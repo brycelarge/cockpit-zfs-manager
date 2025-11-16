@@ -30,6 +30,14 @@
 @use "@patternfly/patternfly/utilities/Text/text.css";
 
 // Custom ZFS Manager styles
+// ct-page-fill (Cockpit utility class for full-width page content)
+.ct-page-fill {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 .listing-ct-item {
     cursor: pointer;
 }
@@ -135,4 +143,3 @@ body {
     gap: var(--pf-t--global--spacer--sm);
     align-items: center;
 }
-
