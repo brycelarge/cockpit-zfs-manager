@@ -964,6 +964,7 @@
                 const disks = [];
                 
                 // Use lsblk to get block devices, filtering out partitions and loop devices
+                // -e 7,11 excludes loop devices (7) and ROM devices (11)
                 const proc = cockpit.spawn(['lsblk', '-nd', '-o', 'NAME,TYPE', '-e', '7,11'], { err: 'message' });
                 
                 proc.stream((data) => {
@@ -974,25 +975,10 @@
                             const name = parts[0];
                             const type = parts[1];
                             // Only include disks (not partitions, loop, etc.)
+                            // lsblk already filters loop devices via -e flag, but double-check
                             if (type === 'disk' && !name.startsWith('loop') && !name.startsWith('ram')) {
-                                // Determine the full device path
-                                let devicePath = `/dev/${name}`;
-                                // Check if it's an NVMe device (nvme0n1 format)
-                                if (name.startsWith('nvme')) {
-                                    devicePath = `/dev/${name}`;
-                                }
-                                // Check if it's a virtio device (vd*)
-                                else if (name.startsWith('vd')) {
-                                    devicePath = `/dev/${name}`;
-                                }
-                                // Standard SCSI/SATA (sd*)
-                                else if (name.match(/^sd[a-z]+$/)) {
-                                    devicePath = `/dev/${name}`;
-                                }
-                                // Only add if it matches a known pattern
-                                if (devicePath.startsWith('/dev/')) {
-                                    disks.push(devicePath);
-                                }
+                                // Use the device name directly from lsblk
+                                disks.push(`/dev/${name}`);
                             }
                         }
                     });
@@ -1004,7 +990,7 @@
                         disks.sort();
                         resolve(disks);
                     } else {
-                        // Fallback: try listing /dev directly
+                        // Fallback: try listing /dev directly using lsblk with different options
                         this.listDisksFallback().then(resolve).catch(reject);
                     }
                 });
@@ -1022,18 +1008,15 @@
             return new Promise((resolve, reject) => {
                 const disks = [];
                 
-                // Try to list common disk patterns using find
-                const proc = cockpit.spawn(['sh', '-c', 'find /dev -maxdepth 1 -type b \\( -name "sd[a-z]" -o -name "nvme[0-9]n[0-9]" -o -name "vd[a-z]" \\) 2>/dev/null'], { err: 'message' });
+                // Fallback: use lsblk without filters, or list /dev/disk/by-id
+                const proc = cockpit.spawn(['sh', '-c', 'lsblk -nd -o NAME,TYPE 2>/dev/null | awk \'$2=="disk" && $1!~/^loop/ && $1!~/^ram/ {print "/dev/"$1}\''], { err: 'message' });
                 
                 proc.stream((data) => {
                     const lines = data.split('\n');
                     lines.forEach(line => {
                         const device = line.trim();
                         if (device && device.startsWith('/dev/')) {
-                            // Exclude partitions (those ending in numbers)
-                            if (!device.match(/[0-9]+$/)) {
-                                disks.push(device);
-                            }
+                            disks.push(device);
                         }
                     });
                 });
@@ -1044,7 +1027,7 @@
                 });
                 
                 proc.fail((error) => {
-                    // If find fails, return empty array rather than rejecting
+                    // If lsblk fails completely, return empty array
                     resolve([]);
                 });
             });
