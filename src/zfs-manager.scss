@@ -153,4 +153,10 @@
     width: 100%;
 }
 
+// Ensure main-container doesn't constrain width
+.pf-v6-c-page__main-container {
+    width: 100%;
+    max-width: none;
+}
+
 
