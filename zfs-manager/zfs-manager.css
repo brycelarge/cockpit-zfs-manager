@@ -1,17 +1,15 @@
-/* ZFS Manager Styles - PatternFly 6 */
+/* ZFS Manager Styles */
 
-/* Custom table row expansion styles */
-
-.pf-c-table__tr.listing-ct-item {
+.listing-ct-item {
     cursor: pointer;
 }
 
-.pf-c-table__tr.listing-ct-item:hover {
-    background-color: var(--pf-global--BackgroundColor--200);
+.listing-ct-item:hover {
+    background-color: #f5f5f5;
 }
 
-.pf-c-table__tr.listing-ct-item.expanded {
-    background-color: var(--pf-global--BackgroundColor--100);
+.listing-ct-item.expanded {
+    background-color: #fafafa;
 }
 
 .listing-ct-toggle {
@@ -23,34 +21,29 @@
     border: none;
     background: none;
     cursor: pointer;
-    padding: 0.25rem;
+    padding: 4px;
 }
 
 .listing-ct-toggle i {
     transition: transform 0.2s;
 }
 
-.pool-details {
-    background-color: var(--pf-global--BackgroundColor--100);
-}
-
 .pool-details td {
-    padding: 1rem;
+    padding: 15px;
+    background-color: #fafafa;
 }
 
 .tab-content {
-    margin-top: 1rem;
+    margin-top: 15px;
 }
 
 .tab-pane {
-    padding: 1rem 0;
+    padding: 15px 0;
 }
 
 .tab-pane.active {
     display: block;
 }
-
-/* Tabs are handled by PatternFly CSS */
 
 .listing-ct-wordwrap {
     white-space: normal;
@@ -66,104 +59,176 @@
     text-align: center;
 }
 
-/* Dropdowns are handled by PatternFly CSS */
-
-/* Modals use PatternFly's built-in modal component */
-.pf-c-modal-box {
-    /* PatternFly 6 modal styles are provided by base CSS */
-    max-width: 600px;
-}
-
-/* Alerts use PatternFly's built-in alert component */
-.pf-c-alert-group.pf-m-toast {
-    position: fixed;
-    top: var(--pf-global--spacer--md);
-    right: var(--pf-global--spacer--md);
-    z-index: var(--pf-global--ZIndex--2xl);
-    max-width: 400px;
-}
-
-/* Forms use PatternFly's built-in form components */
-
-.pf-c-code-block {
-    background-color: var(--pf-global--BackgroundColor--200);
-    padding: 1rem;
-    border-radius: 4px;
-    overflow-x: auto;
-    font-family: monospace;
-    font-size: 0.875rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-/* Progress bars use PatternFly's built-in progress component */
-
-/* Toolbar and spinner use PatternFly's built-in components */
-
-/* Utility classes */
 .hidden {
     display: none !important;
 }
 
-/* Custom styles for expandable table rows */
-.pool-details {
-    background-color: var(--pf-global--BackgroundColor--100);
+#alerts-notifications {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 3000;
+    max-width: 400px;
 }
 
-.pool-details .pf-c-table__td {
-    padding: var(--pf-global--spacer--md);
+.alert {
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 4px;
 }
 
-.tab-content {
-    margin-top: var(--pf-global--spacer--md);
+.alert-success {
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+    color: #3c763d;
 }
 
-.tab-pane {
-    padding: var(--pf-global--spacer--md) 0;
+.alert-danger {
+    background-color: #f2dede;
+    border-color: #ebccd1;
+    color: #a94442;
 }
 
-.tab-pane.active {
+.alert-warning {
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+    color: #8a6d3b;
+}
+
+.alert-info {
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+    color: #31708f;
+}
+
+.modal {
     display: block;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
 }
 
-.listing-ct-wordwrap {
-    white-space: normal;
-    word-wrap: break-word;
+.modal-dialog {
+    position: relative;
+    margin: 50px auto;
+    max-width: 600px;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
 
-.listing-ct-icon {
-    width: 40px;
+.modal-header {
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.listing-ct-actionsmenu {
-    width: 60px;
-    text-align: center;
+.modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
 }
 
-.listing-ct-toggle {
-    width: 40px;
-    text-align: center;
+.modal-body {
+    padding: 15px;
 }
 
-.listing-ct-toggle button {
-    border: none;
+.modal-footer {
+    padding: 15px;
+    border-top: 1px solid #ddd;
+    text-align: right;
+}
+
+.modal-footer .btn {
+    margin-left: 5px;
+}
+
+.close {
     background: none;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
     cursor: pointer;
-    padding: var(--pf-global--spacer--xs);
+    color: #999;
 }
 
-.listing-ct-toggle i {
-    transition: transform 0.2s;
+.close:hover {
+    color: #000;
 }
 
-/* Code blocks */
-.pf-c-code-block {
-    background-color: var(--pf-global--BackgroundColor--200);
-    padding: var(--pf-global--spacer--md);
-    border-radius: var(--pf-global--BorderRadius--sm);
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.form-control {
+    width: 100%;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #0088ce;
+    box-shadow: 0 0 0 2px rgba(0, 136, 206, 0.2);
+}
+
+.help-block {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #737373;
+}
+
+.code-block {
+    background-color: #f5f5f5;
+    padding: 15px;
+    border-radius: 4px;
     overflow-x: auto;
-    font-family: var(--pf-global--FontFamily--monospace);
-    font-size: var(--pf-global--FontSize--sm);
+    font-family: monospace;
+    font-size: 12px;
     white-space: pre-wrap;
     word-wrap: break-word;
+}
+
+.progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 20px;
+    background-color: #ededed;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar > div {
+    height: 100%;
+    background-color: #0088ce;
+    transition: width 0.3s;
+}
+
+.progress-measure {
+    font-size: 12px;
+    color: #737373;
+    min-width: 50px;
+    text-align: right;
+    margin-left: 10px;
 }

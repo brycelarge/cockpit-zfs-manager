@@ -35,32 +35,28 @@
         showNotification(status, title, description, timeout = 5000) {
             const alertContainer = document.getElementById('alerts-notifications') || document.body;
             const alertId = 'alert-' + Date.now();
-            const statusClass = status === 'success' ? 'pf-m-success' : 
-                              status === 'warning' ? 'pf-m-warning' : 
-                              status === 'danger' ? 'pf-m-danger' : 'pf-m-info';
+            const statusClass = status === 'success' ? 'alert-success' : 
+                              status === 'warning' ? 'alert-warning' : 
+                              status === 'danger' ? 'alert-danger' : 'alert-info';
             const icon = status === 'success' ? 'fa-check-circle' :
                         status === 'warning' ? 'fa-exclamation-triangle' :
                         status === 'danger' ? 'fa-times-circle' : 'fa-info-circle';
 
             const alert = document.createElement('div');
             alert.id = alertId;
-            alert.className = `pf-c-alert ${statusClass}`;
+            alert.className = `alert ${statusClass} alert-dismissible`;
             alert.innerHTML = `
-                <div class="pf-c-alert__icon">
-                    <i class="fa ${icon}" aria-hidden="true"></i>
-                </div>
-                <h4 class="pf-c-alert__title">${this.escapeHtml(title)}</h4>
-                ${description ? `<div class="pf-c-alert__description"><p>${this.escapeHtml(description)}</p></div>` : ''}
-                <div class="pf-c-alert__action">
-                    <button class="pf-c-button pf-m-plain" type="button" aria-label="Close">
-                        <i class="fa fa-times" aria-hidden="true"></i>
-                    </button>
-                </div>
+                <button type="button" class="close" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <span class="fa ${icon}"></span>
+                <strong>${this.escapeHtml(title)}</strong>
+                ${description ? `<p>${this.escapeHtml(description)}</p>` : ''}
             `;
 
             alertContainer.appendChild(alert);
 
-            alert.querySelector('.pf-c-button').addEventListener('click', () => {
+            alert.querySelector('.close').addEventListener('click', () => {
                 alert.remove();
             });
 
@@ -88,38 +84,42 @@
                 this.reject = reject;
 
                 this.backdrop = document.createElement('div');
-                this.backdrop.className = 'pf-c-backdrop';
+                this.backdrop.className = 'modal-backdrop fade';
                 this.backdrop.style.display = 'block';
 
                 this.modal = document.createElement('div');
-                this.modal.className = 'pf-c-modal-box';
+                this.modal.className = 'modal';
                 this.modal.setAttribute('role', 'dialog');
                 this.modal.innerHTML = `
-                    <div class="pf-c-modal-box__header">
-                        <h1 class="pf-c-modal-box__title">${Utils.escapeHtml(this.title)}</h1>
-                        <button class="pf-c-button pf-m-plain" type="button" aria-label="Close dialog">
-                            <i class="fa fa-times" aria-hidden="true"></i>
-                        </button>
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">${Utils.escapeHtml(this.title)}</h4>
+                                <button type="button" class="close" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                ${this.content}
+                            </div>
+                            ${this.options.footer !== false ? `
+                            <div class="modal-footer">
+                                ${this.options.footer || `
+                                    <button class="btn btn-primary" type="button">${this.options.confirmText || 'OK'}</button>
+                                    <button class="btn btn-default" type="button">Cancel</button>
+                                `}
+                            </div>
+                            ` : ''}
+                        </div>
                     </div>
-                    <div class="pf-c-modal-box__body">
-                        ${this.content}
-                    </div>
-                    ${this.options.footer !== false ? `
-                    <div class="pf-c-modal-box__footer">
-                        ${this.options.footer || `
-                            <button class="pf-c-button pf-m-primary" type="button">${this.options.confirmText || 'OK'}</button>
-                            <button class="pf-c-button pf-m-link" type="button">Cancel</button>
-                        `}
-                    </div>
-                    ` : ''}
                 `;
 
                 document.body.appendChild(this.backdrop);
                 document.body.appendChild(this.modal);
 
-                const closeBtn = this.modal.querySelector('.pf-c-button[aria-label="Close dialog"]');
-                const cancelBtn = this.modal.querySelector('.pf-c-button.pf-m-link');
-                const confirmBtn = this.modal.querySelector('.pf-c-button.pf-m-primary');
+                const closeBtn = this.modal.querySelector('.close');
+                const cancelBtn = this.modal.querySelector('.btn-default');
+                const confirmBtn = this.modal.querySelector('.btn-primary');
 
                 const close = () => {
                     this.modal.remove();
@@ -175,14 +175,10 @@
             proc.fail(() => {
                 document.getElementById('alerts-requirements').classList.remove('hidden');
                 document.getElementById('alerts-requirements').innerHTML = `
-                    <div class="pf-c-alert pf-m-danger">
-                        <div class="pf-c-alert__icon">
-                            <i class="fa fa-times-circle" aria-hidden="true"></i>
-                        </div>
-                        <h4 class="pf-c-alert__title">ZFS not found</h4>
-                        <div class="pf-c-alert__description">
-                            <p>ZFS tools are not installed. Please install zfsutils-linux (Debian/Ubuntu) or zfs (Fedora/RHEL).</p>
-                        </div>
+                    <div class="alert alert-danger">
+                        <span class="fa fa-times-circle"></span>
+                        <h4>ZFS not found</h4>
+                        <p>ZFS tools are not installed. Please install zfsutils-linux (Debian/Ubuntu) or zfs (Fedora/RHEL).</p>
                     </div>
                 `;
             });
@@ -200,22 +196,22 @@
             document.getElementById('btn-about')?.addEventListener('click', () => this.showAboutModal());
 
             // Dropdown menu toggle
-            const dropdownToggle = document.querySelector('.pf-c-dropdown__toggle');
+            const dropdownToggle = document.querySelector('.dropdown-toggle');
             if (dropdownToggle) {
                 dropdownToggle.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const menu = dropdownToggle.nextElementSibling;
                     if (menu) {
-                        menu.hidden = !menu.hidden;
+                        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
                     }
                 });
             }
 
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
-                if (!e.target.closest('.pf-c-dropdown')) {
-                    document.querySelectorAll('.pf-c-dropdown__menu').forEach(menu => {
-                        menu.hidden = true;
+                if (!e.target.closest('.btn-group')) {
+                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                        menu.style.display = 'none';
                     });
                 }
             });
@@ -226,19 +222,20 @@
                 this.showLoading();
 
                 const proc = cockpit.spawn(['zpool', 'list', '-H', '-o', 
-                    'name,size,allocated,free,fragmentation,health,readonly']);
+                    'name,size,allocated,free,fragmentation,health,readonly'], { err: 'message' });
                 let output = '';
 
                 proc.stream((data) => {
                     output += data;
                 });
 
-                proc.done((exitCode) => {
+                proc.done((exitCode, data) => {
                     if (exitCode === 0) {
                         this.pools = this.parsePoolList(output);
                         this.renderPools();
                     } else {
-                        Utils.showNotification('danger', 'Error', 'Failed to list ZFS pools');
+                        const errorMsg = data || `Exit code: ${exitCode}`;
+                        Utils.showNotification('danger', 'Error', `Failed to list ZFS pools: ${errorMsg}`);
                     }
                 });
 
@@ -282,14 +279,14 @@
 
             if (this.pools.length === 0) {
                 tbody.innerHTML = `
-                    <tr class="pf-c-table__tr">
-                        <td colspan="11" class="pf-c-table__td pf-m-center">
-                            <div class="pf-c-empty-state">
-                                <div class="pf-c-empty-state__content">
-                                    <i class="fa fa-database pf-c-empty-state__icon" aria-hidden="true"></i>
-                                    <h2 class="pf-c-empty-state__title">No storage pools found</h2>
-                                    <p class="pf-c-empty-state__body">Create a new storage pool to get started.</p>
+                    <tr>
+                        <td colspan="11" class="text-center">
+                            <div class="blank-slate-pf">
+                                <div class="blank-slate-pf-icon">
+                                    <i class="fa fa-database" aria-hidden="true"></i>
                                 </div>
+                                <h2>No storage pools found</h2>
+                                <p>Create a new storage pool to get started.</p>
                             </div>
                         </td>
                     </tr>
@@ -309,53 +306,54 @@
 
         createPoolRow(pool) {
             const row = document.createElement('tr');
-            row.className = 'pf-c-table__tr listing-ct-item';
+            row.className = 'listing-ct-item';
             row.setAttribute('data-pool-name', pool.name);
             row.setAttribute('data-pool-id', pool.id);
 
-            const healthClass = pool.health === 'ONLINE' ? 'pf-m-success' : 
-                              pool.health === 'DEGRADED' ? 'pf-m-warning' : 'pf-m-danger';
+            const healthClass = pool.health === 'ONLINE' ? 'label-success' : 
+                              pool.health === 'DEGRADED' ? 'label-warning' : 'label-danger';
             const healthIcon = pool.health === 'ONLINE' ? 'fa-check-circle' :
                              pool.health === 'DEGRADED' ? 'fa-exclamation-triangle' : 'fa-times-circle';
 
             row.innerHTML = `
-                <td class="pf-c-table__td listing-ct-toggle">
-                    <button class="pf-c-button pf-m-plain" type="button" aria-label="Toggle details">
+                <td class="listing-ct-toggle">
+                    <button class="btn btn-link" type="button" aria-label="Toggle details">
                         <i class="fa fa-angle-right" aria-hidden="true"></i>
                     </button>
                 </td>
-                <td class="pf-c-table__td" colspan="2"><strong>${Utils.escapeHtml(pool.name)}</strong></td>
-                <td class="pf-c-table__td">
-                    <span class="pf-c-label ${healthClass}">
+                <td colspan="2"><strong>${Utils.escapeHtml(pool.name)}</strong></td>
+                <td>
+                    <span class="label ${healthClass}">
                         <i class="fa ${healthIcon}" aria-hidden="true"></i>
                         ${Utils.escapeHtml(pool.health)}
                     </span>
                 </td>
-                <td class="pf-c-table__td">${Utils.escapeHtml(pool.size)}</td>
-                <td class="pf-c-table__td">${Utils.escapeHtml(pool.allocated)}</td>
-                <td class="pf-c-table__td">${Utils.escapeHtml(pool.free)}</td>
-                <td class="pf-c-table__td">${Utils.escapeHtml(pool.fragmentation)}</td>
-                <td class="pf-c-table__td">
-                    <div class="pf-c-progress">
-                        <div class="pf-c-progress__bar" role="progressbar" 
+                <td>${Utils.escapeHtml(pool.size)}</td>
+                <td>${Utils.escapeHtml(pool.allocated)}</td>
+                <td>${Utils.escapeHtml(pool.free)}</td>
+                <td>${Utils.escapeHtml(pool.fragmentation)}</td>
+                <td>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" 
                              aria-valuenow="${pool.usage}" 
                              aria-valuemin="0" 
-                             aria-valuemax="100">
-                            <div style="width: ${pool.usage}%"></div>
+                             aria-valuemax="100"
+                             style="width: ${pool.usage}%">
                         </div>
-                        <span class="pf-c-progress__measure">${pool.usage}%</span>
+                        <span class="progress-measure">${pool.usage}%</span>
                     </div>
                 </td>
-                <td class="pf-c-table__td listing-ct-icon"></td>
-                <td class="pf-c-table__td listing-ct-actionsmenu">
-                    <div class="pf-c-dropdown">
-                        <button class="pf-c-dropdown__toggle pf-m-plain" type="button" aria-label="Actions">
+                <td class="listing-ct-icon"></td>
+                <td class="listing-ct-actionsmenu">
+                    <div class="btn-group">
+                        <button class="btn btn-link dropdown-toggle" type="button" data-toggle="dropdown" aria-label="Actions">
                             <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
                         </button>
-                        <ul class="pf-c-dropdown__menu" hidden>
-                            <li><button class="pf-c-dropdown__menu-item" data-action="details">Details</button></li>
-                            <li><button class="pf-c-dropdown__menu-item" data-action="export">Export</button></li>
-                            <li><button class="pf-c-dropdown__menu-item pf-m-danger" data-action="destroy">Destroy</button></li>
+                        <ul class="dropdown-menu dropdown-menu-right">
+                            <li><a data-action="details">Details</a></li>
+                            <li><a data-action="export">Export</a></li>
+                            <li class="divider"></li>
+                            <li><a data-action="destroy" class="text-danger">Destroy</a></li>
                         </ul>
                     </div>
                 </td>
@@ -373,20 +371,20 @@
             });
 
             // Actions menu
-            const dropdown = row.querySelector('.pf-c-dropdown');
-            const toggle = dropdown?.querySelector('.pf-c-dropdown__toggle');
-            const menu = dropdown?.querySelector('.pf-c-dropdown__menu');
+            const dropdown = row.querySelector('.btn-group');
+            const toggle = dropdown?.querySelector('.dropdown-toggle');
+            const menu = dropdown?.querySelector('.dropdown-menu');
             
             if (toggle && menu) {
                 toggle.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    menu.hidden = !menu.hidden;
+                    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
                 });
 
                 menu.querySelectorAll('[data-action]').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        menu.hidden = true;
+                        menu.style.display = 'none';
                         const action = btn.getAttribute('data-action');
                         this.handlePoolAction(pool, action);
                     });
@@ -402,22 +400,14 @@
             icon.className = 'fa fa-angle-down';
 
             const detailsRow = document.createElement('tr');
-            detailsRow.className = 'pf-c-table__tr pool-details';
+            detailsRow.className = 'pool-details';
             detailsRow.innerHTML = `
-                <td class="pf-c-table__td" colspan="11">
-                    <div class="pf-c-tabs">
-                        <ul class="pf-c-tabs__list">
-                            <li class="pf-c-tabs__item pf-m-current">
-                                <button class="pf-c-tabs__link" data-tab="filesystems">File Systems</button>
-                            </li>
-                            <li class="pf-c-tabs__item">
-                                <button class="pf-c-tabs__link" data-tab="snapshots">Snapshots</button>
-                            </li>
-                            <li class="pf-c-tabs__item">
-                                <button class="pf-c-tabs__link" data-tab="status">Status</button>
-                            </li>
-                        </ul>
-                    </div>
+                <td colspan="11">
+                    <ul class="nav nav-tabs">
+                        <li class="active"><a data-tab="filesystems">File Systems</a></li>
+                        <li><a data-tab="snapshots">Snapshots</a></li>
+                        <li><a data-tab="status">Status</a></li>
+                    </ul>
                     <div class="tab-content">
                         <div class="tab-pane active" data-tab="filesystems">
                             <div class="spinner spinner-lg"></div>
@@ -458,10 +448,10 @@
 
         switchTab(detailsRow, tabName) {
             // Update tab buttons
-            detailsRow.querySelectorAll('.pf-c-tabs__item').forEach(item => {
-                item.classList.remove('pf-m-current');
+            detailsRow.querySelectorAll('.nav-tabs li').forEach(item => {
+                item.classList.remove('active');
             });
-            detailsRow.querySelector(`[data-tab="${tabName}"]`).closest('.pf-c-tabs__item').classList.add('pf-m-current');
+            detailsRow.querySelector(`[data-tab="${tabName}"]`).closest('li').classList.add('active');
 
             // Update content
             detailsRow.querySelectorAll('.tab-pane').forEach(pane => {
@@ -539,16 +529,16 @@
             }
 
             let html = `
-                <div class="pf-c-toolbar">
-                    <div class="pf-c-toolbar__content">
-                        <div class="pf-c-toolbar__content-section">
-                            <button class="pf-c-button pf-m-primary" data-action="create-filesystem">
-                                <i class="fa fa-plus" aria-hidden="true"></i> Create File System
+                <div class="toolbar-pf">
+                    <div class="toolbar-pf-actions">
+                        <div class="form-group">
+                            <button class="btn btn-primary" data-action="create-filesystem">
+                                <span class="fa fa-plus"></span> Create File System
                             </button>
                         </div>
                     </div>
                 </div>
-                <table class="pf-c-table">
+                <table class="table table-striped table-bordered">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -573,16 +563,17 @@
                         <td>${Utils.escapeHtml(fs.refer)}</td>
                         <td>${Utils.escapeHtml(fs.mountpoint)}</td>
                         <td>${Utils.escapeHtml(fs.type)}</td>
-                        <td>${fs.encryption !== 'off' ? '<span class="pf-c-label pf-m-blue"><i class="fa fa-lock"></i> Encrypted</span>' : '-'}</td>
+                        <td>${fs.encryption !== 'off' ? '<span class="label label-info"><i class="fa fa-lock"></i> Encrypted</span>' : '-'}</td>
                         <td>
-                            <div class="pf-c-dropdown">
-                                <button class="pf-c-dropdown__toggle pf-m-plain" type="button">
+                            <div class="btn-group">
+                                <button class="btn btn-link dropdown-toggle" type="button" data-toggle="dropdown">
                                     <i class="fa fa-ellipsis-v"></i>
                                 </button>
-                                <ul class="pf-c-dropdown__menu" hidden>
-                                    <li><button class="pf-c-dropdown__menu-item" data-action="snapshot">Create Snapshot</button></li>
-                                    <li><button class="pf-c-dropdown__menu-item" data-action="clone">Clone</button></li>
-                                    <li><button class="pf-c-dropdown__menu-item pf-m-danger" data-action="destroy">Destroy</button></li>
+                                <ul class="dropdown-menu dropdown-menu-right">
+                                    <li><a data-action="snapshot">Create Snapshot</a></li>
+                                    <li><a data-action="clone">Clone</a></li>
+                                    <li class="divider"></li>
+                                    <li><a data-action="destroy" class="text-danger">Destroy</a></li>
                                 </ul>
                             </div>
                         </td>
@@ -599,20 +590,20 @@
             });
 
             // Filesystem action dropdowns
-            container.querySelectorAll('.pf-c-dropdown').forEach(dropdown => {
-                const toggle = dropdown.querySelector('.pf-c-dropdown__toggle');
-                const menu = dropdown.querySelector('.pf-c-dropdown__menu');
+            container.querySelectorAll('.btn-group').forEach(dropdown => {
+                const toggle = dropdown.querySelector('.dropdown-toggle');
+                const menu = dropdown.querySelector('.dropdown-menu');
                 
                 if (toggle && menu) {
                     toggle.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        menu.hidden = !menu.hidden;
+                        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
                     });
 
                     menu.querySelectorAll('[data-action]').forEach(btn => {
                         btn.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            menu.hidden = true;
+                            menu.style.display = 'none';
                             const action = btn.getAttribute('data-action');
                             const row = btn.closest('tr');
                             const fsName = row.querySelector('td').textContent.trim();
@@ -665,11 +656,11 @@
 
         renderSnapshots(snapshots, container, pool) {
             let html = `
-                <div class="pf-c-toolbar">
-                    <div class="pf-c-toolbar__content">
-                        <div class="pf-c-toolbar__content-section">
-                            <button class="pf-c-button pf-m-primary" data-action="create-snapshot">
-                                <i class="fa fa-plus" aria-hidden="true"></i> Create Snapshot
+                <div class="toolbar-pf">
+                    <div class="toolbar-pf-actions">
+                        <div class="form-group">
+                            <button class="btn btn-primary" data-action="create-snapshot">
+                                <span class="fa fa-plus"></span> Create Snapshot
                             </button>
                         </div>
                     </div>
@@ -686,7 +677,7 @@
             }
 
             html += `
-                <table class="pf-c-table">
+                <table class="table table-striped table-bordered">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -707,14 +698,15 @@
                         <td>${Utils.escapeHtml(snap.refer)}</td>
                         <td>${Utils.escapeHtml(snap.creation)}</td>
                         <td>
-                            <div class="pf-c-dropdown">
-                                <button class="pf-c-dropdown__toggle pf-m-plain" type="button">
+                            <div class="btn-group">
+                                <button class="btn btn-link dropdown-toggle" type="button" data-toggle="dropdown">
                                     <i class="fa fa-ellipsis-v"></i>
                                 </button>
-                                <ul class="pf-c-dropdown__menu" hidden>
-                                    <li><button class="pf-c-dropdown__menu-item" data-action="clone">Clone</button></li>
-                                    <li><button class="pf-c-dropdown__menu-item" data-action="rollback">Rollback</button></li>
-                                    <li><button class="pf-c-dropdown__menu-item pf-m-danger" data-action="destroy">Destroy</button></li>
+                                <ul class="dropdown-menu dropdown-menu-right">
+                                    <li><a data-action="clone">Clone</a></li>
+                                    <li><a data-action="rollback">Rollback</a></li>
+                                    <li class="divider"></li>
+                                    <li><a data-action="destroy" class="text-danger">Destroy</a></li>
                                 </ul>
                             </div>
                         </td>
@@ -731,20 +723,20 @@
             });
 
             // Snapshot action dropdowns
-            container.querySelectorAll('.pf-c-dropdown').forEach(dropdown => {
-                const toggle = dropdown.querySelector('.pf-c-dropdown__toggle');
-                const menu = dropdown.querySelector('.pf-c-dropdown__menu');
+            container.querySelectorAll('.btn-group').forEach(dropdown => {
+                const toggle = dropdown.querySelector('.dropdown-toggle');
+                const menu = dropdown.querySelector('.dropdown-menu');
                 
                 if (toggle && menu) {
                     toggle.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        menu.hidden = !menu.hidden;
+                        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
                     });
 
                     menu.querySelectorAll('[data-action]').forEach(btn => {
                         btn.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            menu.hidden = true;
+                            menu.style.display = 'none';
                             const action = btn.getAttribute('data-action');
                             const row = btn.closest('tr');
                             const snapName = row.querySelector('td').textContent.trim();
@@ -766,7 +758,7 @@
 
                 proc.done((exitCode) => {
                     if (exitCode === 0) {
-                        container.innerHTML = `<pre class="pf-c-code-block">${Utils.escapeHtml(output)}</pre>`;
+                        container.innerHTML = `<pre class="code-block">${Utils.escapeHtml(output)}</pre>`;
                     } else {
                         container.innerHTML = '<p class="text-danger">Failed to load status</p>';
                     }
@@ -796,7 +788,7 @@
 
         showPoolDetails(pool) {
             const modal = new Modal(`Pool Details: ${pool.name}`, 
-                `<pre class="pf-c-code-block">Loading...</pre>`, 
+                `<pre class="code-block">Loading...</pre>`, 
                 { footer: false });
             modal.show();
 
@@ -804,29 +796,29 @@
             let output = '';
             proc.stream((data) => output += data);
             proc.done(() => {
-                modal.modal.querySelector('.pf-c-code-block').textContent = output;
+                modal.modal.querySelector('.code-block').textContent = output;
             });
         }
 
         showCreatePoolModal() {
             const content = `
                 <form id="create-pool-form">
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label" for="pool-name">
-                            <span class="pf-c-form__label-text">Pool Name</span>
+                    <div class="form-group">
+                        <label class="control-label" for="pool-name">
+                            <span class="control-label-text">Pool Name</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="pool-name" name="name" required>
+                        <input class="form-control" type="text" id="pool-name" name="name" required>
                     </div>
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label" for="pool-devices">
-                            <span class="pf-c-form__label-text">Devices</span>
+                    <div class="form-group">
+                        <label class="control-label" for="pool-devices">
+                            <span class="control-label-text">Devices</span>
                         </label>
-                        <textarea class="pf-c-form-control" id="pool-devices" name="devices" 
+                        <textarea class="form-control" id="pool-devices" name="devices" 
                                   placeholder="/dev/sdb /dev/sdc" required></textarea>
-                        <div class="pf-c-form__helper-text">Space-separated list of devices</div>
+                        <div class="help-block">Space-separated list of devices</div>
                     </div>
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label">
+                    <div class="form-group">
+                        <label class="control-label">
                             <input type="checkbox" id="pool-raidz" name="raidz"> Use RAID-Z
                         </label>
                     </div>
@@ -881,12 +873,12 @@
         showImportPoolModal() {
             const content = `
                 <form id="import-pool-form">
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label" for="import-pool-name">
-                            <span class="pf-c-form__label-text">Pool Name (optional)</span>
+                    <div class="form-group">
+                        <label class="control-label" for="import-pool-name">
+                            <span class="control-label-text">Pool Name (optional)</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="import-pool-name" name="name">
-                        <div class="pf-c-form__helper-text">Leave empty to import all available pools</div>
+                        <input class="form-control" type="text" id="import-pool-name" name="name">
+                        <div class="help-block">Leave empty to import all available pools</div>
                     </div>
                 </form>
             `;
@@ -931,23 +923,23 @@
         showCreateFileSystemModal(pool) {
             const content = `
                 <form id="create-filesystem-form">
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label" for="fs-name">
-                            <span class="pf-c-form__label-text">File System Name</span>
+                    <div class="form-group">
+                        <label class="control-label" for="fs-name">
+                            <span class="control-label-text">File System Name</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="fs-name" name="name" 
+                        <input class="form-control" type="text" id="fs-name" name="name" 
                                placeholder="${pool.name}/" required>
                     </div>
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label">
+                    <div class="form-group">
+                        <label class="control-label">
                             <input type="checkbox" id="fs-encrypted" name="encrypted"> Encrypted
                         </label>
                     </div>
-                    <div class="pf-c-form-group" id="fs-passphrase-group" style="display: none;">
-                        <label class="pf-c-form__label" for="fs-passphrase">
-                            <span class="pf-c-form__label-text">Passphrase</span>
+                    <div class="form-group" id="fs-passphrase-group" style="display: none;">
+                        <label class="control-label" for="fs-passphrase">
+                            <span class="control-label-text">Passphrase</span>
                         </label>
-                        <input class="pf-c-form-control" type="password" id="fs-passphrase" name="passphrase">
+                        <input class="form-control" type="password" id="fs-passphrase" name="passphrase">
                     </div>
                 </form>
             `;
@@ -1030,20 +1022,20 @@
         showUnlockFileSystemsModal() {
             const content = `
                 <form id="unlock-filesystems-form">
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label" for="unlock-pool">
-                            <span class="pf-c-form__label-text">Pool Name</span>
+                    <div class="form-group">
+                        <label class="control-label" for="unlock-pool">
+                            <span class="control-label-text">Pool Name</span>
                         </label>
-                        <select class="pf-c-form-control" id="unlock-pool" name="pool" required>
+                        <select class="form-control" id="unlock-pool" name="pool" required>
                             <option value="">Select a pool...</option>
                             ${this.pools.map(p => `<option value="${Utils.escapeHtml(p.name)}">${Utils.escapeHtml(p.name)}</option>`).join('')}
                         </select>
                     </div>
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label" for="unlock-passphrase">
-                            <span class="pf-c-form__label-text">Passphrase</span>
+                    <div class="form-group">
+                        <label class="control-label" for="unlock-passphrase">
+                            <span class="control-label-text">Passphrase</span>
                         </label>
-                        <input class="pf-c-form-control" type="password" id="unlock-passphrase" name="passphrase" required>
+                        <input class="form-control" type="password" id="unlock-passphrase" name="passphrase" required>
                     </div>
                 </form>
             `;
@@ -1093,12 +1085,10 @@
 
         showConfigureModal() {
             const content = `
-                <div class="pf-c-alert pf-m-info">
-                    <div class="pf-c-alert__icon">
-                        <i class="fa fa-info-circle" aria-hidden="true"></i>
-                    </div>
-                    <h4 class="pf-c-alert__title">Configuration</h4>
-                    <div class="pf-c-alert__description">
+                <div class="alert alert-info">
+                    <span class="fa fa-info-circle"></span>
+                    <h4>Configuration</h4>
+                    <div>
                         <p>Configuration options will be available in a future release.</p>
                     </div>
                 </div>
@@ -1153,13 +1143,13 @@
         showCreateSnapshotModal(pool, filesystem = null) {
             const content = `
                 <form id="create-snapshot-form">
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label" for="snapshot-name">
-                            <span class="pf-c-form__label-text">Snapshot Name</span>
+                    <div class="form-group">
+                        <label class="control-label" for="snapshot-name">
+                            <span class="control-label-text">Snapshot Name</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="snapshot-name" name="name" 
+                        <input class="form-control" type="text" id="snapshot-name" name="name" 
                                placeholder="${filesystem || pool.name}@snapshot-name" required>
-                        <div class="pf-c-form__helper-text">Format: filesystem@snapshot-name</div>
+                        <div class="help-block">Format: filesystem@snapshot-name</div>
                     </div>
                 </form>
             `;
@@ -1218,12 +1208,12 @@
         showCloneFileSystemModal(fsName) {
             const content = `
                 <form id="clone-filesystem-form">
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label" for="clone-name">
-                            <span class="pf-c-form__label-text">Clone Name</span>
+                    <div class="form-group">
+                        <label class="control-label" for="clone-name">
+                            <span class="control-label-text">Clone Name</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="clone-name" name="name" required>
-                        <div class="pf-c-form__helper-text">Name for the cloned file system</div>
+                        <input class="form-control" type="text" id="clone-name" name="name" required>
+                        <div class="help-block">Name for the cloned file system</div>
                     </div>
                 </form>
             `;
@@ -1268,12 +1258,12 @@
         showCloneSnapshotModal(snapName) {
             const content = `
                 <form id="clone-snapshot-form">
-                    <div class="pf-c-form-group">
-                        <label class="pf-c-form__label" for="clone-snapshot-name">
-                            <span class="pf-c-form__label-text">Clone Name</span>
+                    <div class="form-group">
+                        <label class="control-label" for="clone-snapshot-name">
+                            <span class="control-label-text">Clone Name</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="clone-snapshot-name" name="name" required>
-                        <div class="pf-c-form__helper-text">Name for the cloned file system from snapshot</div>
+                        <input class="form-control" type="text" id="clone-snapshot-name" name="name" required>
+                        <div class="help-block">Name for the cloned file system from snapshot</div>
                     </div>
                 </form>
             `;
