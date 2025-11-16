@@ -1,6 +1,9 @@
 // Import PatternFly base first (required for tokens/variables)
 @use "@patternfly/patternfly/base" as *;
 
+// Import Font Awesome icons (PatternFly includes Font Awesome)
+@use "@patternfly/patternfly/assets/fontawesome/fontawesome.scss";
+
 // Import PatternFly components (using short paths like cockpit-machines)
 @use "@patternfly/patternfly/components/Page/page.scss";
 @use "@patternfly/patternfly/components/Table/table.scss";
@@ -36,6 +39,17 @@
     width: 100%;
     display: flex;
     flex-direction: column;
+}
+
+// Ensure table is full width
+.pf-v6-c-table {
+    width: 100%;
+    flex: 1;
+    overflow: auto;
+}
+
+.pf-v6-c-table__table {
+    width: 100%;
 }
 
 .listing-ct-item {
