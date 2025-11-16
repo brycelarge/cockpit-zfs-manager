@@ -200,22 +200,34 @@
             document.getElementById('btn-about')?.addEventListener('click', () => this.showAboutModal());
 
             // Dropdown menu toggle
-            const dropdownToggle = document.querySelector('.pf-v6-c-menu-toggle');
-            if (dropdownToggle) {
-                dropdownToggle.addEventListener('click', (e) => {
+            const dropdownToggles = document.querySelectorAll('.pf-v6-c-menu-toggle');
+            dropdownToggles.forEach(toggle => {
+                toggle.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const menu = dropdownToggle.nextElementSibling;
+                    const menuContainer = toggle.closest('.menu-dropdown-wrapper');
+                    const menu = menuContainer?.querySelector('.pf-v6-c-menu.pf-m-flyout');
                     if (menu) {
-                        menu.hidden = !menu.hidden;
+                        const isHidden = menu.hidden;
+                        // Close all menus first
+                        document.querySelectorAll('.pf-v6-c-menu.pf-m-flyout').forEach(m => m.hidden = true);
+                        document.querySelectorAll('.pf-v6-c-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                        // Toggle this menu
+                        if (isHidden) {
+                            menu.hidden = false;
+                            toggle.setAttribute('aria-expanded', 'true');
+                        }
                     }
                 });
-            }
+            });
 
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
-                if (!e.target.closest('.pf-v6-c-menu')) {
-                    document.querySelectorAll('.pf-v6-c-menu__list').forEach(menu => {
+                if (!e.target.closest('.menu-dropdown-wrapper')) {
+                    document.querySelectorAll('.pf-v6-c-menu.pf-m-flyout').forEach(menu => {
                         menu.hidden = true;
+                    });
+                    document.querySelectorAll('.pf-v6-c-menu-toggle').forEach(toggle => {
+                        toggle.setAttribute('aria-expanded', 'false');
                     });
                 }
             });
@@ -349,15 +361,17 @@
                 </td>
                 <td class="pf-v6-c-table__td listing-ct-icon"></td>
                 <td class="pf-v6-c-table__td listing-ct-actionsmenu">
-                    <div class="pf-v6-c-menu">
-                        <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button" aria-label="Actions">
+                    <div class="menu-dropdown-wrapper">
+                        <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button" aria-label="Actions" aria-expanded="false">
                             <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
                         </button>
-                        <ul class="pf-v6-c-menu__list" hidden>
+                        <div class="pf-v6-c-menu pf-m-flyout" hidden>
+                            <ul class="pf-v6-c-menu__list">
                             <li><button class="pf-v6-c-menu__list-item" data-action="details">Details</button></li>
                             <li><button class="pf-v6-c-menu__list-item" data-action="export">Export</button></li>
                             <li><button class="pf-v6-c-menu__list-item pf-v6-m-danger" data-action="destroy">Destroy</button></li>
-                        </ul>
+                            </ul>
+                        </div>
                     </div>
                 </td>
             `;
@@ -374,14 +388,22 @@
             });
 
             // Actions menu
-            const dropdown = row.querySelector('.pf-v6-c-menu');
+            const dropdown = row.querySelector('.menu-dropdown-wrapper');
             const toggle = dropdown?.querySelector('.pf-v6-c-menu-toggle');
-            const menu = dropdown?.querySelector('.pf-v6-c-menu__list');
+            const menu = dropdown?.querySelector('.pf-v6-c-menu.pf-m-flyout');
             
             if (toggle && menu) {
                 toggle.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    menu.hidden = !menu.hidden;
+                    const isHidden = menu.hidden;
+                    // Close all menus first
+                    document.querySelectorAll('.pf-v6-c-menu.pf-m-flyout').forEach(m => m.hidden = true);
+                    document.querySelectorAll('.pf-v6-c-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                    // Toggle this menu
+                    if (isHidden) {
+                        menu.hidden = false;
+                        toggle.setAttribute('aria-expanded', 'true');
+                    }
                 });
 
                 menu.querySelectorAll('[data-action]').forEach(btn => {
@@ -589,15 +611,17 @@
                         <td class="pf-v6-c-table__td">${Utils.escapeHtml(fs.type)}</td>
                         <td class="pf-v6-c-table__td">${fs.encryption !== 'off' ? '<span class="pf-v6-c-label pf-v6-m-blue"><i class="fa fa-lock"></i> Encrypted</span>' : '-'}</td>
                         <td class="pf-v6-c-table__td">
-                            <div class="pf-v6-c-menu">
-                                <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button">
+                            <div class="menu-dropdown-wrapper">
+                                <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button" aria-label="Actions" aria-expanded="false">
                                     <i class="fa fa-ellipsis-v"></i>
                                 </button>
-                                <ul class="pf-v6-c-menu__list" hidden>
+                                <div class="pf-v6-c-menu pf-m-flyout" hidden>
+                                    <ul class="pf-v6-c-menu__list">
                                     <li><button class="pf-v6-c-menu__list-item" data-action="snapshot">Create Snapshot</button></li>
                                     <li><button class="pf-v6-c-menu__list-item" data-action="clone">Clone</button></li>
                                     <li><button class="pf-v6-c-menu__list-item pf-v6-m-danger" data-action="destroy">Destroy</button></li>
-                                </ul>
+                                    </ul>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -613,14 +637,22 @@
             });
 
             // Filesystem action dropdowns
-            container.querySelectorAll('.pf-v6-c-menu').forEach(dropdown => {
+            container.querySelectorAll('.menu-dropdown-wrapper').forEach(dropdown => {
                 const toggle = dropdown.querySelector('.pf-v6-c-menu-toggle');
-                const menu = dropdown.querySelector('.pf-v6-c-menu__list');
+                const menu = dropdown.querySelector('.pf-v6-c-menu.pf-m-flyout');
                 
                 if (toggle && menu) {
                     toggle.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        menu.hidden = !menu.hidden;
+                        const isHidden = menu.hidden;
+                        // Close all menus first
+                        document.querySelectorAll('.pf-v6-c-menu.pf-m-flyout').forEach(m => m.hidden = true);
+                        document.querySelectorAll('.pf-v6-c-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                        // Toggle this menu
+                        if (isHidden) {
+                            menu.hidden = false;
+                            toggle.setAttribute('aria-expanded', 'true');
+                        }
                     });
 
                     menu.querySelectorAll('[data-action]').forEach(btn => {
@@ -722,15 +754,17 @@
                         <td class="pf-v6-c-table__td">${Utils.escapeHtml(snap.refer)}</td>
                         <td class="pf-v6-c-table__td">${Utils.escapeHtml(snap.creation)}</td>
                         <td class="pf-v6-c-table__td">
-                            <div class="pf-v6-c-menu">
-                                <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button">
+                            <div class="menu-dropdown-wrapper">
+                                <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button" aria-label="Actions" aria-expanded="false">
                                     <i class="fa fa-ellipsis-v"></i>
                                 </button>
-                                <ul class="pf-v6-c-menu__list" hidden>
+                                <div class="pf-v6-c-menu pf-m-flyout" hidden>
+                                    <ul class="pf-v6-c-menu__list">
                                     <li><button class="pf-v6-c-menu__list-item" data-action="clone">Clone</button></li>
                                     <li><button class="pf-v6-c-menu__list-item" data-action="rollback">Rollback</button></li>
                                     <li><button class="pf-v6-c-menu__list-item pf-v6-m-danger" data-action="destroy">Destroy</button></li>
-                                </ul>
+                                    </ul>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -746,14 +780,22 @@
             });
 
             // Snapshot action dropdowns
-            container.querySelectorAll('.pf-v6-c-menu').forEach(dropdown => {
+            container.querySelectorAll('.menu-dropdown-wrapper').forEach(dropdown => {
                 const toggle = dropdown.querySelector('.pf-v6-c-menu-toggle');
-                const menu = dropdown.querySelector('.pf-v6-c-menu__list');
+                const menu = dropdown.querySelector('.pf-v6-c-menu.pf-m-flyout');
                 
                 if (toggle && menu) {
                     toggle.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        menu.hidden = !menu.hidden;
+                        const isHidden = menu.hidden;
+                        // Close all menus first
+                        document.querySelectorAll('.pf-v6-c-menu.pf-m-flyout').forEach(m => m.hidden = true);
+                        document.querySelectorAll('.pf-v6-c-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                        // Toggle this menu
+                        if (isHidden) {
+                            menu.hidden = false;
+                            toggle.setAttribute('aria-expanded', 'true');
+                        }
                     });
 
                     menu.querySelectorAll('[data-action]').forEach(btn => {

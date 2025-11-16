@@ -1,8 +1,6 @@
 // Import PatternFly base first (required for tokens/variables)
+// This already includes Font Awesome icons via patternfly-fa-icons
 @use "@patternfly/patternfly/base" as *;
-
-// Import Font Awesome icons (PatternFly includes Font Awesome)
-@use "@patternfly/patternfly/assets/fontawesome/fontawesome.scss";
 
 // Import PatternFly components (using short paths like cockpit-machines)
 @use "@patternfly/patternfly/components/Page/page.scss";
@@ -110,6 +108,11 @@
     right: var(--pf-t--global--spacer--md);
     z-index: var(--pf-t--global--ZIndex--2xl);
     max-width: 400px;
+}
+
+// Menu dropdown wrapper needs position relative for flyout positioning
+.menu-dropdown-wrapper {
+    position: relative;
 }
 
 // Modal backdrop (PatternFly 6 doesn't include a backdrop component)
