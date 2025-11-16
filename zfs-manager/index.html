@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZFS Manager</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../base1/patternfly.css" type="text/css" rel="stylesheet">
+    <link href="../base1/patternfly-additions.css" type="text/css" rel="stylesheet">
+    <link href="zfs-manager.css" type="text/css" rel="stylesheet">
+</head>
+<body class="pf-m-redhat-font">
+    <div id="alerts-requirements" class="pf-c-empty-state hidden"></div>
+    <div id="container" class="pf-l-bullseye hidden">
+        <div class="pf-l-bullseye__item">
+            <div class="pf-c-page">
+                <main class="pf-c-page__main">
+                    <section class="pf-c-page__main-section">
+                        <div class="pf-c-page__main-body">
+                            <ul id="alerts-notifications" class="pf-c-alert-group pf-m-toast"></ul>
+                            
+                            <div class="pf-c-toolbar">
+                                <div class="pf-c-toolbar__content">
+                                    <div class="pf-c-toolbar__content-section">
+                                        <h1 class="pf-c-title pf-m-2xl">Storage Pools</h1>
+                                    </div>
+                                    <div class="pf-c-toolbar__content-section pf-m-button-group">
+                                        <button id="btn-storagepools-create" class="pf-c-button pf-m-primary" type="button">
+                                            <i class="fa fa-plus" aria-hidden="true"></i> Create Storage Pool
+                                        </button>
+                                        <button id="btn-storagepools-import" class="pf-c-button pf-m-secondary" type="button">
+                                            <i class="fa fa-download" aria-hidden="true"></i> Import Storage Pool
+                                        </button>
+                                        <button id="btn-storagepools-refresh" class="pf-c-button pf-m-secondary" type="button">
+                                            <i class="fa fa-refresh" aria-hidden="true"></i> Refresh
+                                        </button>
+                                        <div class="pf-c-dropdown">
+                                            <button class="pf-c-button pf-m-secondary pf-c-dropdown__toggle" type="button" aria-label="Actions">
+                                                <i class="fa fa-caret-down" aria-hidden="true"></i>
+                                            </button>
+                                            <ul class="pf-c-dropdown__menu" hidden>
+                                                <li>
+                                                    <button class="pf-c-dropdown__menu-item" id="btn-filesystems-unlock">
+                                                        <i class="fa fa-unlock" aria-hidden="true"></i> Unlock File Systems
+                                                    </button>
+                                                </li>
+                                                <li class="pf-c-divider" role="separator"></li>
+                                                <li>
+                                                    <button class="pf-c-dropdown__menu-item" id="btn-configure">
+                                                        <i class="fa fa-cog" aria-hidden="true"></i> Configure
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button class="pf-c-dropdown__menu-item" id="btn-about">
+                                                        <i class="fa fa-info-circle" aria-hidden="true"></i> About
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pf-c-table">
+                                <table id="table-storagepools" class="pf-c-table__table" role="table">
+                                    <thead>
+                                        <tr class="pf-c-table__tr">
+                                            <th class="pf-c-table__th listing-ct-toggle"></th>
+                                            <th class="pf-c-table__th" colspan="2">Name</th>
+                                            <th class="pf-c-table__th">Health</th>
+                                            <th class="pf-c-table__th">Size</th>
+                                            <th class="pf-c-table__th listing-ct-wordwrap">Allocated</th>
+                                            <th class="pf-c-table__th">Free</th>
+                                            <th class="pf-c-table__th listing-ct-wordwrap">Fragmentation</th>
+                                            <th class="pf-c-table__th">Usage</th>
+                                            <th class="pf-c-table__th listing-ct-icon"></th>
+                                            <th class="pf-c-table__th listing-ct-actionsmenu"></th>
+                                        </tr>
+                                        <tr id="spinner-storagepools" class="pf-c-table__tr" style="display: none;">
+                                            <td colspan="11" class="pf-c-table__td pf-m-center">
+                                                <div class="pf-c-spinner pf-m-xl" role="progressbar" aria-valuetext="Loading...">
+                                                    <span class="pf-c-spinner__clipper"></span>
+                                                    <span class="pf-c-spinner__lead-ball"></span>
+                                                    <span class="pf-c-spinner__tail-ball"></span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="pf-c-table__tbody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script src="../base1/cockpit.js"></script>
+    <script src="zfs-manager.js"></script>
+</body>
+</html>

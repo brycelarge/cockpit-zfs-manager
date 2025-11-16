@@ -1,0 +1,169 @@
+/* ZFS Manager Styles - PatternFly 6 */
+
+/* Custom table row expansion styles */
+
+.pf-c-table__tr.listing-ct-item {
+    cursor: pointer;
+}
+
+.pf-c-table__tr.listing-ct-item:hover {
+    background-color: var(--pf-global--BackgroundColor--200);
+}
+
+.pf-c-table__tr.listing-ct-item.expanded {
+    background-color: var(--pf-global--BackgroundColor--100);
+}
+
+.listing-ct-toggle {
+    width: 40px;
+    text-align: center;
+}
+
+.listing-ct-toggle button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0.25rem;
+}
+
+.listing-ct-toggle i {
+    transition: transform 0.2s;
+}
+
+.pool-details {
+    background-color: var(--pf-global--BackgroundColor--100);
+}
+
+.pool-details td {
+    padding: 1rem;
+}
+
+.tab-content {
+    margin-top: 1rem;
+}
+
+.tab-pane {
+    padding: 1rem 0;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Tabs are handled by PatternFly CSS */
+
+.listing-ct-wordwrap {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.listing-ct-icon {
+    width: 40px;
+}
+
+.listing-ct-actionsmenu {
+    width: 60px;
+    text-align: center;
+}
+
+/* Dropdowns are handled by PatternFly CSS */
+
+/* Modals use PatternFly's built-in modal component */
+.pf-c-modal-box {
+    /* PatternFly 6 modal styles are provided by base CSS */
+    max-width: 600px;
+}
+
+/* Alerts use PatternFly's built-in alert component */
+.pf-c-alert-group.pf-m-toast {
+    position: fixed;
+    top: var(--pf-global--spacer--md);
+    right: var(--pf-global--spacer--md);
+    z-index: var(--pf-global--ZIndex--2xl);
+    max-width: 400px;
+}
+
+/* Forms use PatternFly's built-in form components */
+
+.pf-c-code-block {
+    background-color: var(--pf-global--BackgroundColor--200);
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: monospace;
+    font-size: 0.875rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Progress bars use PatternFly's built-in progress component */
+
+/* Toolbar and spinner use PatternFly's built-in components */
+
+/* Utility classes */
+.hidden {
+    display: none !important;
+}
+
+/* Custom styles for expandable table rows */
+.pool-details {
+    background-color: var(--pf-global--BackgroundColor--100);
+}
+
+.pool-details .pf-c-table__td {
+    padding: var(--pf-global--spacer--md);
+}
+
+.tab-content {
+    margin-top: var(--pf-global--spacer--md);
+}
+
+.tab-pane {
+    padding: var(--pf-global--spacer--md) 0;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.listing-ct-wordwrap {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.listing-ct-icon {
+    width: 40px;
+}
+
+.listing-ct-actionsmenu {
+    width: 60px;
+    text-align: center;
+}
+
+.listing-ct-toggle {
+    width: 40px;
+    text-align: center;
+}
+
+.listing-ct-toggle button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: var(--pf-global--spacer--xs);
+}
+
+.listing-ct-toggle i {
+    transition: transform 0.2s;
+}
+
+/* Code blocks */
+.pf-c-code-block {
+    background-color: var(--pf-global--BackgroundColor--200);
+    padding: var(--pf-global--spacer--md);
+    border-radius: var(--pf-global--BorderRadius--sm);
+    overflow-x: auto;
+    font-family: var(--pf-global--FontFamily--monospace);
+    font-size: var(--pf-global--FontSize--sm);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
