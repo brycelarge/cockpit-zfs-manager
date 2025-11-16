@@ -833,17 +833,24 @@
                         <input class="pf-c-form-control" type="text" id="pool-name" name="name" required>
                     </div>
                     <div class="pf-c-form__group">
+                        <label class="pf-c-form__label" for="pool-vdev-type">
+                            <span class="pf-c-form__label-text">VDEV Type</span>
+                        </label>
+                        <select class="pf-c-form-control" id="pool-vdev-type" name="vdevType" required>
+                            <option value="stripe">Stripe (No redundancy)</option>
+                            <option value="mirror">Mirror</option>
+                            <option value="raidz">RAID-Z (single parity)</option>
+                            <option value="raidz2">RAID-Z2 (double parity)</option>
+                            <option value="raidz3">RAID-Z3 (triple parity)</option>
+                        </select>
+                    </div>
+                    <div class="pf-c-form__group">
                         <label class="pf-c-form__label" for="pool-devices">
                             <span class="pf-c-form__label-text">Devices</span>
                         </label>
                         <textarea class="pf-c-form-control" id="pool-devices" name="devices" 
                                   placeholder="/dev/sdb /dev/sdc" required></textarea>
                         <div class="pf-c-form__helper-text">Space-separated list of devices</div>
-                    </div>
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label">
-                            <input type="checkbox" id="pool-raidz" name="raidz"> Use RAID-Z
-                        </label>
                     </div>
                 </form>
             `;
@@ -854,27 +861,37 @@
                     const formData = new FormData(form);
                     const name = formData.get('name');
                     const devices = formData.get('devices').split(/\s+/).filter(d => d);
-                    const raidz = formData.get('raidz');
+                    const vdevType = formData.get('vdevType');
 
-                    if (!name || devices.length === 0) {
+                    if (!name || devices.length === 0 || !vdevType) {
                         Utils.showNotification('warning', 'Validation Error', 'Please fill in all required fields');
                         return false;
                     }
 
-                    this.createPool(name, devices, raidz);
+                    // Validate device count for mirrors
+                    if (vdevType === 'mirror' && devices.length < 2) {
+                        Utils.showNotification('warning', 'Validation Error', 'Mirror requires at least 2 devices');
+                        return false;
+                    }
+
+                    this.createPool(name, devices, vdevType);
                     return true;
                 }
             });
             modal.show();
         }
 
-        async createPool(name, devices, raidz) {
+        async createPool(name, devices, vdevType) {
             try {
-                const args = ['zpool', 'create'];
-                if (raidz) {
-                    args.push('-o', 'raidz');
+                const args = ['zpool', 'create', name];
+                
+                // Add vdev type if not stripe
+                if (vdevType !== 'stripe') {
+                    args.push(vdevType);
                 }
-                args.push(name, ...devices);
+                
+                // Add devices
+                args.push(...devices);
 
                 const proc = cockpit.spawn(args);
                 proc.done((exitCode) => {

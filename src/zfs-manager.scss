@@ -1,0 +1,92 @@
+@use "../node_modules/@patternfly/patternfly/components/Page/page.scss";
+@use "../node_modules/@patternfly/patternfly/components/Table/table.scss";
+@use "../node_modules/@patternfly/patternfly/components/Button/button.scss";
+@use "../node_modules/@patternfly/patternfly/components/Menu/menu.scss";
+@use "../node_modules/@patternfly/patternfly/components/MenuToggle/menu-toggle.scss";
+@use "../node_modules/@patternfly/patternfly/components/Alert/alert.scss";
+@use "../node_modules/@patternfly/patternfly/components/ModalBox/modal-box.scss";
+@use "../node_modules/@patternfly/patternfly/components/Form/form.scss";
+@use "../node_modules/@patternfly/patternfly/components/Label/label.scss";
+@use "../node_modules/@patternfly/patternfly/components/Progress/progress.scss";
+@use "../node_modules/@patternfly/patternfly/components/Spinner/spinner.scss";
+@use "../node_modules/@patternfly/patternfly/components/Tabs/tabs.scss";
+@use "../node_modules/@patternfly/patternfly/components/EmptyState/empty-state.scss";
+@use "../node_modules/@patternfly/patternfly/components/Toolbar/toolbar.scss";
+@use "../node_modules/@patternfly/patternfly/components/CodeBlock/code-block.scss";
+@use "../node_modules/@patternfly/patternfly/components/Divider/divider.scss";
+@use "../node_modules/@patternfly/patternfly/components/Title/title.scss";
+@use "../node_modules/@patternfly/patternfly/utilities/Spacing/spacing.scss";
+@use "../node_modules/@patternfly/patternfly/utilities/Text/text.scss";
+
+// Custom ZFS Manager styles
+.listing-ct-item {
+    cursor: pointer;
+}
+
+.listing-ct-item:hover {
+    background-color: var(--pf-t--global--BackgroundColor--200);
+}
+
+.listing-ct-item.expanded {
+    background-color: var(--pf-t--global--BackgroundColor--100);
+}
+
+.listing-ct-toggle {
+    width: 40px;
+    text-align: center;
+}
+
+.listing-ct-toggle button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: var(--pf-t--global--spacer--xs);
+}
+
+.listing-ct-toggle i {
+    transition: transform 0.2s;
+}
+
+.pool-details td {
+    padding: var(--pf-t--global--spacer--md);
+    background-color: var(--pf-t--global--BackgroundColor--100);
+}
+
+.tab-content {
+    margin-top: var(--pf-t--global--spacer--md);
+}
+
+.tab-pane {
+    padding: var(--pf-t--global--spacer--md) 0;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.listing-ct-wordwrap {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.listing-ct-icon {
+    width: 40px;
+}
+
+.listing-ct-actionsmenu {
+    width: 60px;
+    text-align: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#alerts-notifications {
+    position: fixed;
+    top: var(--pf-t--global--spacer--md);
+    right: var(--pf-t--global--spacer--md);
+    z-index: var(--pf-t--global--ZIndex--2xl);
+    max-width: 400px;
+}
+

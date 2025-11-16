@@ -4,4 +4,6 @@
 *.swo
 *~
 .cockpit/
+node_modules/
+dist/
 

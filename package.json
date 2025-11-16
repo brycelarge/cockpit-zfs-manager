@@ -1,0 +1,20 @@
+{
+  "name": "cockpit-zfs-manager",
+  "version": "0.1.0",
+  "description": "Cockpit plugin for managing ZFS",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js -w",
+    "eslint": "eslint src/**/*.js",
+    "eslint:fix": "eslint --fix src/**/*.js",
+    "stylelint": "stylelint 'src/**/*.{css,scss}'",
+    "stylelint:fix": "stylelint --fix 'src/**/*.{css,scss}'"
+  },
+  "devDependencies": {
+    "@patternfly/patternfly": "^6.0.0",
+    "eslint": "^8.50.0",
+    "sass": "^1.69.0",
+    "stylelint": "^15.10.0",
+    "stylelint-config-standard": "^34.0.0"
+  }
+}

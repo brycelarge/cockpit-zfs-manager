@@ -1,6 +1,6 @@
 # Cockpit ZFS Manager
 
-A modern Cockpit plugin for managing ZFS pools, datasets, and snapshots. Built with vanilla JavaScript and PatternFly 6 styling.
+A modern Cockpit plugin for managing ZFS pools, datasets, and snapshots. Built with vanilla JavaScript (no jQuery) and PatternFly 6 styling. Compatible with Cockpit 201+.
 
 ## Requirements
 
@@ -12,15 +12,22 @@ A modern Cockpit plugin for managing ZFS pools, datasets, and snapshots. Built w
 
 ### Simple Install
 
-1. Clone the repository:
+1. Clone and build:
    ```bash
    git clone https://github.com/brycelarge/cockpit-zfs-manager.git
    cd cockpit-zfs-manager
+   npm install
+   make
    ```
 
-2. Copy the plugin directory:
+2. Install:
    ```bash
-   sudo cp -r zfs-manager /usr/share/cockpit/
+   sudo make install
+   ```
+
+   Or manually copy:
+   ```bash
+   sudo cp -r dist /usr/share/cockpit/zfs-manager
    ```
 
 3. Restart Cockpit (if needed):
@@ -36,14 +43,17 @@ On your server:
 ```bash
 git clone https://github.com/brycelarge/cockpit-zfs-manager.git
 cd cockpit-zfs-manager
-sudo cp -r zfs-manager /usr/share/cockpit/
+npm install
+make
+sudo make install
 sudo systemctl restart cockpit
 ```
 
 Or copy from your local machine:
 ```bash
-scp -r zfs-manager user@server:/tmp/
-ssh user@server "sudo cp -r /tmp/zfs-manager /usr/share/cockpit/"
+make
+scp -r dist user@server:/tmp/
+ssh user@server "sudo cp -r /tmp/dist /usr/share/cockpit/zfs-manager"
 ```
 
 ## Usage
@@ -57,9 +67,11 @@ ssh user@server "sudo cp -r /tmp/zfs-manager /usr/share/cockpit/"
 4. **Manage ZFS**:
    - View all storage pools with health status and usage statistics
    - Expand pools to see file systems, snapshots, and detailed status
-   - Create new pools, file systems, and snapshots
+   - Create new pools with various VDEV configurations (stripe, mirror, RAID-Z variants)
+   - Create file systems and snapshots
    - Manage encryption and unlock encrypted datasets
-   - Clone and rollback snapshots
+   - Clone file systems and snapshots
+   - Rollback to snapshots
    - Export and destroy pools (with appropriate warnings)
 
 ## Features
@@ -67,10 +79,16 @@ ssh user@server "sudo cp -r /tmp/zfs-manager /usr/share/cockpit/"
 ### Storage Pool Management
 - List all ZFS pools with health status
 - View pool statistics (size, allocated, free, fragmentation, usage)
-- Create new storage pools
+- Create new storage pools with VDEV types:
+  - Stripe (no redundancy)
+  - Mirror (2+ devices)
+  - RAID-Z (single parity)
+  - RAID-Z2 (double parity)
+  - RAID-Z3 (triple parity)
 - Import existing pools
 - Export pools
 - Destroy pools (with confirmation)
+- View detailed pool status
 
 ### File System Management
 - List all file systems within pools
@@ -112,6 +130,12 @@ Restart Cockpit:
 sudo systemctl restart cockpit
 ```
 
+For development installs:
+
+```bash
+make devel-uninstall
+```
+
 ## Troubleshooting
 
 ### Plugin not appearing in Cockpit
@@ -135,12 +159,55 @@ sudo systemctl restart cockpit
 
 For developers who want to contribute or modify the plugin:
 
+### Prerequisites
+- Node.js and npm
+- Make
+
+On Debian/Ubuntu:
+```bash
+sudo apt install gettext nodejs npm make
+```
+
+On Fedora:
+```bash
+sudo dnf install gettext nodejs npm make
+```
+
+### Building
+
+Build the plugin (compiles SCSS and copies files to `dist/`):
+```bash
+npm install
+make
+```
+
+Or use watch mode for automatic rebuilds:
+```bash
+make watch
+```
+
 ### Development Installation (Linux)
 ```bash
 make devel-install
 ```
 
-This creates a symlink at `~/.local/share/cockpit/zfs-manager` for local development.
+This creates a symlink at `~/.local/share/cockpit/zfs-manager` pointing to `dist/` for local development.
+
+After changing code, run `make` again and reload the Cockpit page in your browser.
+
+### Code Quality
+
+Run linting:
+```bash
+npm run eslint
+npm run stylelint
+```
+
+Fix auto-fixable issues:
+```bash
+npm run eslint:fix
+npm run stylelint:fix
+```
 
 
 ## License
@@ -150,3 +217,7 @@ LGPL-2.1
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request.
+
+## Acknowledgments
+
+This plugin is inspired by the [45Drives cockpit-zfs-manager](https://github.com/45Drives/cockpit-zfs-manager) project, but rebuilt from scratch with modern JavaScript (no jQuery) and PatternFly 6 styling.
