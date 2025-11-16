@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html id="zfs-manager-page" class="pf-theme-dark">
 <head>
-    <title>ZFS Manager</title>
     <meta charset="utf-8">
-    <link href="zfs-manager.css" type="text/css" rel="stylesheet">
+    <title translate="yes">ZFS Manager</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="zfs-manager.css">
+    <link href="../../static/branding.css" rel="stylesheet" />
 </head>
-<body>
+<body class="pf-v6-m-tabular-nums">
     <div id="alerts-requirements" class="pf-v6-c-empty-state hidden"></div>
     <div id="container" class="pf-v6-l-bullseye hidden">
         <div class="pf-v6-l-bullseye__item">
@@ -93,7 +97,7 @@
         </div>
     </div>
 
-    <script src="../base1/cockpit.js"></script>
-    <script src="zfs-manager.js"></script>
+    <script type="text/javascript" src="../base1/cockpit.js"></script>
+    <script type="text/javascript" src="zfs-manager.js"></script>
 </body>
 </html>
