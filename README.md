@@ -160,7 +160,7 @@ make devel-uninstall
 For developers who want to contribute or modify the plugin:
 
 ### Prerequisites
-- Node.js and npm
+- Node.js 20+ and npm (use `nvm` to install: `nvm install` then `nvm use`)
 - Make
 
 On Debian/Ubuntu:
