@@ -29,11 +29,15 @@
                     <button id="btn-storagepools-refresh" class="pf-v6-c-button pf-v6-m-secondary" type="button">
                         <i class="fa fa-refresh" aria-hidden="true"></i> Refresh
                     </button>
-                    <div class="pf-v6-c-menu">
-                        <button class="pf-v6-c-menu-toggle pf-v6-m-secondary" type="button" aria-label="Actions">
-                            <i class="fa fa-caret-down" aria-hidden="true"></i>
+                    <div style="position: relative;">
+                        <button class="pf-v6-c-menu-toggle pf-v6-m-secondary" type="button" aria-label="Actions" aria-expanded="false">
+                            <span class="pf-v6-c-menu-toggle__text">Actions</span>
+                            <span class="pf-v6-c-menu-toggle__icon">
+                                <i class="fa fa-caret-down" aria-hidden="true"></i>
+                            </span>
                         </button>
-                        <ul class="pf-v6-c-menu__list" hidden>
+                        <div class="pf-v6-c-menu pf-m-flyout" hidden>
+                            <ul class="pf-v6-c-menu__list">
                             <li>
                                 <button class="pf-v6-c-menu__list-item" id="btn-filesystems-unlock">
                                     <i class="fa fa-unlock" aria-hidden="true"></i> Unlock File Systems
@@ -50,7 +54,8 @@
                                     <i class="fa fa-info-circle" aria-hidden="true"></i> About
                                 </button>
                             </li>
-                        </ul>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>

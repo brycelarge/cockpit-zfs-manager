@@ -41,17 +41,6 @@
     flex-direction: column;
 }
 
-// Ensure table is full width
-.pf-v6-c-table {
-    width: 100%;
-    flex: 1;
-    overflow: auto;
-}
-
-.pf-v6-c-table__table {
-    width: 100%;
-}
-
 .listing-ct-item {
     cursor: pointer;
 }
@@ -145,15 +134,3 @@
     overflow-y: auto;
 }
 
-// Override Cockpit base styles that might interfere
-body {
-    font-family: var(--pf-t--global--font--family--body) !important;
-    color: var(--pf-t--global--text--color--regular) !important;
-}
-
-// Ensure buttons have proper spacing
-.pf-v6-c-toolbar__content-section.pf-v6-m-button-group {
-    display: flex;
-    gap: var(--pf-t--global--spacer--sm);
-    align-items: center;
-}
