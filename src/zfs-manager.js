@@ -890,7 +890,10 @@
             });
         }
 
-        showCreatePoolModal() {
+        async showCreatePoolModal() {
+            // Load available disks
+            const disks = await this.listAvailableDisks();
+            
             const content = `
                 <form id="create-pool-form">
                     <div class="pf-v6-c-form__group">
@@ -912,12 +915,20 @@
                         </select>
                     </div>
                     <div class="pf-v6-c-form__group">
-                        <label class="pf-v6-c-form__label" for="pool-devices">
-                            <span class="pf-v6-c-form__label-text">Devices</span>
+                        <label class="pf-v6-c-form__label">
+                            <span class="pf-v6-c-form__label-text">Select Devices</span>
                         </label>
-                        <textarea class="pf-v6-c-form-control" id="pool-devices" name="devices" 
-                                  placeholder="/dev/sdb /dev/sdc" required></textarea>
-                        <div class="pf-v6-c-form__helper-text">Space-separated list of devices</div>
+                        <div id="pool-devices-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--pf-t--global--border--color--default); border-radius: var(--pf-t--global--border--radius--small); padding: var(--pf-t--global--spacer--sm);">
+                            ${disks.length > 0 ? disks.map(disk => `
+                                <div class="pf-v6-c-check" style="margin-bottom: var(--pf-t--global--spacer--xs);">
+                                    <input class="pf-v6-c-check__input" type="checkbox" id="disk-${disk.replace(/\//g, '-')}" name="devices" value="${disk}">
+                                    <label class="pf-v6-c-check__label" for="disk-${disk.replace(/\//g, '-')}">
+                                        <span class="pf-v6-c-check__label-text">${Utils.escapeHtml(disk)}</span>
+                                    </label>
+                                </div>
+                            `).join('') : '<div class="pf-v6-c-empty-state"><div class="pf-v6-c-empty-state__content">No available disks found</div></div>'}
+                        </div>
+                        <div class="pf-v6-c-form__helper-text">Select one or more devices to use for the storage pool</div>
                     </div>
                 </form>
             `;
@@ -927,25 +938,121 @@
                     const form = document.getElementById('create-pool-form');
                     const formData = new FormData(form);
                     const name = formData.get('name');
-                    const devices = formData.get('devices').split(/\s+/).filter(d => d);
                     const vdevType = formData.get('vdevType');
+                    const selectedDevices = Array.from(form.querySelectorAll('input[name="devices"]:checked')).map(cb => cb.value);
 
-                    if (!name || devices.length === 0 || !vdevType) {
-                        Utils.showNotification('warning', 'Validation Error', 'Please fill in all required fields');
+                    if (!name || selectedDevices.length === 0 || !vdevType) {
+                        Utils.showNotification('warning', 'Validation Error', 'Please fill in all required fields and select at least one device');
                         return false;
                     }
 
                     // Validate device count for mirrors
-                    if (vdevType === 'mirror' && devices.length < 2) {
+                    if (vdevType === 'mirror' && selectedDevices.length < 2) {
                         Utils.showNotification('warning', 'Validation Error', 'Mirror requires at least 2 devices');
                         return false;
                     }
 
-                    this.createPool(name, devices, vdevType);
+                    this.createPool(name, selectedDevices, vdevType);
                     return true;
                 }
             });
             modal.show();
+        }
+
+        async listAvailableDisks() {
+            return new Promise((resolve, reject) => {
+                const disks = [];
+                const errorOutput = [];
+                
+                // Use lsblk to get block devices, filtering out partitions and loop devices
+                const proc = cockpit.spawn(['lsblk', '-nd', '-o', 'NAME,TYPE', '-e', '7,11'], { err: 'message' });
+                
+                proc.stream((data) => {
+                    const lines = data.split('\n');
+                    lines.forEach(line => {
+                        const parts = line.trim().split(/\s+/);
+                        if (parts.length >= 2) {
+                            const name = parts[0];
+                            const type = parts[1];
+                            // Only include disks (not partitions, loop, etc.)
+                            if (type === 'disk' && !name.startsWith('loop') && !name.startsWith('ram')) {
+                                // Determine the full device path
+                                let devicePath = `/dev/${name}`;
+                                // Check if it's an NVMe device (nvme0n1 format)
+                                if (name.startsWith('nvme')) {
+                                    devicePath = `/dev/${name}`;
+                                }
+                                // Check if it's a virtio device (vd*)
+                                else if (name.startsWith('vd')) {
+                                    devicePath = `/dev/${name}`;
+                                }
+                                // Standard SCSI/SATA (sd*)
+                                else if (name.match(/^sd[a-z]+$/)) {
+                                    devicePath = `/dev/${name}`;
+                                }
+                                // Only add if it matches a known pattern
+                                if (devicePath.startsWith('/dev/')) {
+                                    disks.push(devicePath);
+                                }
+                            }
+                        }
+                    });
+                });
+                
+                proc.stream(cockpit.spawn.err, (data) => {
+                    errorOutput.push(data);
+                });
+                
+                proc.done((exitCode) => {
+                    if (exitCode === 0) {
+                        // Sort disks alphabetically
+                        disks.sort();
+                        resolve(disks);
+                    } else {
+                        // Fallback: try listing /dev directly
+                        this.listDisksFallback().then(resolve).catch(reject);
+                    }
+                });
+                
+                proc.fail((error) => {
+                    // Fallback: try listing /dev directly
+                    this.listDisksFallback().then(resolve).catch(() => {
+                        reject(new Error('Failed to list disks: ' + error));
+                    });
+                });
+            });
+        }
+
+        async listDisksFallback() {
+            return new Promise((resolve, reject) => {
+                const disks = [];
+                const patterns = ['/dev/sd[a-z]', '/dev/nvme[0-9]n[0-9]', '/dev/vd[a-z]'];
+                
+                // Try to list common disk patterns
+                const proc = cockpit.spawn(['sh', '-c', 'ls -1 /dev/sd[a-z] /dev/nvme[0-9]n[0-9] /dev/vd[a-z] 2>/dev/null | grep -v "[0-9]$"'], { err: 'message' });
+                
+                proc.stream((data) => {
+                    const lines = data.split('\n');
+                    lines.forEach(line => {
+                        const device = line.trim();
+                        if (device && device.startsWith('/dev/')) {
+                            // Exclude partitions (those ending in numbers)
+                            if (!device.match(/[0-9]+$/)) {
+                                disks.push(device);
+                            }
+                        }
+                    });
+                });
+                
+                proc.done((exitCode) => {
+                    disks.sort();
+                    resolve(disks);
+                });
+                
+                proc.fail((error) => {
+                    reject(new Error('Failed to list disks: ' + error));
+                });
+            });
         }
 
         async createPool(name, devices, vdevType) {

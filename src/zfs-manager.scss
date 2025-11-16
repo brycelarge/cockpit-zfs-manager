@@ -11,6 +11,7 @@
 @use "@patternfly/patternfly/components/MenuToggle/menu-toggle.scss";
 @use "@patternfly/patternfly/components/ModalBox/modal-box.scss";
 @use "@patternfly/patternfly/components/Form/form.scss";
+@use "@patternfly/patternfly/components/Check/check.scss";
 @use "@patternfly/patternfly/components/Label/label.scss";
 @use "@patternfly/patternfly/components/Progress/progress.scss";
 @use "@patternfly/patternfly/components/Spinner/spinner.scss";
@@ -150,5 +151,12 @@
 
 .pf-v6-c-page__main-section {
     width: 100%;
+}
+
+// Override PatternFly's default margins on main-container to make it full width
+.pf-v6-c-page__main-container {
+    --pf-v6-c-page__main-container--MarginInlineStart: 0;
+    --pf-v6-c-page__main-container--MarginInlineEnd: 0;
+    --pf-v6-c-page__main-container--BorderRadius: 0;
 }
 
