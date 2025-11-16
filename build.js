@@ -33,7 +33,9 @@ function build() {
     // Compile SCSS to CSS
     console.log('Compiling SCSS...');
     try {
-        execSync(`sass --quiet-deps ${path.join(srcDir, 'zfs-manager.scss')} ${path.join(distDir, 'zfs-manager.css')}`, { stdio: 'inherit' });
+        const sassPath = path.join(__dirname, 'node_modules', '.bin', 'sass');
+        const sassCmd = fs.existsSync(sassPath) ? sassPath : 'npx sass';
+        execSync(`${sassCmd} --quiet-deps ${path.join(srcDir, 'zfs-manager.scss')} ${path.join(distDir, 'zfs-manager.css')}`, { stdio: 'inherit' });
     } catch (error) {
         console.error('SCSS compilation failed:', error.message);
         process.exit(1);
@@ -61,7 +63,7 @@ function build() {
         const rsyncTarget = process.env.RSYNC;
         const rsyncDest = process.env.RSYNC_DEVEL 
             ? `${rsyncTarget}:~/.local/share/cockpit/zfs-manager`
-            : `${rsyncTarget}:/usr/local/share/cockpit/zfs-manager`;
+            : `${rsyncTarget}:/usr/share/cockpit/zfs-manager`;
         
         console.log(`Syncing to ${rsyncDest}...`);
         execSync(`rsync -avz --delete ${distDir}/ ${rsyncDest}/`, { stdio: 'inherit' });
