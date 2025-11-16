@@ -1,22 +1,33 @@
-@use "../node_modules/@patternfly/patternfly/components/Page/page.scss";
-@use "../node_modules/@patternfly/patternfly/components/Table/table.scss";
-@use "../node_modules/@patternfly/patternfly/components/Button/button.scss";
-@use "../node_modules/@patternfly/patternfly/components/Menu/menu.scss";
-@use "../node_modules/@patternfly/patternfly/components/MenuToggle/menu-toggle.scss";
-@use "../node_modules/@patternfly/patternfly/components/Alert/alert.scss";
-@use "../node_modules/@patternfly/patternfly/components/ModalBox/modal-box.scss";
-@use "../node_modules/@patternfly/patternfly/components/Form/form.scss";
-@use "../node_modules/@patternfly/patternfly/components/Label/label.scss";
-@use "../node_modules/@patternfly/patternfly/components/Progress/progress.scss";
-@use "../node_modules/@patternfly/patternfly/components/Spinner/spinner.scss";
-@use "../node_modules/@patternfly/patternfly/components/Tabs/tabs.scss";
-@use "../node_modules/@patternfly/patternfly/components/EmptyState/empty-state.scss";
-@use "../node_modules/@patternfly/patternfly/components/Toolbar/toolbar.scss";
-@use "../node_modules/@patternfly/patternfly/components/CodeBlock/code-block.scss";
-@use "../node_modules/@patternfly/patternfly/components/Divider/divider.scss";
-@use "../node_modules/@patternfly/patternfly/components/Title/title.scss";
-@use "../node_modules/@patternfly/patternfly/utilities/Spacing/spacing.scss";
-@use "../node_modules/@patternfly/patternfly/utilities/Text/text.scss";
+// Import PatternFly base first (required for tokens/variables)
+@use "@patternfly/patternfly/base" as *;
+
+// Import PatternFly components (using short paths like cockpit-machines)
+@use "@patternfly/patternfly/components/Page/page.scss";
+@use "@patternfly/patternfly/components/Table/table.scss";
+@use "@patternfly/patternfly/components/Button/button.scss";
+@use "@patternfly/patternfly/components/Menu/menu.scss";
+@use "@patternfly/patternfly/components/MenuToggle/menu-toggle.scss";
+@use "@patternfly/patternfly/components/ModalBox/modal-box.scss";
+@use "@patternfly/patternfly/components/Form/form.scss";
+@use "@patternfly/patternfly/components/Label/label.scss";
+@use "@patternfly/patternfly/components/Progress/progress.scss";
+@use "@patternfly/patternfly/components/Spinner/spinner.scss";
+@use "@patternfly/patternfly/components/Tabs/tabs.scss";
+@use "@patternfly/patternfly/components/EmptyState/empty-state.scss";
+@use "@patternfly/patternfly/components/Toolbar/toolbar.scss";
+@use "@patternfly/patternfly/components/CodeBlock/code-block.scss";
+@use "@patternfly/patternfly/components/Divider/divider.scss";
+@use "@patternfly/patternfly/components/Title/title.scss";
+@use "@patternfly/patternfly/layouts/Bullseye/bullseye.scss";
+
+// Import utilities (using .css like cockpit-machines)
+@use "@patternfly/patternfly/utilities/Spacing/spacing.css";
+
+// Import Alert component (for notifications)
+@use "@patternfly/patternfly/components/Alert/alert.scss";
+
+// Import Text utility (using .css like cockpit-machines)
+@use "@patternfly/patternfly/utilities/Text/text.css";
 
 // Custom ZFS Manager styles
 .listing-ct-item {
@@ -110,5 +121,18 @@
     z-index: var(--pf-t--global--z-index--xl);
     max-height: 90vh;
     overflow-y: auto;
+}
+
+// Override Cockpit base styles that might interfere
+body {
+    font-family: var(--pf-t--global--font--family--body) !important;
+    color: var(--pf-t--global--text--color--regular) !important;
+}
+
+// Ensure buttons have proper spacing
+.pf-v6-c-toolbar__content-section.pf-v6-m-button-group {
+    display: flex;
+    gap: var(--pf-t--global--spacer--sm);
+    align-items: center;
 }
 
