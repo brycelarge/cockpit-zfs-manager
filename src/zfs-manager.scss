@@ -115,6 +115,12 @@
 // Menu dropdown wrapper needs position relative for flyout positioning
 .menu-dropdown-wrapper {
     position: relative;
+    
+    // Menu should be positioned absolutely (PatternFly handles this via JS/popper)
+    .pf-v6-c-menu {
+        position: absolute;
+        z-index: var(--pf-t--global--z-index--sm);
+    }
 }
 
 // Modal backdrop (PatternFly 6 doesn't include a backdrop component)

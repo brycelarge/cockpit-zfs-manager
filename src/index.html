@@ -30,31 +30,45 @@
                                         <span class="pf-v6-c-button__text">Refresh</span>
                                     </button>
                                     <div class="menu-dropdown-wrapper">
-                                        <button class="pf-v6-c-menu-toggle pf-m-secondary" type="button" aria-label="Actions" aria-expanded="false">
-                                            <span class="pf-v6-c-menu-toggle__text">Actions</span>
-                                            <span class="pf-v6-c-menu-toggle__controls">
-                                                <span class="pf-v6-c-menu-toggle__toggle-icon"></span>
-                                            </span>
-                                        </button>
-                                        <div class="pf-v6-c-menu pf-m-flyout" hidden>
-                                            <ul class="pf-v6-c-menu__list">
-                                                <li>
-                                                    <button class="pf-v6-c-menu__list-item" id="btn-filesystems-unlock">
-                                                        <span class="pf-v6-c-menu__item-text">Unlock File Systems</span>
-                                                    </button>
-                                                </li>
-                                                <li class="pf-v6-c-divider" role="separator"></li>
-                                                <li>
-                                                    <button class="pf-v6-c-menu__list-item" id="btn-configure">
-                                                        <span class="pf-v6-c-menu__item-text">Configure</span>
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <button class="pf-v6-c-menu__list-item" id="btn-about">
-                                                        <span class="pf-v6-c-menu__item-text">About</span>
-                                                    </button>
-                                                </li>
-                                            </ul>
+                                        <div class="pf-v6-c-menu-toggle pf-m-secondary">
+                                            <button class="pf-v6-c-menu-toggle__button" type="button" aria-expanded="false" id="actions-menu-toggle">
+                                                <span class="pf-v6-c-menu-toggle__text">Actions</span>
+                                                <span class="pf-v6-c-menu-toggle__controls">
+                                                    <span class="pf-v6-c-menu-toggle__toggle-icon">
+                                                        <svg class="pf-v6-svg" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                                            <path d="M31.3 192h257.3c17.8 0 26.7 21.5 14.1 34.1L174.1 354.8c-7.8 7.8-20.5 7.8-28.3 0L17.2 226.1C4.6 213.5 13.5 192 31.3 192z"></path>
+                                                        </svg>
+                                                    </span>
+                                                </span>
+                                            </button>
+                                        </div>
+                                        <div class="pf-v6-c-menu" hidden id="actions-menu">
+                                            <div class="pf-v6-c-menu__content">
+                                                <ul role="menu" class="pf-v6-c-menu__list">
+                                                    <li class="pf-v6-c-menu__list-item" role="none">
+                                                        <button id="btn-filesystems-unlock" tabindex="0" class="pf-v6-c-menu__item" role="menuitem" type="button">
+                                                            <span class="pf-v6-c-menu__item-main">
+                                                                <span class="pf-v6-c-menu__item-text">Unlock File Systems</span>
+                                                            </span>
+                                                        </button>
+                                                    </li>
+                                                    <li class="pf-v6-c-divider" role="separator"></li>
+                                                    <li class="pf-v6-c-menu__list-item" role="none">
+                                                        <button id="btn-configure" tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button">
+                                                            <span class="pf-v6-c-menu__item-main">
+                                                                <span class="pf-v6-c-menu__item-text">Configure</span>
+                                                            </span>
+                                                        </button>
+                                                    </li>
+                                                    <li class="pf-v6-c-menu__list-item" role="none">
+                                                        <button id="btn-about" tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button">
+                                                            <span class="pf-v6-c-menu__item-main">
+                                                                <span class="pf-v6-c-menu__item-text">About</span>
+                                                            </span>
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

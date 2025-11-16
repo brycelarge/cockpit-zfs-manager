@@ -195,17 +195,17 @@
             document.getElementById('btn-about')?.addEventListener('click', () => this.showAboutModal());
 
             // Dropdown menu toggle
-            const dropdownToggles = document.querySelectorAll('.pf-v6-c-menu-toggle');
+            const dropdownToggles = document.querySelectorAll('.pf-v6-c-menu-toggle__button');
             dropdownToggles.forEach(toggle => {
                 toggle.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const menuContainer = toggle.closest('.menu-dropdown-wrapper');
-                    const menu = menuContainer?.querySelector('.pf-v6-c-menu.pf-m-flyout');
+                    const menu = menuContainer?.querySelector('.pf-v6-c-menu');
                     if (menu) {
                         const isHidden = menu.hidden;
                         // Close all menus first
-                        document.querySelectorAll('.pf-v6-c-menu.pf-m-flyout').forEach(m => m.hidden = true);
-                        document.querySelectorAll('.pf-v6-c-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                        document.querySelectorAll('.pf-v6-c-menu').forEach(m => m.hidden = true);
+                        document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => t.setAttribute('aria-expanded', 'false'));
                         // Toggle this menu
                         if (isHidden) {
                             menu.hidden = false;
@@ -218,10 +218,10 @@
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.menu-dropdown-wrapper')) {
-                    document.querySelectorAll('.pf-v6-c-menu.pf-m-flyout').forEach(menu => {
+                    document.querySelectorAll('.pf-v6-c-menu').forEach(menu => {
                         menu.hidden = true;
                     });
-                    document.querySelectorAll('.pf-v6-c-menu-toggle').forEach(toggle => {
+                    document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(toggle => {
                         toggle.setAttribute('aria-expanded', 'false');
                     });
                 }
@@ -362,19 +362,41 @@
                 <td tabindex="-1" data-label="" class="pf-v6-c-table__td">
                     <div class="btn-group">
                         <div class="menu-dropdown-wrapper">
-                            <button class="pf-v6-c-menu-toggle pf-m-plain" type="button" aria-expanded="false" id="${poolId}-action-kebab">
-                                <span class="pf-v6-c-menu-toggle__text">
-                                    <svg class="pf-v6-svg" viewBox="0 0 192 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
-                                        <path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path>
-                                    </svg>
-                                </span>
-                            </button>
-                            <div class="pf-v6-c-menu pf-m-flyout" hidden>
-                                <ul class="pf-v6-c-menu__list">
-                                <li><button class="pf-v6-c-menu__list-item" data-action="details"><span class="pf-v6-c-menu__item-text">Details</span></button></li>
-                                <li><button class="pf-v6-c-menu__list-item" data-action="export"><span class="pf-v6-c-menu__item-text">Export</span></button></li>
-                                <li><button class="pf-v6-c-menu__list-item pf-m-danger" data-action="destroy"><span class="pf-v6-c-menu__item-text">Destroy</span></button></li>
-                                </ul>
+                            <div class="pf-v6-c-menu-toggle pf-m-plain">
+                                <button class="pf-v6-c-menu-toggle__button" type="button" aria-expanded="false" id="${poolId}-action-kebab">
+                                    <span class="pf-v6-c-menu-toggle__text">
+                                        <svg class="pf-v6-svg" viewBox="0 0 192 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                            <path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path>
+                                        </svg>
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="pf-v6-c-menu" hidden>
+                                <div class="pf-v6-c-menu__content">
+                                    <ul role="menu" class="pf-v6-c-menu__list">
+                                        <li class="pf-v6-c-menu__list-item" role="none">
+                                            <button tabindex="0" class="pf-v6-c-menu__item" role="menuitem" type="button" data-action="details">
+                                                <span class="pf-v6-c-menu__item-main">
+                                                    <span class="pf-v6-c-menu__item-text">Details</span>
+                                                </span>
+                                            </button>
+                                        </li>
+                                        <li class="pf-v6-c-menu__list-item" role="none">
+                                            <button tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button" data-action="export">
+                                                <span class="pf-v6-c-menu__item-main">
+                                                    <span class="pf-v6-c-menu__item-text">Export</span>
+                                                </span>
+                                            </button>
+                                        </li>
+                                        <li class="pf-v6-c-menu__list-item pf-m-danger" role="none">
+                                            <button tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button" data-action="destroy">
+                                                <span class="pf-v6-c-menu__item-main">
+                                                    <span class="pf-v6-c-menu__item-text">Destroy</span>
+                                                </span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -394,16 +416,16 @@
 
             // Actions menu
             const dropdown = row.querySelector('.menu-dropdown-wrapper');
-            const toggle = dropdown?.querySelector('.pf-v6-c-menu-toggle');
-            const menu = dropdown?.querySelector('.pf-v6-c-menu.pf-m-flyout');
+            const toggle = dropdown?.querySelector('.pf-v6-c-menu-toggle__button');
+            const menu = dropdown?.querySelector('.pf-v6-c-menu');
             
             if (toggle && menu) {
                 toggle.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const isHidden = menu.hidden;
                     // Close all menus first
-                    document.querySelectorAll('.pf-v6-c-menu.pf-m-flyout').forEach(m => m.hidden = true);
-                    document.querySelectorAll('.pf-v6-c-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                    document.querySelectorAll('.pf-v6-c-menu').forEach(m => m.hidden = true);
+                    document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => t.setAttribute('aria-expanded', 'false'));
                     // Toggle this menu
                     if (isHidden) {
                         menu.hidden = false;
@@ -633,17 +655,41 @@
                         <td class="pf-v6-c-table__td">${fs.encryption !== 'off' ? '<span class="pf-v6-c-label pf-m-blue">Encrypted</span>' : '-'}</td>
                         <td class="pf-v6-c-table__td">
                             <div class="menu-dropdown-wrapper">
-                                <button class="pf-v6-c-menu-toggle pf-m-plain" type="button" aria-label="Actions" aria-expanded="false">
-                                    <svg class="pf-v6-svg" viewBox="0 0 192 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
-                                        <path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path>
-                                    </svg>
-                                </button>
-                                <div class="pf-v6-c-menu pf-m-flyout" hidden>
-                                    <ul class="pf-v6-c-menu__list">
-                                    <li><button class="pf-v6-c-menu__list-item" data-action="snapshot"><span class="pf-v6-c-menu__item-text">Create Snapshot</span></button></li>
-                                    <li><button class="pf-v6-c-menu__list-item" data-action="clone"><span class="pf-v6-c-menu__item-text">Clone</span></button></li>
-                                    <li><button class="pf-v6-c-menu__list-item pf-m-danger" data-action="destroy"><span class="pf-v6-c-menu__item-text">Destroy</span></button></li>
-                                    </ul>
+                                <div class="pf-v6-c-menu-toggle pf-m-plain">
+                                    <button class="pf-v6-c-menu-toggle__button" type="button" aria-label="Actions" aria-expanded="false">
+                                        <span class="pf-v6-c-menu-toggle__text">
+                                            <svg class="pf-v6-svg" viewBox="0 0 192 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                                <path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path>
+                                            </svg>
+                                        </span>
+                                    </button>
+                                </div>
+                                <div class="pf-v6-c-menu" hidden>
+                                    <div class="pf-v6-c-menu__content">
+                                        <ul role="menu" class="pf-v6-c-menu__list">
+                                            <li class="pf-v6-c-menu__list-item" role="none">
+                                                <button tabindex="0" class="pf-v6-c-menu__item" role="menuitem" type="button" data-action="snapshot">
+                                                    <span class="pf-v6-c-menu__item-main">
+                                                        <span class="pf-v6-c-menu__item-text">Create Snapshot</span>
+                                                    </span>
+                                                </button>
+                                            </li>
+                                            <li class="pf-v6-c-menu__list-item" role="none">
+                                                <button tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button" data-action="clone">
+                                                    <span class="pf-v6-c-menu__item-main">
+                                                        <span class="pf-v6-c-menu__item-text">Clone</span>
+                                                    </span>
+                                                </button>
+                                            </li>
+                                            <li class="pf-v6-c-menu__list-item pf-m-danger" role="none">
+                                                <button tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button" data-action="destroy">
+                                                    <span class="pf-v6-c-menu__item-main">
+                                                        <span class="pf-v6-c-menu__item-text">Destroy</span>
+                                                    </span>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </td>
@@ -661,16 +707,16 @@
 
             // Filesystem action dropdowns
             container.querySelectorAll('.menu-dropdown-wrapper').forEach(dropdown => {
-                const toggle = dropdown.querySelector('.pf-v6-c-menu-toggle');
-                const menu = dropdown.querySelector('.pf-v6-c-menu.pf-m-flyout');
+                const toggle = dropdown.querySelector('.pf-v6-c-menu-toggle__button');
+                const menu = dropdown.querySelector('.pf-v6-c-menu');
                 
                 if (toggle && menu) {
                     toggle.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const isHidden = menu.hidden;
                         // Close all menus first
-                        document.querySelectorAll('.pf-v6-c-menu.pf-m-flyout').forEach(m => m.hidden = true);
-                        document.querySelectorAll('.pf-v6-c-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                        document.querySelectorAll('.pf-v6-c-menu').forEach(m => m.hidden = true);
+                        document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => t.setAttribute('aria-expanded', 'false'));
                         // Toggle this menu
                         if (isHidden) {
                             menu.hidden = false;
@@ -778,17 +824,41 @@
                         <td class="pf-v6-c-table__td">${Utils.escapeHtml(snap.creation)}</td>
                         <td class="pf-v6-c-table__td">
                             <div class="menu-dropdown-wrapper">
-                                <button class="pf-v6-c-menu-toggle pf-m-plain" type="button" aria-label="Actions" aria-expanded="false">
-                                    <svg class="pf-v6-svg" viewBox="0 0 192 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
-                                        <path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path>
-                                    </svg>
-                                </button>
-                                <div class="pf-v6-c-menu pf-m-flyout" hidden>
-                                    <ul class="pf-v6-c-menu__list">
-                                    <li><button class="pf-v6-c-menu__list-item" data-action="clone"><span class="pf-v6-c-menu__item-text">Clone</span></button></li>
-                                    <li><button class="pf-v6-c-menu__list-item" data-action="rollback"><span class="pf-v6-c-menu__item-text">Rollback</span></button></li>
-                                    <li><button class="pf-v6-c-menu__list-item pf-m-danger" data-action="destroy"><span class="pf-v6-c-menu__item-text">Destroy</span></button></li>
-                                    </ul>
+                                <div class="pf-v6-c-menu-toggle pf-m-plain">
+                                    <button class="pf-v6-c-menu-toggle__button" type="button" aria-label="Actions" aria-expanded="false">
+                                        <span class="pf-v6-c-menu-toggle__text">
+                                            <svg class="pf-v6-svg" viewBox="0 0 192 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                                <path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path>
+                                            </svg>
+                                        </span>
+                                    </button>
+                                </div>
+                                <div class="pf-v6-c-menu" hidden>
+                                    <div class="pf-v6-c-menu__content">
+                                        <ul role="menu" class="pf-v6-c-menu__list">
+                                            <li class="pf-v6-c-menu__list-item" role="none">
+                                                <button tabindex="0" class="pf-v6-c-menu__item" role="menuitem" type="button" data-action="clone">
+                                                    <span class="pf-v6-c-menu__item-main">
+                                                        <span class="pf-v6-c-menu__item-text">Clone</span>
+                                                    </span>
+                                                </button>
+                                            </li>
+                                            <li class="pf-v6-c-menu__list-item" role="none">
+                                                <button tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button" data-action="rollback">
+                                                    <span class="pf-v6-c-menu__item-main">
+                                                        <span class="pf-v6-c-menu__item-text">Rollback</span>
+                                                    </span>
+                                                </button>
+                                            </li>
+                                            <li class="pf-v6-c-menu__list-item pf-m-danger" role="none">
+                                                <button tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button" data-action="destroy">
+                                                    <span class="pf-v6-c-menu__item-main">
+                                                        <span class="pf-v6-c-menu__item-text">Destroy</span>
+                                                    </span>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </td>
@@ -806,16 +876,16 @@
 
             // Snapshot action dropdowns
             container.querySelectorAll('.menu-dropdown-wrapper').forEach(dropdown => {
-                const toggle = dropdown.querySelector('.pf-v6-c-menu-toggle');
-                const menu = dropdown.querySelector('.pf-v6-c-menu.pf-m-flyout');
+                const toggle = dropdown.querySelector('.pf-v6-c-menu-toggle__button');
+                const menu = dropdown.querySelector('.pf-v6-c-menu');
                 
                 if (toggle && menu) {
                     toggle.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const isHidden = menu.hidden;
                         // Close all menus first
-                        document.querySelectorAll('.pf-v6-c-menu.pf-m-flyout').forEach(m => m.hidden = true);
-                        document.querySelectorAll('.pf-v6-c-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                        document.querySelectorAll('.pf-v6-c-menu').forEach(m => m.hidden = true);
+                        document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => t.setAttribute('aria-expanded', 'false'));
                         // Toggle this menu
                         if (isHidden) {
                             menu.hidden = false;
