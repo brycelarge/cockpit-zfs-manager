@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html id="zfs-manager-page" class="pf-theme-dark">
+<html id="zfs-manager-page" class="pf-v6-theme-dark">
 <head>
     <meta charset="utf-8">
     <title translate="yes">ZFS Manager</title>
@@ -14,70 +14,69 @@
     <div id="container" class="ct-page-fill hidden">
         <ul id="alerts-notifications" class="pf-v6-c-alert-group pf-v6-m-toast"></ul>
         
-        <div class="pf-v6-c-toolbar">
-            <div class="pf-v6-c-toolbar__content">
-                <div class="pf-v6-c-toolbar__content-section">
-                    <h1 class="pf-v6-c-title pf-v6-m-2xl">Storage Pools</h1>
-                </div>
-                <div class="pf-v6-c-toolbar__content-section pf-v6-m-button-group">
-                    <button id="btn-storagepools-create" class="pf-v6-c-button pf-v6-m-primary" type="button">
-                        <i class="fa fa-plus" aria-hidden="true"></i> Create Storage Pool
-                    </button>
-                    <button id="btn-storagepools-import" class="pf-v6-c-button pf-v6-m-secondary" type="button">
-                        <i class="fa fa-download" aria-hidden="true"></i> Import Storage Pool
-                    </button>
-                    <button id="btn-storagepools-refresh" class="pf-v6-c-button pf-v6-m-secondary" type="button">
-                        <i class="fa fa-refresh" aria-hidden="true"></i> Refresh
-                    </button>
-                    <div class="menu-dropdown-wrapper">
-                        <button class="pf-v6-c-menu-toggle pf-v6-m-secondary" type="button" aria-label="Actions" aria-expanded="false">
-                            <span class="pf-v6-c-menu-toggle__text">Actions</span>
-                            <span class="pf-v6-c-menu-toggle__icon">
-                                <i class="fa fa-caret-down" aria-hidden="true"></i>
-                            </span>
+        <section class="pf-v6-c-page__main-section">
+            <div class="pf-v6-c-card pf-m-plain">
+                <div class="pf-v6-c-card__header">
+                    <div class="pf-v6-c-card__actions">
+                        <button id="btn-storagepools-create" class="pf-v6-c-button pf-m-primary" type="button">
+                            <span class="pf-v6-c-button__text">Create Storage Pool</span>
                         </button>
-                        <div class="pf-v6-c-menu pf-m-flyout" hidden>
-                            <ul class="pf-v6-c-menu__list">
-                            <li>
-                                <button class="pf-v6-c-menu__list-item" id="btn-filesystems-unlock">
-                                    <i class="fa fa-unlock" aria-hidden="true"></i> Unlock File Systems
-                                </button>
-                            </li>
-                            <li class="pf-v6-c-divider" role="separator"></li>
-                            <li>
-                                <button class="pf-v6-c-menu__list-item" id="btn-configure">
-                                    <i class="fa fa-cog" aria-hidden="true"></i> Configure
-                                </button>
-                            </li>
-                            <li>
-                                <button class="pf-v6-c-menu__list-item" id="btn-about">
-                                    <i class="fa fa-info-circle" aria-hidden="true"></i> About
-                                </button>
-                            </li>
-                            </ul>
+                        <button id="btn-storagepools-import" class="pf-v6-c-button pf-m-secondary" type="button">
+                            <span class="pf-v6-c-button__text">Import Storage Pool</span>
+                        </button>
+                        <button id="btn-storagepools-refresh" class="pf-v6-c-button pf-m-secondary" type="button">
+                            <span class="pf-v6-c-button__text">Refresh</span>
+                        </button>
+                        <div class="menu-dropdown-wrapper">
+                            <button class="pf-v6-c-menu-toggle pf-m-secondary" type="button" aria-label="Actions" aria-expanded="false">
+                                <span class="pf-v6-c-menu-toggle__text">Actions</span>
+                                <span class="pf-v6-c-menu-toggle__controls">
+                                    <span class="pf-v6-c-menu-toggle__toggle-icon"></span>
+                                </span>
+                            </button>
+                            <div class="pf-v6-c-menu pf-m-flyout" hidden>
+                                <ul class="pf-v6-c-menu__list">
+                                <li>
+                                    <button class="pf-v6-c-menu__list-item" id="btn-filesystems-unlock">
+                                        <span class="pf-v6-c-menu__item-text">Unlock File Systems</span>
+                                    </button>
+                                </li>
+                                <li class="pf-v6-c-divider" role="separator"></li>
+                                <li>
+                                    <button class="pf-v6-c-menu__list-item" id="btn-configure">
+                                        <span class="pf-v6-c-menu__item-text">Configure</span>
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="pf-v6-c-menu__list-item" id="btn-about">
+                                        <span class="pf-v6-c-menu__item-text">About</span>
+                                    </button>
+                                </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pf-v6-c-card__header-main">
+                        <div class="pf-v6-c-card__title">
+                            <h2 class="pf-v6-c-card__title-text">Storage Pools</h2>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="pf-v6-c-table">
-            <table id="table-storagepools" class="pf-v6-c-table__table" role="table">
-                <thead>
+                <table id="table-storagepools" aria-label="Storage Pools" role="grid" class="ct-table pf-v6-c-table pf-m-grid-md pf-m-compact">
+                <thead class="pf-v6-c-table__thead">
                     <tr class="pf-v6-c-table__tr">
-                        <th class="pf-v6-c-table__th listing-ct-toggle"></th>
-                        <th class="pf-v6-c-table__th" colspan="2">Name</th>
-                        <th class="pf-v6-c-table__th">Health</th>
-                        <th class="pf-v6-c-table__th">Size</th>
-                        <th class="pf-v6-c-table__th">Allocated</th>
-                        <th class="pf-v6-c-table__th">Free</th>
-                        <th class="pf-v6-c-table__th">Fragmentation</th>
-                        <th class="pf-v6-c-table__th">Usage</th>
-                        <th class="pf-v6-c-table__th"></th>
-                        <th class="pf-v6-c-table__th"></th>
+                        <th tabindex="-1" scope="col" aria-label="Row expansion" class="pf-v6-c-table__th"></th>
+                        <th tabindex="-1" scope="col" class="pf-v6-c-table__th pf-m-width-15">Name</th>
+                        <th tabindex="-1" scope="col" class="pf-v6-c-table__th pf-m-width-15">Health</th>
+                        <th tabindex="-1" scope="col" class="pf-v6-c-table__th pf-m-width-15">Size</th>
+                        <th tabindex="-1" scope="col" class="pf-v6-c-table__th pf-m-width-15">Allocated</th>
+                        <th tabindex="-1" scope="col" class="pf-v6-c-table__th pf-m-width-15">Free</th>
+                        <th tabindex="-1" scope="col" class="pf-v6-c-table__th pf-m-width-15">Fragmentation</th>
+                        <th tabindex="-1" scope="col" class="pf-v6-c-table__th pf-m-width-20">Usage</th>
+                        <th tabindex="-1" scope="col" aria-label="Actions" class="pf-v6-c-table__th pf-m-width-20"></th>
                     </tr>
                     <tr id="spinner-storagepools" class="pf-v6-c-table__tr" style="display: none;">
-                        <td colspan="11" class="pf-v6-c-table__td pf-v6-m-center">
+                        <td colspan="9" class="pf-v6-c-table__td pf-v6-m-center">
                             <div class="pf-v6-c-spinner pf-v6-m-xl" role="progressbar" aria-valuetext="Loading...">
                                 <span class="pf-v6-c-spinner__clipper"></span>
                                 <span class="pf-v6-c-spinner__lead-ball"></span>
@@ -88,8 +87,9 @@
                 </thead>
                 <tbody class="pf-v6-c-table__tbody">
                 </tbody>
-            </table>
-        </div>
+                </table>
+            </div>
+        </section>
     </div>
 
     <script type="text/javascript" src="../base1/cockpit.js"></script>

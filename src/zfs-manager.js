@@ -35,25 +35,21 @@
         showNotification(status, title, description, timeout = 5000) {
             const alertContainer = document.getElementById('alerts-notifications') || document.body;
             const alertId = 'alert-' + Date.now();
-            const statusClass = status === 'success' ? 'pf-v6-m-success' : 
-                              status === 'warning' ? 'pf-v6-m-warning' : 
-                              status === 'danger' ? 'pf-v6-m-danger' : 'pf-v6-m-info';
-            const icon = status === 'success' ? 'fa-check-circle' :
-                        status === 'warning' ? 'fa-exclamation-triangle' :
-                        status === 'danger' ? 'fa-times-circle' : 'fa-info-circle';
+            const statusClass = status === 'success' ? 'pf-m-success' : 
+                              status === 'warning' ? 'pf-m-warning' : 
+                              status === 'danger' ? 'pf-m-danger' : 'pf-m-info';
 
             const alert = document.createElement('div');
             alert.id = alertId;
             alert.className = `pf-v6-c-alert ${statusClass}`;
             alert.innerHTML = `
-                <div class="pf-v6-c-alert__icon">
-                    <i class="fa ${icon}" aria-hidden="true"></i>
-                </div>
                 <h4 class="pf-v6-c-alert__title">${this.escapeHtml(title)}</h4>
                 ${description ? `<div class="pf-v6-c-alert__description"><p>${this.escapeHtml(description)}</p></div>` : ''}
                 <div class="pf-v6-c-alert__action">
-                    <button class="pf-v6-c-button pf-v6-m-plain" type="button" aria-label="Close">
-                        <i class="fa fa-times" aria-hidden="true"></i>
+                    <button class="pf-v6-c-button pf-m-plain" type="button" aria-label="Close">
+                        <svg class="pf-v6-svg" viewBox="0 0 352 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                            <path d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path>
+                        </svg>
                     </button>
                 </div>
             `;
@@ -97,8 +93,10 @@
                 this.modal.innerHTML = `
                     <div class="pf-v6-c-modal-box__header">
                         <h1 class="pf-v6-c-modal-box__title">${Utils.escapeHtml(this.title)}</h1>
-                        <button class="pf-v6-c-button pf-v6-m-plain" type="button" aria-label="Close dialog">
-                            <i class="fa fa-times" aria-hidden="true"></i>
+                        <button class="pf-v6-c-button pf-m-plain" type="button" aria-label="Close dialog">
+                            <svg class="pf-v6-svg" viewBox="0 0 352 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                <path d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path>
+                            </svg>
                         </button>
                     </div>
                     <div class="pf-v6-c-modal-box__body">
@@ -107,7 +105,7 @@
                     ${this.options.footer !== false ? `
                     <div class="pf-v6-c-modal-box__footer">
                         ${this.options.footer || `
-                            <button class="pf-v6-c-button pf-v6-m-primary" type="button">${this.options.confirmText || 'OK'}</button>
+                            <button class="pf-v6-c-button pf-m-primary" type="button">${this.options.confirmText || 'OK'}</button>
                             <button class="pf-v6-c-button pf-v6-m-link" type="button">Cancel</button>
                         `}
                     </div>
@@ -119,7 +117,7 @@
 
                 const closeBtn = this.modal.querySelector('.pf-v6-c-button[aria-label="Close dialog"]');
                 const cancelBtn = this.modal.querySelector('.pf-v6-c-button.pf-v6-m-link');
-                const confirmBtn = this.modal.querySelector('.pf-v6-c-button.pf-v6-m-primary');
+                const confirmBtn = this.modal.querySelector('.pf-v6-c-button.pf-m-primary');
 
                 const close = () => {
                     this.modal.remove();
@@ -175,10 +173,7 @@
             proc.fail(() => {
                 document.getElementById('alerts-requirements').classList.remove('hidden');
                 document.getElementById('alerts-requirements').innerHTML = `
-                    <div class="pf-v6-c-alert pf-v6-m-danger">
-                        <div class="pf-v6-c-alert__icon">
-                            <i class="fa fa-times-circle" aria-hidden="true"></i>
-                        </div>
+                    <div class="pf-v6-c-alert pf-m-danger">
                         <h4 class="pf-v6-c-alert__title">ZFS not found</h4>
                         <div class="pf-v6-c-alert__description">
                             <p>ZFS tools are not installed. Please install zfsutils-linux (Debian/Ubuntu) or zfs (Fedora/RHEL).</p>
@@ -299,7 +294,6 @@
                         <td colspan="11" class="pf-v6-c-table__td pf-v6-m-center">
                             <div class="pf-v6-c-empty-state">
                                 <div class="pf-v6-c-empty-state__content">
-                                    <i class="fa fa-database pf-v6-c-empty-state__icon" aria-hidden="true"></i>
                                     <h2 class="pf-v6-c-empty-state__title">No storage pools found</h2>
                                     <p class="pf-v6-c-empty-state__body">Create a new storage pool to get started.</p>
                                 </div>
@@ -326,29 +320,35 @@
             row.setAttribute('data-pool-name', pool.name);
             row.setAttribute('data-pool-id', pool.id);
 
-            const healthClass = pool.health === 'ONLINE' ? 'pf-v6-m-success' : 
-                              pool.health === 'DEGRADED' ? 'pf-v6-m-warning' : 'pf-v6-m-danger';
-            const healthIcon = pool.health === 'ONLINE' ? 'fa-check-circle' :
-                             pool.health === 'DEGRADED' ? 'fa-exclamation-triangle' : 'fa-times-circle';
+            const healthClass = pool.health === 'ONLINE' ? 'pf-m-success' : 
+                              pool.health === 'DEGRADED' ? 'pf-m-warning' : 'pf-m-danger';
 
+            const poolId = Utils.generateId(pool.name);
             row.innerHTML = `
-                <td class="pf-v6-c-table__td listing-ct-toggle">
-                    <button class="pf-v6-c-button pf-v6-m-plain" type="button" aria-label="Toggle details">
-                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                <td tabindex="-1" class="pf-v6-c-table__td pf-v6-c-table__toggle">
+                    <button aria-labelledby="${poolId}-name expand-toggle-${poolId}" id="expand-toggle-${poolId}" aria-expanded="false" aria-label="Details" class="pf-v6-c-button pf-m-plain" type="button">
+                        <span class="pf-v6-c-button__icon">
+                            <div class="pf-v6-c-table__toggle-icon">
+                                <svg class="pf-v6-svg toggle-icon" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                    <path d="M143 352.3L7 216.3c-9.4-9.4-9.4-24.6 0-33.9l22.6-22.6c9.4-9.4 24.6-9.4 33.9 0l96.4 96.4 96.4-96.4c9.4-9.4 24.6-9.4 33.9 0l22.6 22.6c9.4 9.4 9.4 24.6 0 33.9l-136 136c-9.2 9.4-24.4 9.4-33.8 0z"></path>
+                                </svg>
+                            </div>
+                        </span>
                     </button>
                 </td>
-                <td class="pf-v6-c-table__td" colspan="2"><strong>${Utils.escapeHtml(pool.name)}</strong></td>
-                <td class="pf-v6-c-table__td">
+                <th tabindex="-1" data-label="Name" scope="row" class="pf-v6-c-table__th">
+                    <span id="${poolId}-name">${Utils.escapeHtml(pool.name)}</span>
+                </th>
+                <td tabindex="-1" data-label="Health" class="pf-v6-c-table__td">
                     <span class="pf-v6-c-label ${healthClass}">
-                        <i class="fa ${healthIcon}" aria-hidden="true"></i>
                         ${Utils.escapeHtml(pool.health)}
                     </span>
                 </td>
-                <td class="pf-v6-c-table__td">${Utils.escapeHtml(pool.size)}</td>
-                <td class="pf-v6-c-table__td">${Utils.escapeHtml(pool.allocated)}</td>
-                <td class="pf-v6-c-table__td">${Utils.escapeHtml(pool.free)}</td>
-                <td class="pf-v6-c-table__td">${Utils.escapeHtml(pool.fragmentation)}</td>
-                <td class="pf-v6-c-table__td">
+                <td tabindex="-1" data-label="Size" class="pf-v6-c-table__td">${Utils.escapeHtml(pool.size)}</td>
+                <td tabindex="-1" data-label="Allocated" class="pf-v6-c-table__td">${Utils.escapeHtml(pool.allocated)}</td>
+                <td tabindex="-1" data-label="Free" class="pf-v6-c-table__td">${Utils.escapeHtml(pool.free)}</td>
+                <td tabindex="-1" data-label="Fragmentation" class="pf-v6-c-table__td">${Utils.escapeHtml(pool.fragmentation)}</td>
+                <td tabindex="-1" data-label="Usage" class="pf-v6-c-table__td">
                     <div class="pf-v6-c-progress">
                         <div class="pf-v6-c-progress__bar" role="progressbar" 
                              aria-valuenow="${pool.usage}" 
@@ -359,25 +359,30 @@
                         <span class="pf-v6-c-progress__measure">${pool.usage}%</span>
                     </div>
                 </td>
-                <td class="pf-v6-c-table__td listing-ct-icon"></td>
-                <td class="pf-v6-c-table__td listing-ct-actionsmenu">
-                    <div class="menu-dropdown-wrapper">
-                        <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button" aria-label="Actions" aria-expanded="false">
-                            <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
-                        </button>
-                        <div class="pf-v6-c-menu pf-m-flyout" hidden>
-                            <ul class="pf-v6-c-menu__list">
-                            <li><button class="pf-v6-c-menu__list-item" data-action="details">Details</button></li>
-                            <li><button class="pf-v6-c-menu__list-item" data-action="export">Export</button></li>
-                            <li><button class="pf-v6-c-menu__list-item pf-v6-m-danger" data-action="destroy">Destroy</button></li>
-                            </ul>
+                <td tabindex="-1" data-label="" class="pf-v6-c-table__td">
+                    <div class="btn-group">
+                        <div class="menu-dropdown-wrapper">
+                            <button class="pf-v6-c-menu-toggle pf-m-plain" type="button" aria-expanded="false" id="${poolId}-action-kebab">
+                                <span class="pf-v6-c-menu-toggle__text">
+                                    <svg class="pf-v6-svg" viewBox="0 0 192 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                        <path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path>
+                                    </svg>
+                                </span>
+                            </button>
+                            <div class="pf-v6-c-menu pf-m-flyout" hidden>
+                                <ul class="pf-v6-c-menu__list">
+                                <li><button class="pf-v6-c-menu__list-item" data-action="details"><span class="pf-v6-c-menu__item-text">Details</span></button></li>
+                                <li><button class="pf-v6-c-menu__list-item" data-action="export"><span class="pf-v6-c-menu__item-text">Export</span></button></li>
+                                <li><button class="pf-v6-c-menu__list-item pf-m-danger" data-action="destroy"><span class="pf-v6-c-menu__item-text">Destroy</span></button></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </td>
             `;
 
             // Toggle details
-            const toggleBtn = row.querySelector('.listing-ct-toggle button');
+            const toggleBtn = row.querySelector('.pf-v6-c-table__toggle button');
             toggleBtn.addEventListener('click', () => {
                 const isExpanded = row.classList.contains('expanded');
                 if (isExpanded) {
@@ -421,13 +426,22 @@
 
         async expandPoolRow(row, pool) {
             row.classList.add('expanded');
-            const icon = row.querySelector('.listing-ct-toggle i');
-            icon.className = 'fa fa-angle-down';
+            const toggleBtn = row.querySelector('.pf-v6-c-table__toggle button');
+            if (toggleBtn) {
+                toggleBtn.setAttribute('aria-expanded', 'true');
+            }
+            const icon = row.querySelector('.pf-v6-c-table__toggle-icon .toggle-icon');
+            if (icon) {
+                icon.setAttribute('d', 'M143 352.3L7 216.3c-9.4-9.4-9.4-24.6 0-33.9l22.6-22.6c9.4-9.4 24.6-9.4 33.9 0l96.4 96.4 96.4-96.4c9.4-9.4 24.6-9.4 33.9 0l22.6 22.6c9.4 9.4 9.4 24.6 0 33.9l-136 136c-9.2 9.4-24.4 9.4-33.8 0z');
+            }
 
             const detailsRow = document.createElement('tr');
-            detailsRow.className = 'pf-v6-c-table__tr pool-details';
+            detailsRow.className = 'pf-v6-c-table__tr pf-v6-c-table__expandable-row';
+            const poolId = Utils.generateId(pool.name);
+            detailsRow.id = `expanded-content-${poolId}`;
             detailsRow.innerHTML = `
-                <td class="pf-v6-c-table__td" colspan="11">
+                <td tabindex="-1" class="pf-v6-c-table__td" colspan="9">
+                    <div class="pf-v6-c-table__expandable-row-content">
                     <div class="pf-v6-c-tabs">
                         <ul class="pf-v6-c-tabs__list">
                             <li class="pf-v6-c-tabs__item pf-v6-m-current">
@@ -464,6 +478,7 @@
                             </div>
                         </div>
                     </div>
+                    </div>
                 </td>
             `;
 
@@ -483,10 +498,16 @@
 
         collapsePoolRow(row) {
             row.classList.remove('expanded');
-            const icon = row.querySelector('.listing-ct-toggle i');
-            icon.className = 'fa fa-angle-right';
+            const toggleBtn = row.querySelector('.pf-v6-c-table__toggle button');
+            if (toggleBtn) {
+                toggleBtn.setAttribute('aria-expanded', 'false');
+            }
+            const icon = row.querySelector('.pf-v6-c-table__toggle-icon .toggle-icon');
+            if (icon) {
+                icon.setAttribute('d', 'M143 352.3L7 216.3c-9.4-9.4-9.4-24.6 0-33.9l22.6-22.6c9.4-9.4 24.6-9.4 33.9 0l96.4 96.4 96.4-96.4c9.4-9.4 24.6-9.4 33.9 0l22.6 22.6c9.4 9.4 9.4 24.6 0 33.9l-136 136c-9.2 9.4-24.4 9.4-33.8 0z');
+            }
             const detailsRow = row.nextElementSibling;
-            if (detailsRow && detailsRow.classList.contains('pool-details')) {
+            if (detailsRow && detailsRow.classList.contains('pf-v6-c-table__expandable-row')) {
                 detailsRow.remove();
             }
         }
@@ -577,8 +598,8 @@
                 <div class="pf-v6-c-toolbar">
                     <div class="pf-v6-c-toolbar__content">
                         <div class="pf-v6-c-toolbar__content-section">
-                            <button class="pf-v6-c-button pf-v6-m-primary" data-action="create-filesystem">
-                                <i class="fa fa-plus" aria-hidden="true"></i> Create File System
+                            <button class="pf-v6-c-button pf-m-primary" data-action="create-filesystem">
+                                <span class="pf-v6-c-button__text">Create File System</span>
                             </button>
                         </div>
                     </div>
@@ -609,17 +630,19 @@
                         <td class="pf-v6-c-table__td">${Utils.escapeHtml(fs.refer)}</td>
                         <td class="pf-v6-c-table__td">${Utils.escapeHtml(fs.mountpoint)}</td>
                         <td class="pf-v6-c-table__td">${Utils.escapeHtml(fs.type)}</td>
-                        <td class="pf-v6-c-table__td">${fs.encryption !== 'off' ? '<span class="pf-v6-c-label pf-v6-m-blue"><i class="fa fa-lock"></i> Encrypted</span>' : '-'}</td>
+                        <td class="pf-v6-c-table__td">${fs.encryption !== 'off' ? '<span class="pf-v6-c-label pf-m-blue">Encrypted</span>' : '-'}</td>
                         <td class="pf-v6-c-table__td">
                             <div class="menu-dropdown-wrapper">
-                                <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button" aria-label="Actions" aria-expanded="false">
-                                    <i class="fa fa-ellipsis-v"></i>
+                                <button class="pf-v6-c-menu-toggle pf-m-plain" type="button" aria-label="Actions" aria-expanded="false">
+                                    <svg class="pf-v6-svg" viewBox="0 0 192 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                        <path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path>
+                                    </svg>
                                 </button>
                                 <div class="pf-v6-c-menu pf-m-flyout" hidden>
                                     <ul class="pf-v6-c-menu__list">
-                                    <li><button class="pf-v6-c-menu__list-item" data-action="snapshot">Create Snapshot</button></li>
-                                    <li><button class="pf-v6-c-menu__list-item" data-action="clone">Clone</button></li>
-                                    <li><button class="pf-v6-c-menu__list-item pf-v6-m-danger" data-action="destroy">Destroy</button></li>
+                                    <li><button class="pf-v6-c-menu__list-item" data-action="snapshot"><span class="pf-v6-c-menu__item-text">Create Snapshot</span></button></li>
+                                    <li><button class="pf-v6-c-menu__list-item" data-action="clone"><span class="pf-v6-c-menu__item-text">Clone</span></button></li>
+                                    <li><button class="pf-v6-c-menu__list-item pf-m-danger" data-action="destroy"><span class="pf-v6-c-menu__item-text">Destroy</span></button></li>
                                     </ul>
                                 </div>
                             </div>
@@ -714,8 +737,8 @@
                 <div class="pf-v6-c-toolbar">
                     <div class="pf-v6-c-toolbar__content">
                         <div class="pf-v6-c-toolbar__content-section">
-                            <button class="pf-v6-c-button pf-v6-m-primary" data-action="create-snapshot">
-                                <i class="fa fa-plus" aria-hidden="true"></i> Create Snapshot
+                            <button class="pf-v6-c-button pf-m-primary" data-action="create-snapshot">
+                                <span class="pf-v6-c-button__text">Create Snapshot</span>
                             </button>
                         </div>
                     </div>
@@ -755,14 +778,16 @@
                         <td class="pf-v6-c-table__td">${Utils.escapeHtml(snap.creation)}</td>
                         <td class="pf-v6-c-table__td">
                             <div class="menu-dropdown-wrapper">
-                                <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button" aria-label="Actions" aria-expanded="false">
-                                    <i class="fa fa-ellipsis-v"></i>
+                                <button class="pf-v6-c-menu-toggle pf-m-plain" type="button" aria-label="Actions" aria-expanded="false">
+                                    <svg class="pf-v6-svg" viewBox="0 0 192 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                        <path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"></path>
+                                    </svg>
                                 </button>
                                 <div class="pf-v6-c-menu pf-m-flyout" hidden>
                                     <ul class="pf-v6-c-menu__list">
-                                    <li><button class="pf-v6-c-menu__list-item" data-action="clone">Clone</button></li>
-                                    <li><button class="pf-v6-c-menu__list-item" data-action="rollback">Rollback</button></li>
-                                    <li><button class="pf-v6-c-menu__list-item pf-v6-m-danger" data-action="destroy">Destroy</button></li>
+                                    <li><button class="pf-v6-c-menu__list-item" data-action="clone"><span class="pf-v6-c-menu__item-text">Clone</span></button></li>
+                                    <li><button class="pf-v6-c-menu__list-item" data-action="rollback"><span class="pf-v6-c-menu__item-text">Rollback</span></button></li>
+                                    <li><button class="pf-v6-c-menu__list-item pf-m-danger" data-action="destroy"><span class="pf-v6-c-menu__item-text">Destroy</span></button></li>
                                     </ul>
                                 </div>
                             </div>
@@ -1167,10 +1192,7 @@
 
         showConfigureModal() {
             const content = `
-                <div class="pf-v6-c-alert pf-v6-m-info">
-                    <div class="pf-v6-c-alert__icon">
-                        <i class="fa fa-info-circle" aria-hidden="true"></i>
-                    </div>
+                <div class="pf-v6-c-alert pf-m-info">
                     <h4 class="pf-v6-c-alert__title">Configuration</h4>
                     <div class="pf-v6-c-alert__description">
                         <p>Configuration options will be available in a future release.</p>

@@ -19,7 +19,10 @@
 @use "@patternfly/patternfly/components/CodeBlock/code-block.scss";
 @use "@patternfly/patternfly/components/Divider/divider.scss";
 @use "@patternfly/patternfly/components/Title/title.scss";
+@use "@patternfly/patternfly/components/Card/card.scss";
+@use "@patternfly/patternfly/components/DescriptionList/description-list.scss";
 @use "@patternfly/patternfly/layouts/Bullseye/bullseye.scss";
+@use "@patternfly/patternfly/layouts/Flex/flex.scss";
 
 // Import utilities (using .css like cockpit-machines)
 @use "@patternfly/patternfly/utilities/Spacing/spacing.css";
@@ -111,8 +114,17 @@
 }
 
 // Menu dropdown wrapper needs position relative for flyout positioning
+// Menu flyout should be absolutely positioned to not affect layout
 .menu-dropdown-wrapper {
     position: relative;
+    
+    .pf-v6-c-menu.pf-m-flyout {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: var(--pf-t--global--spacer--xs);
+        z-index: var(--pf-t--global--z-index--sm);
+    }
 }
 
 // Modal backdrop (PatternFly 6 doesn't include a backdrop component)
