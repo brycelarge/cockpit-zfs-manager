@@ -155,7 +155,7 @@
     // ZFS Manager main class
     class ZFSManager {
         constructor() {
-            this.container = document.getElementById('container');
+            this.container = document.getElementById('app');
             this.pools = [];
             this.selectedPool = null;
             this.init();
@@ -182,7 +182,7 @@
                 `;
             });
             proc.done(() => {
-                this.container.classList.remove('hidden');
+                // Container is always visible, no need to remove hidden class
             });
         }
 
