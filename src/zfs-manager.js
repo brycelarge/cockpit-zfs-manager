@@ -962,7 +962,6 @@
         async listAvailableDisks() {
             return new Promise((resolve, reject) => {
                 const disks = [];
-                const errorOutput = [];
                 
                 // Use lsblk to get block devices, filtering out partitions and loop devices
                 const proc = cockpit.spawn(['lsblk', '-nd', '-o', 'NAME,TYPE', '-e', '7,11'], { err: 'message' });
@@ -999,10 +998,6 @@
                     });
                 });
                 
-                proc.stream(cockpit.spawn.err, (data) => {
-                    errorOutput.push(data);
-                });
-                
                 proc.done((exitCode) => {
                     if (exitCode === 0) {
                         // Sort disks alphabetically
@@ -1026,10 +1021,9 @@
         async listDisksFallback() {
             return new Promise((resolve, reject) => {
                 const disks = [];
-                const patterns = ['/dev/sd[a-z]', '/dev/nvme[0-9]n[0-9]', '/dev/vd[a-z]'];
                 
-                // Try to list common disk patterns
-                const proc = cockpit.spawn(['sh', '-c', 'ls -1 /dev/sd[a-z] /dev/nvme[0-9]n[0-9] /dev/vd[a-z] 2>/dev/null | grep -v "[0-9]$"'], { err: 'message' });
+                // Try to list common disk patterns using find
+                const proc = cockpit.spawn(['sh', '-c', 'find /dev -maxdepth 1 -type b \\( -name "sd[a-z]" -o -name "nvme[0-9]n[0-9]" -o -name "vd[a-z]" \\) 2>/dev/null'], { err: 'message' });
                 
                 proc.stream((data) => {
                     const lines = data.split('\n');
@@ -1050,7 +1044,8 @@
                 });
                 
                 proc.fail((error) => {
-                    reject(new Error('Failed to list disks: ' + error));
+                    // If find fails, return empty array rather than rejecting
+                    resolve([]);
                 });
             });
         }

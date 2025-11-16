@@ -153,10 +153,4 @@
     width: 100%;
 }
 
-// Override PatternFly's default margins on main-container to make it full width
-.pf-v6-c-page__main-container {
-    --pf-v6-c-page__main-container--MarginInlineStart: 0;
-    --pf-v6-c-page__main-container--MarginInlineEnd: 0;
-    --pf-v6-c-page__main-container--BorderRadius: 0;
-}
 
