@@ -25,10 +25,8 @@ A modern Cockpit plugin for managing ZFS pools, datasets, and snapshots. Built w
    sudo make install
    ```
 
-   Or manually copy:
-   ```bash
-   sudo cp -r dist /usr/share/cockpit/zfs-manager
-   ```
+   This installs to `/usr/share/cockpit/zfs-manager` by default (Debian/Ubuntu).
+   For other locations, use: `sudo make install PREFIX=/usr/local`
 
 3. Restart Cockpit (if needed):
    ```bash

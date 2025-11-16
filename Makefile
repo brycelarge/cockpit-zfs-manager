@@ -1,35 +1,41 @@
 PACKAGE := cockpit-zfs-manager
 VERSION := 0.1.0
 NAME := zfs-manager
+PREFIX ?= /usr
 
-# Check if we're on macOS (no /usr/share/cockpit)
-ifeq ($(shell test -d /usr/share/cockpit && echo "yes"),yes)
-    include /usr/share/cockpit/Makefile.common
-endif
+# stamp file to check for node_modules/
+NODE_MODULES_TEST=package-lock.json
+# one example file in dist/ from bundler to check if that already ran
+DIST_TEST=dist/manifest.json
+
+all: $(DIST_TEST)
 
 # Build the plugin
-dist: src/manifest.json src/index.html src/zfs-manager.js src/zfs-manager.scss
-	@echo "Building plugin..."
-	@./build.js
-	@echo "Build complete! Output in dist/"
+$(DIST_TEST): $(NODE_MODULES_TEST) $(shell find src/ -type f) package.json build.js
+	NODE_ENV=$(NODE_ENV) ./build.js
 
-# Install target
-install: dist
-	mkdir -p $(DESTDIR)/usr/share/cockpit/$(NAME)
-	cp -r dist/* $(DESTDIR)/usr/share/cockpit/$(NAME)/
+watch: $(NODE_MODULES_TEST)
+	NODE_ENV=$(NODE_ENV) ./build.js -w
 
-# Development install (Linux only)
-devel-install: dist
-	@if [ ! -d ~/.local/share/cockpit ]; then \
-		mkdir -p ~/.local/share/cockpit; \
-	fi
+clean:
+	rm -rf dist/
+
+install: $(DIST_TEST)
+	mkdir -p $(DESTDIR)$(PREFIX)/share/cockpit/$(NAME)
+	cp -r dist/* $(DESTDIR)$(PREFIX)/share/cockpit/$(NAME)/
+
+# this requires a built source tree and avoids having to install anything system-wide
+devel-install: $(DIST_TEST)
+	mkdir -p ~/.local/share/cockpit
 	ln -sf `pwd`/dist ~/.local/share/cockpit/$(NAME)
 
+# assumes that there was symlink set up using the above devel-install target,
+# and removes it
 devel-uninstall:
 	rm -f ~/.local/share/cockpit/$(NAME)
 
-# Watch mode
-watch:
-	./build.js -w
+$(NODE_MODULES_TEST): package.json
+	# unset NODE_ENV, skips devDependencies otherwise
+	env -u NODE_ENV npm install
 
-.PHONY: install devel-install devel-uninstall watch dist
+.PHONY: all clean install devel-install devel-uninstall watch
