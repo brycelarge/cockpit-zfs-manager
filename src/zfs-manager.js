@@ -35,24 +35,24 @@
         showNotification(status, title, description, timeout = 5000) {
             const alertContainer = document.getElementById('alerts-notifications') || document.body;
             const alertId = 'alert-' + Date.now();
-            const statusClass = status === 'success' ? 'pf-m-success' : 
-                              status === 'warning' ? 'pf-m-warning' : 
-                              status === 'danger' ? 'pf-m-danger' : 'pf-m-info';
+            const statusClass = status === 'success' ? 'pf-v6-m-success' : 
+                              status === 'warning' ? 'pf-v6-m-warning' : 
+                              status === 'danger' ? 'pf-v6-m-danger' : 'pf-v6-m-info';
             const icon = status === 'success' ? 'fa-check-circle' :
                         status === 'warning' ? 'fa-exclamation-triangle' :
                         status === 'danger' ? 'fa-times-circle' : 'fa-info-circle';
 
             const alert = document.createElement('div');
             alert.id = alertId;
-            alert.className = `pf-c-alert ${statusClass}`;
+            alert.className = `pf-v6-c-alert ${statusClass}`;
             alert.innerHTML = `
-                <div class="pf-c-alert__icon">
+                <div class="pf-v6-c-alert__icon">
                     <i class="fa ${icon}" aria-hidden="true"></i>
                 </div>
-                <h4 class="pf-c-alert__title">${this.escapeHtml(title)}</h4>
-                ${description ? `<div class="pf-c-alert__description"><p>${this.escapeHtml(description)}</p></div>` : ''}
-                <div class="pf-c-alert__action">
-                    <button class="pf-c-button pf-m-plain" type="button" aria-label="Close">
+                <h4 class="pf-v6-c-alert__title">${this.escapeHtml(title)}</h4>
+                ${description ? `<div class="pf-v6-c-alert__description"><p>${this.escapeHtml(description)}</p></div>` : ''}
+                <div class="pf-v6-c-alert__action">
+                    <button class="pf-v6-c-button pf-v6-m-plain" type="button" aria-label="Close">
                         <i class="fa fa-times" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -60,7 +60,7 @@
 
             alertContainer.appendChild(alert);
 
-            alert.querySelector('.pf-c-button').addEventListener('click', () => {
+            alert.querySelector('.pf-v6-c-button').addEventListener('click', () => {
                 alert.remove();
             });
 
@@ -88,27 +88,27 @@
                 this.reject = reject;
 
                 this.backdrop = document.createElement('div');
-                this.backdrop.className = 'pf-c-backdrop';
+                this.backdrop.className = 'pf-v6-c-backdrop';
                 this.backdrop.style.display = 'block';
 
                 this.modal = document.createElement('div');
-                this.modal.className = 'pf-c-modal-box';
+                this.modal.className = 'pf-v6-c-modal-box';
                 this.modal.setAttribute('role', 'dialog');
                 this.modal.innerHTML = `
-                    <div class="pf-c-modal-box__header">
-                        <h1 class="pf-c-modal-box__title">${Utils.escapeHtml(this.title)}</h1>
-                        <button class="pf-c-button pf-m-plain" type="button" aria-label="Close dialog">
+                    <div class="pf-v6-c-modal-box__header">
+                        <h1 class="pf-v6-c-modal-box__title">${Utils.escapeHtml(this.title)}</h1>
+                        <button class="pf-v6-c-button pf-v6-m-plain" type="button" aria-label="Close dialog">
                             <i class="fa fa-times" aria-hidden="true"></i>
                         </button>
                     </div>
-                    <div class="pf-c-modal-box__body">
+                    <div class="pf-v6-c-modal-box__body">
                         ${this.content}
                     </div>
                     ${this.options.footer !== false ? `
-                    <div class="pf-c-modal-box__footer">
+                    <div class="pf-v6-c-modal-box__footer">
                         ${this.options.footer || `
-                            <button class="pf-c-button pf-m-primary" type="button">${this.options.confirmText || 'OK'}</button>
-                            <button class="pf-c-button pf-m-link" type="button">Cancel</button>
+                            <button class="pf-v6-c-button pf-v6-m-primary" type="button">${this.options.confirmText || 'OK'}</button>
+                            <button class="pf-v6-c-button pf-v6-m-link" type="button">Cancel</button>
                         `}
                     </div>
                     ` : ''}
@@ -117,9 +117,9 @@
                 document.body.appendChild(this.backdrop);
                 document.body.appendChild(this.modal);
 
-                const closeBtn = this.modal.querySelector('.pf-c-button[aria-label="Close dialog"]');
-                const cancelBtn = this.modal.querySelector('.pf-c-button.pf-m-link');
-                const confirmBtn = this.modal.querySelector('.pf-c-button.pf-m-primary');
+                const closeBtn = this.modal.querySelector('.pf-v6-c-button[aria-label="Close dialog"]');
+                const cancelBtn = this.modal.querySelector('.pf-v6-c-button.pf-v6-m-link');
+                const confirmBtn = this.modal.querySelector('.pf-v6-c-button.pf-v6-m-primary');
 
                 const close = () => {
                     this.modal.remove();
@@ -175,12 +175,12 @@
             proc.fail(() => {
                 document.getElementById('alerts-requirements').classList.remove('hidden');
                 document.getElementById('alerts-requirements').innerHTML = `
-                    <div class="pf-c-alert pf-m-danger">
-                        <div class="pf-c-alert__icon">
+                    <div class="pf-v6-c-alert pf-v6-m-danger">
+                        <div class="pf-v6-c-alert__icon">
                             <i class="fa fa-times-circle" aria-hidden="true"></i>
                         </div>
-                        <h4 class="pf-c-alert__title">ZFS not found</h4>
-                        <div class="pf-c-alert__description">
+                        <h4 class="pf-v6-c-alert__title">ZFS not found</h4>
+                        <div class="pf-v6-c-alert__description">
                             <p>ZFS tools are not installed. Please install zfsutils-linux (Debian/Ubuntu) or zfs (Fedora/RHEL).</p>
                         </div>
                     </div>
@@ -200,7 +200,7 @@
             document.getElementById('btn-about')?.addEventListener('click', () => this.showAboutModal());
 
             // Dropdown menu toggle
-            const dropdownToggle = document.querySelector('.pf-c-dropdown__toggle');
+            const dropdownToggle = document.querySelector('.pf-v6-c-menu-toggle');
             if (dropdownToggle) {
                 dropdownToggle.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -213,8 +213,8 @@
 
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
-                if (!e.target.closest('.pf-c-dropdown')) {
-                    document.querySelectorAll('.pf-c-dropdown__menu').forEach(menu => {
+                if (!e.target.closest('.pf-v6-c-menu')) {
+                    document.querySelectorAll('.pf-v6-c-menu__list').forEach(menu => {
                         menu.hidden = true;
                     });
                 }
@@ -283,13 +283,13 @@
 
             if (this.pools.length === 0) {
                 tbody.innerHTML = `
-                    <tr class="pf-c-table__tr">
-                        <td colspan="11" class="pf-c-table__td pf-m-center">
-                            <div class="pf-c-empty-state">
-                                <div class="pf-c-empty-state__content">
-                                    <i class="fa fa-database pf-c-empty-state__icon" aria-hidden="true"></i>
-                                    <h2 class="pf-c-empty-state__title">No storage pools found</h2>
-                                    <p class="pf-c-empty-state__body">Create a new storage pool to get started.</p>
+                    <tr class="pf-v6-c-table__tr">
+                        <td colspan="11" class="pf-v6-c-table__td pf-v6-m-center">
+                            <div class="pf-v6-c-empty-state">
+                                <div class="pf-v6-c-empty-state__content">
+                                    <i class="fa fa-database pf-v6-c-empty-state__icon" aria-hidden="true"></i>
+                                    <h2 class="pf-v6-c-empty-state__title">No storage pools found</h2>
+                                    <p class="pf-v6-c-empty-state__body">Create a new storage pool to get started.</p>
                                 </div>
                             </div>
                         </td>
@@ -310,53 +310,53 @@
 
         createPoolRow(pool) {
             const row = document.createElement('tr');
-            row.className = 'pf-c-table__tr listing-ct-item';
+            row.className = 'pf-v6-c-table__tr listing-ct-item';
             row.setAttribute('data-pool-name', pool.name);
             row.setAttribute('data-pool-id', pool.id);
 
-            const healthClass = pool.health === 'ONLINE' ? 'pf-m-success' : 
-                              pool.health === 'DEGRADED' ? 'pf-m-warning' : 'pf-m-danger';
+            const healthClass = pool.health === 'ONLINE' ? 'pf-v6-m-success' : 
+                              pool.health === 'DEGRADED' ? 'pf-v6-m-warning' : 'pf-v6-m-danger';
             const healthIcon = pool.health === 'ONLINE' ? 'fa-check-circle' :
                              pool.health === 'DEGRADED' ? 'fa-exclamation-triangle' : 'fa-times-circle';
 
             row.innerHTML = `
-                <td class="pf-c-table__td listing-ct-toggle">
-                    <button class="pf-c-button pf-m-plain" type="button" aria-label="Toggle details">
+                <td class="pf-v6-c-table__td listing-ct-toggle">
+                    <button class="pf-v6-c-button pf-v6-m-plain" type="button" aria-label="Toggle details">
                         <i class="fa fa-angle-right" aria-hidden="true"></i>
                     </button>
                 </td>
-                <td class="pf-c-table__td" colspan="2"><strong>${Utils.escapeHtml(pool.name)}</strong></td>
-                <td class="pf-c-table__td">
-                    <span class="pf-c-label ${healthClass}">
+                <td class="pf-v6-c-table__td" colspan="2"><strong>${Utils.escapeHtml(pool.name)}</strong></td>
+                <td class="pf-v6-c-table__td">
+                    <span class="pf-v6-c-label ${healthClass}">
                         <i class="fa ${healthIcon}" aria-hidden="true"></i>
                         ${Utils.escapeHtml(pool.health)}
                     </span>
                 </td>
-                <td class="pf-c-table__td">${Utils.escapeHtml(pool.size)}</td>
-                <td class="pf-c-table__td">${Utils.escapeHtml(pool.allocated)}</td>
-                <td class="pf-c-table__td">${Utils.escapeHtml(pool.free)}</td>
-                <td class="pf-c-table__td">${Utils.escapeHtml(pool.fragmentation)}</td>
-                <td class="pf-c-table__td">
-                    <div class="pf-c-progress">
-                        <div class="pf-c-progress__bar" role="progressbar" 
+                <td class="pf-v6-c-table__td">${Utils.escapeHtml(pool.size)}</td>
+                <td class="pf-v6-c-table__td">${Utils.escapeHtml(pool.allocated)}</td>
+                <td class="pf-v6-c-table__td">${Utils.escapeHtml(pool.free)}</td>
+                <td class="pf-v6-c-table__td">${Utils.escapeHtml(pool.fragmentation)}</td>
+                <td class="pf-v6-c-table__td">
+                    <div class="pf-v6-c-progress">
+                        <div class="pf-v6-c-progress__bar" role="progressbar" 
                              aria-valuenow="${pool.usage}" 
                              aria-valuemin="0" 
                              aria-valuemax="100">
                             <div style="width: ${pool.usage}%"></div>
                         </div>
-                        <span class="pf-c-progress__measure">${pool.usage}%</span>
+                        <span class="pf-v6-c-progress__measure">${pool.usage}%</span>
                     </div>
                 </td>
-                <td class="pf-c-table__td listing-ct-icon"></td>
-                <td class="pf-c-table__td listing-ct-actionsmenu">
-                    <div class="pf-c-dropdown">
-                        <button class="pf-c-dropdown__toggle pf-m-plain" type="button" aria-label="Actions">
+                <td class="pf-v6-c-table__td listing-ct-icon"></td>
+                <td class="pf-v6-c-table__td listing-ct-actionsmenu">
+                    <div class="pf-v6-c-menu">
+                        <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button" aria-label="Actions">
                             <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
                         </button>
-                        <ul class="pf-c-dropdown__menu" hidden>
-                            <li><button class="pf-c-dropdown__menu-item" data-action="details">Details</button></li>
-                            <li><button class="pf-c-dropdown__menu-item" data-action="export">Export</button></li>
-                            <li><button class="pf-c-dropdown__menu-item pf-m-danger" data-action="destroy">Destroy</button></li>
+                        <ul class="pf-v6-c-menu__list" hidden>
+                            <li><button class="pf-v6-c-menu__list-item" data-action="details">Details</button></li>
+                            <li><button class="pf-v6-c-menu__list-item" data-action="export">Export</button></li>
+                            <li><button class="pf-v6-c-menu__list-item pf-v6-m-danger" data-action="destroy">Destroy</button></li>
                         </ul>
                     </div>
                 </td>
@@ -374,9 +374,9 @@
             });
 
             // Actions menu
-            const dropdown = row.querySelector('.pf-c-dropdown');
-            const toggle = dropdown?.querySelector('.pf-c-dropdown__toggle');
-            const menu = dropdown?.querySelector('.pf-c-dropdown__menu');
+            const dropdown = row.querySelector('.pf-v6-c-menu');
+            const toggle = dropdown?.querySelector('.pf-v6-c-menu-toggle');
+            const menu = dropdown?.querySelector('.pf-v6-c-menu__list');
             
             if (toggle && menu) {
                 toggle.addEventListener('click', (e) => {
@@ -403,42 +403,42 @@
             icon.className = 'fa fa-angle-down';
 
             const detailsRow = document.createElement('tr');
-            detailsRow.className = 'pf-c-table__tr pool-details';
+            detailsRow.className = 'pf-v6-c-table__tr pool-details';
             detailsRow.innerHTML = `
-                <td class="pf-c-table__td" colspan="11">
-                    <div class="pf-c-tabs">
-                        <ul class="pf-c-tabs__list">
-                            <li class="pf-c-tabs__item pf-m-current">
-                                <button class="pf-c-tabs__link" data-tab="filesystems">File Systems</button>
+                <td class="pf-v6-c-table__td" colspan="11">
+                    <div class="pf-v6-c-tabs">
+                        <ul class="pf-v6-c-tabs__list">
+                            <li class="pf-v6-c-tabs__item pf-v6-m-current">
+                                <button class="pf-v6-c-tabs__link" data-tab="filesystems">File Systems</button>
                             </li>
-                            <li class="pf-c-tabs__item">
-                                <button class="pf-c-tabs__link" data-tab="snapshots">Snapshots</button>
+                            <li class="pf-v6-c-tabs__item">
+                                <button class="pf-v6-c-tabs__link" data-tab="snapshots">Snapshots</button>
                             </li>
-                            <li class="pf-c-tabs__item">
-                                <button class="pf-c-tabs__link" data-tab="status">Status</button>
+                            <li class="pf-v6-c-tabs__item">
+                                <button class="pf-v6-c-tabs__link" data-tab="status">Status</button>
                             </li>
                         </ul>
                     </div>
                     <div class="tab-content">
                         <div class="tab-pane active" data-tab="filesystems">
-                            <div class="pf-c-spinner pf-m-xl" role="progressbar" aria-valuetext="Loading...">
-                                <span class="pf-c-spinner__clipper"></span>
-                                <span class="pf-c-spinner__lead-ball"></span>
-                                <span class="pf-c-spinner__tail-ball"></span>
+                            <div class="pf-v6-c-spinner pf-v6-m-xl" role="progressbar" aria-valuetext="Loading...">
+                                <span class="pf-v6-c-spinner__clipper"></span>
+                                <span class="pf-v6-c-spinner__lead-ball"></span>
+                                <span class="pf-v6-c-spinner__tail-ball"></span>
                             </div>
                         </div>
                         <div class="tab-pane" data-tab="snapshots" style="display: none;">
-                            <div class="pf-c-spinner pf-m-xl" role="progressbar" aria-valuetext="Loading...">
-                                <span class="pf-c-spinner__clipper"></span>
-                                <span class="pf-c-spinner__lead-ball"></span>
-                                <span class="pf-c-spinner__tail-ball"></span>
+                            <div class="pf-v6-c-spinner pf-v6-m-xl" role="progressbar" aria-valuetext="Loading...">
+                                <span class="pf-v6-c-spinner__clipper"></span>
+                                <span class="pf-v6-c-spinner__lead-ball"></span>
+                                <span class="pf-v6-c-spinner__tail-ball"></span>
                             </div>
                         </div>
                         <div class="tab-pane" data-tab="status" style="display: none;">
-                            <div class="pf-c-spinner pf-m-xl" role="progressbar" aria-valuetext="Loading...">
-                                <span class="pf-c-spinner__clipper"></span>
-                                <span class="pf-c-spinner__lead-ball"></span>
-                                <span class="pf-c-spinner__tail-ball"></span>
+                            <div class="pf-v6-c-spinner pf-v6-m-xl" role="progressbar" aria-valuetext="Loading...">
+                                <span class="pf-v6-c-spinner__clipper"></span>
+                                <span class="pf-v6-c-spinner__lead-ball"></span>
+                                <span class="pf-v6-c-spinner__tail-ball"></span>
                             </div>
                         </div>
                     </div>
@@ -471,10 +471,10 @@
 
         switchTab(detailsRow, tabName) {
             // Update tab buttons
-            detailsRow.querySelectorAll('.pf-c-tabs__item').forEach(item => {
-                item.classList.remove('pf-m-current');
+            detailsRow.querySelectorAll('.pf-v6-c-tabs__item').forEach(item => {
+                item.classList.remove('pf-v6-m-current');
             });
-            detailsRow.querySelector(`[data-tab="${tabName}"]`).closest('.pf-c-tabs__item').classList.add('pf-m-current');
+            detailsRow.querySelector(`[data-tab="${tabName}"]`).closest('.pf-v6-c-tabs__item').classList.add('pf-v6-m-current');
 
             // Update content
             detailsRow.querySelectorAll('.tab-pane').forEach(pane => {
@@ -552,51 +552,51 @@
             }
 
             let html = `
-                <div class="pf-c-toolbar">
-                    <div class="pf-c-toolbar__content">
-                        <div class="pf-c-toolbar__content-section">
-                            <button class="pf-c-button pf-m-primary" data-action="create-filesystem">
+                <div class="pf-v6-c-toolbar">
+                    <div class="pf-v6-c-toolbar__content">
+                        <div class="pf-v6-c-toolbar__content-section">
+                            <button class="pf-v6-c-button pf-v6-m-primary" data-action="create-filesystem">
                                 <i class="fa fa-plus" aria-hidden="true"></i> Create File System
                             </button>
                         </div>
                     </div>
                 </div>
-                <div class="pf-c-table">
-                    <table class="pf-c-table__table" role="table">
+                <div class="pf-v6-c-table">
+                    <table class="pf-v6-c-table__table" role="table">
                         <thead>
-                            <tr class="pf-c-table__tr">
-                                <th class="pf-c-table__th">Name</th>
-                                <th class="pf-c-table__th">Used</th>
-                                <th class="pf-c-table__th">Available</th>
-                                <th class="pf-c-table__th">Referenced</th>
-                                <th class="pf-c-table__th">Mountpoint</th>
-                                <th class="pf-c-table__th">Type</th>
-                                <th class="pf-c-table__th">Encryption</th>
-                                <th class="pf-c-table__th">Actions</th>
+                            <tr class="pf-v6-c-table__tr">
+                                <th class="pf-v6-c-table__th">Name</th>
+                                <th class="pf-v6-c-table__th">Used</th>
+                                <th class="pf-v6-c-table__th">Available</th>
+                                <th class="pf-v6-c-table__th">Referenced</th>
+                                <th class="pf-v6-c-table__th">Mountpoint</th>
+                                <th class="pf-v6-c-table__th">Type</th>
+                                <th class="pf-v6-c-table__th">Encryption</th>
+                                <th class="pf-v6-c-table__th">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="pf-c-table__tbody">
+                        <tbody class="pf-v6-c-table__tbody">
             `;
 
             filesystems.forEach(fs => {
                 html += `
-                    <tr class="pf-c-table__tr">
-                        <td class="pf-c-table__td">${Utils.escapeHtml(fs.name)}</td>
-                        <td class="pf-c-table__td">${Utils.escapeHtml(fs.used)}</td>
-                        <td class="pf-c-table__td">${Utils.escapeHtml(fs.avail)}</td>
-                        <td class="pf-c-table__td">${Utils.escapeHtml(fs.refer)}</td>
-                        <td class="pf-c-table__td">${Utils.escapeHtml(fs.mountpoint)}</td>
-                        <td class="pf-c-table__td">${Utils.escapeHtml(fs.type)}</td>
-                        <td class="pf-c-table__td">${fs.encryption !== 'off' ? '<span class="pf-c-label pf-m-blue"><i class="fa fa-lock"></i> Encrypted</span>' : '-'}</td>
-                        <td class="pf-c-table__td">
-                            <div class="pf-c-dropdown">
-                                <button class="pf-c-dropdown__toggle pf-m-plain" type="button">
+                    <tr class="pf-v6-c-table__tr">
+                        <td class="pf-v6-c-table__td">${Utils.escapeHtml(fs.name)}</td>
+                        <td class="pf-v6-c-table__td">${Utils.escapeHtml(fs.used)}</td>
+                        <td class="pf-v6-c-table__td">${Utils.escapeHtml(fs.avail)}</td>
+                        <td class="pf-v6-c-table__td">${Utils.escapeHtml(fs.refer)}</td>
+                        <td class="pf-v6-c-table__td">${Utils.escapeHtml(fs.mountpoint)}</td>
+                        <td class="pf-v6-c-table__td">${Utils.escapeHtml(fs.type)}</td>
+                        <td class="pf-v6-c-table__td">${fs.encryption !== 'off' ? '<span class="pf-v6-c-label pf-v6-m-blue"><i class="fa fa-lock"></i> Encrypted</span>' : '-'}</td>
+                        <td class="pf-v6-c-table__td">
+                            <div class="pf-v6-c-menu">
+                                <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button">
                                     <i class="fa fa-ellipsis-v"></i>
                                 </button>
-                                <ul class="pf-c-dropdown__menu" hidden>
-                                    <li><button class="pf-c-dropdown__menu-item" data-action="snapshot">Create Snapshot</button></li>
-                                    <li><button class="pf-c-dropdown__menu-item" data-action="clone">Clone</button></li>
-                                    <li><button class="pf-c-dropdown__menu-item pf-m-danger" data-action="destroy">Destroy</button></li>
+                                <ul class="pf-v6-c-menu__list" hidden>
+                                    <li><button class="pf-v6-c-menu__list-item" data-action="snapshot">Create Snapshot</button></li>
+                                    <li><button class="pf-v6-c-menu__list-item" data-action="clone">Clone</button></li>
+                                    <li><button class="pf-v6-c-menu__list-item pf-v6-m-danger" data-action="destroy">Destroy</button></li>
                                 </ul>
                             </div>
                         </td>
@@ -613,9 +613,9 @@
             });
 
             // Filesystem action dropdowns
-            container.querySelectorAll('.pf-c-dropdown').forEach(dropdown => {
-                const toggle = dropdown.querySelector('.pf-c-dropdown__toggle');
-                const menu = dropdown.querySelector('.pf-c-dropdown__menu');
+            container.querySelectorAll('.pf-v6-c-menu').forEach(dropdown => {
+                const toggle = dropdown.querySelector('.pf-v6-c-menu-toggle');
+                const menu = dropdown.querySelector('.pf-v6-c-menu__list');
                 
                 if (toggle && menu) {
                     toggle.addEventListener('click', (e) => {
@@ -679,10 +679,10 @@
 
         renderSnapshots(snapshots, container, pool) {
             let html = `
-                <div class="pf-c-toolbar">
-                    <div class="pf-c-toolbar__content">
-                        <div class="pf-c-toolbar__content-section">
-                            <button class="pf-c-button pf-m-primary" data-action="create-snapshot">
+                <div class="pf-v6-c-toolbar">
+                    <div class="pf-v6-c-toolbar__content">
+                        <div class="pf-v6-c-toolbar__content-section">
+                            <button class="pf-v6-c-button pf-v6-m-primary" data-action="create-snapshot">
                                 <i class="fa fa-plus" aria-hidden="true"></i> Create Snapshot
                             </button>
                         </div>
@@ -700,36 +700,36 @@
             }
 
             html += `
-                <div class="pf-c-table">
-                    <table class="pf-c-table__table" role="table">
+                <div class="pf-v6-c-table">
+                    <table class="pf-v6-c-table__table" role="table">
                         <thead>
-                            <tr class="pf-c-table__tr">
-                                <th class="pf-c-table__th">Name</th>
-                                <th class="pf-c-table__th">Used</th>
-                                <th class="pf-c-table__th">Referenced</th>
-                                <th class="pf-c-table__th">Creation</th>
-                                <th class="pf-c-table__th">Actions</th>
+                            <tr class="pf-v6-c-table__tr">
+                                <th class="pf-v6-c-table__th">Name</th>
+                                <th class="pf-v6-c-table__th">Used</th>
+                                <th class="pf-v6-c-table__th">Referenced</th>
+                                <th class="pf-v6-c-table__th">Creation</th>
+                                <th class="pf-v6-c-table__th">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="pf-c-table__tbody">
+                        <tbody class="pf-v6-c-table__tbody">
             `;
 
             snapshots.forEach(snap => {
                 html += `
-                    <tr class="pf-c-table__tr">
-                        <td class="pf-c-table__td">${Utils.escapeHtml(snap.name)}</td>
-                        <td class="pf-c-table__td">${Utils.escapeHtml(snap.used)}</td>
-                        <td class="pf-c-table__td">${Utils.escapeHtml(snap.refer)}</td>
-                        <td class="pf-c-table__td">${Utils.escapeHtml(snap.creation)}</td>
-                        <td class="pf-c-table__td">
-                            <div class="pf-c-dropdown">
-                                <button class="pf-c-dropdown__toggle pf-m-plain" type="button">
+                    <tr class="pf-v6-c-table__tr">
+                        <td class="pf-v6-c-table__td">${Utils.escapeHtml(snap.name)}</td>
+                        <td class="pf-v6-c-table__td">${Utils.escapeHtml(snap.used)}</td>
+                        <td class="pf-v6-c-table__td">${Utils.escapeHtml(snap.refer)}</td>
+                        <td class="pf-v6-c-table__td">${Utils.escapeHtml(snap.creation)}</td>
+                        <td class="pf-v6-c-table__td">
+                            <div class="pf-v6-c-menu">
+                                <button class="pf-v6-c-menu-toggle pf-v6-m-plain" type="button">
                                     <i class="fa fa-ellipsis-v"></i>
                                 </button>
-                                <ul class="pf-c-dropdown__menu" hidden>
-                                    <li><button class="pf-c-dropdown__menu-item" data-action="clone">Clone</button></li>
-                                    <li><button class="pf-c-dropdown__menu-item" data-action="rollback">Rollback</button></li>
-                                    <li><button class="pf-c-dropdown__menu-item pf-m-danger" data-action="destroy">Destroy</button></li>
+                                <ul class="pf-v6-c-menu__list" hidden>
+                                    <li><button class="pf-v6-c-menu__list-item" data-action="clone">Clone</button></li>
+                                    <li><button class="pf-v6-c-menu__list-item" data-action="rollback">Rollback</button></li>
+                                    <li><button class="pf-v6-c-menu__list-item pf-v6-m-danger" data-action="destroy">Destroy</button></li>
                                 </ul>
                             </div>
                         </td>
@@ -746,9 +746,9 @@
             });
 
             // Snapshot action dropdowns
-            container.querySelectorAll('.pf-c-dropdown').forEach(dropdown => {
-                const toggle = dropdown.querySelector('.pf-c-dropdown__toggle');
-                const menu = dropdown.querySelector('.pf-c-dropdown__menu');
+            container.querySelectorAll('.pf-v6-c-menu').forEach(dropdown => {
+                const toggle = dropdown.querySelector('.pf-v6-c-menu-toggle');
+                const menu = dropdown.querySelector('.pf-v6-c-menu__list');
                 
                 if (toggle && menu) {
                     toggle.addEventListener('click', (e) => {
@@ -781,7 +781,7 @@
 
                 proc.done((exitCode) => {
                     if (exitCode === 0) {
-                        container.innerHTML = `<pre class="pf-c-code-block">${Utils.escapeHtml(output)}</pre>`;
+                        container.innerHTML = `<pre class="pf-v6-c-code-block">${Utils.escapeHtml(output)}</pre>`;
                     } else {
                         container.innerHTML = '<p class="text-danger">Failed to load status</p>';
                     }
@@ -811,7 +811,7 @@
 
         showPoolDetails(pool) {
             const modal = new Modal(`Pool Details: ${pool.name}`, 
-                `<pre class="pf-c-code-block">Loading...</pre>`, 
+                `<pre class="pf-v6-c-code-block">Loading...</pre>`, 
                 { footer: false });
             modal.show();
 
@@ -819,24 +819,24 @@
             let output = '';
             proc.stream((data) => output += data);
             proc.done(() => {
-                modal.modal.querySelector('.pf-c-code-block').textContent = output;
+                modal.modal.querySelector('.pf-v6-c-code-block').textContent = output;
             });
         }
 
         showCreatePoolModal() {
             const content = `
                 <form id="create-pool-form">
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label" for="pool-name">
-                            <span class="pf-c-form__label-text">Pool Name</span>
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label" for="pool-name">
+                            <span class="pf-v6-c-form__label-text">Pool Name</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="pool-name" name="name" required>
+                        <input class="pf-v6-c-form-control" type="text" id="pool-name" name="name" required>
                     </div>
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label" for="pool-vdev-type">
-                            <span class="pf-c-form__label-text">VDEV Type</span>
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label" for="pool-vdev-type">
+                            <span class="pf-v6-c-form__label-text">VDEV Type</span>
                         </label>
-                        <select class="pf-c-form-control" id="pool-vdev-type" name="vdevType" required>
+                        <select class="pf-v6-c-form-control" id="pool-vdev-type" name="vdevType" required>
                             <option value="stripe">Stripe (No redundancy)</option>
                             <option value="mirror">Mirror</option>
                             <option value="raidz">RAID-Z (single parity)</option>
@@ -844,13 +844,13 @@
                             <option value="raidz3">RAID-Z3 (triple parity)</option>
                         </select>
                     </div>
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label" for="pool-devices">
-                            <span class="pf-c-form__label-text">Devices</span>
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label" for="pool-devices">
+                            <span class="pf-v6-c-form__label-text">Devices</span>
                         </label>
-                        <textarea class="pf-c-form-control" id="pool-devices" name="devices" 
+                        <textarea class="pf-v6-c-form-control" id="pool-devices" name="devices" 
                                   placeholder="/dev/sdb /dev/sdc" required></textarea>
-                        <div class="pf-c-form__helper-text">Space-separated list of devices</div>
+                        <div class="pf-v6-c-form__helper-text">Space-separated list of devices</div>
                     </div>
                 </form>
             `;
@@ -913,12 +913,12 @@
         showImportPoolModal() {
             const content = `
                 <form id="import-pool-form">
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label" for="import-pool-name">
-                            <span class="pf-c-form__label-text">Pool Name (optional)</span>
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label" for="import-pool-name">
+                            <span class="pf-v6-c-form__label-text">Pool Name (optional)</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="import-pool-name" name="name">
-                        <div class="pf-c-form__helper-text">Leave empty to import all available pools</div>
+                        <input class="pf-v6-c-form-control" type="text" id="import-pool-name" name="name">
+                        <div class="pf-v6-c-form__helper-text">Leave empty to import all available pools</div>
                     </div>
                 </form>
             `;
@@ -963,23 +963,23 @@
         showCreateFileSystemModal(pool) {
             const content = `
                 <form id="create-filesystem-form">
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label" for="fs-name">
-                            <span class="pf-c-form__label-text">File System Name</span>
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label" for="fs-name">
+                            <span class="pf-v6-c-form__label-text">File System Name</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="fs-name" name="name" 
+                        <input class="pf-v6-c-form-control" type="text" id="fs-name" name="name" 
                                placeholder="${pool.name}/" required>
                     </div>
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label">
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label">
                             <input type="checkbox" id="fs-encrypted" name="encrypted"> Encrypted
                         </label>
                     </div>
-                    <div class="pf-c-form__group" id="fs-passphrase-group" style="display: none;">
-                        <label class="pf-c-form__label" for="fs-passphrase">
-                            <span class="pf-c-form__label-text">Passphrase</span>
+                    <div class="pf-v6-c-form__group" id="fs-passphrase-group" style="display: none;">
+                        <label class="pf-v6-c-form__label" for="fs-passphrase">
+                            <span class="pf-v6-c-form__label-text">Passphrase</span>
                         </label>
-                        <input class="pf-c-form-control" type="password" id="fs-passphrase" name="passphrase">
+                        <input class="pf-v6-c-form-control" type="password" id="fs-passphrase" name="passphrase">
                     </div>
                 </form>
             `;
@@ -1062,20 +1062,20 @@
         showUnlockFileSystemsModal() {
             const content = `
                 <form id="unlock-filesystems-form">
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label" for="unlock-pool">
-                            <span class="pf-c-form__label-text">Pool Name</span>
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label" for="unlock-pool">
+                            <span class="pf-v6-c-form__label-text">Pool Name</span>
                         </label>
-                        <select class="pf-c-form-control" id="unlock-pool" name="pool" required>
+                        <select class="pf-v6-c-form-control" id="unlock-pool" name="pool" required>
                             <option value="">Select a pool...</option>
                             ${this.pools.map(p => `<option value="${Utils.escapeHtml(p.name)}">${Utils.escapeHtml(p.name)}</option>`).join('')}
                         </select>
                     </div>
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label" for="unlock-passphrase">
-                            <span class="pf-c-form__label-text">Passphrase</span>
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label" for="unlock-passphrase">
+                            <span class="pf-v6-c-form__label-text">Passphrase</span>
                         </label>
-                        <input class="pf-c-form-control" type="password" id="unlock-passphrase" name="passphrase" required>
+                        <input class="pf-v6-c-form-control" type="password" id="unlock-passphrase" name="passphrase" required>
                     </div>
                 </form>
             `;
@@ -1125,12 +1125,12 @@
 
         showConfigureModal() {
             const content = `
-                <div class="pf-c-alert pf-m-info">
-                    <div class="pf-c-alert__icon">
+                <div class="pf-v6-c-alert pf-v6-m-info">
+                    <div class="pf-v6-c-alert__icon">
                         <i class="fa fa-info-circle" aria-hidden="true"></i>
                     </div>
-                    <h4 class="pf-c-alert__title">Configuration</h4>
-                    <div class="pf-c-alert__description">
+                    <h4 class="pf-v6-c-alert__title">Configuration</h4>
+                    <div class="pf-v6-c-alert__description">
                         <p>Configuration options will be available in a future release.</p>
                     </div>
                 </div>
@@ -1185,13 +1185,13 @@
         showCreateSnapshotModal(pool, filesystem = null) {
             const content = `
                 <form id="create-snapshot-form">
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label" for="snapshot-name">
-                            <span class="pf-c-form__label-text">Snapshot Name</span>
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label" for="snapshot-name">
+                            <span class="pf-v6-c-form__label-text">Snapshot Name</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="snapshot-name" name="name" 
+                        <input class="pf-v6-c-form-control" type="text" id="snapshot-name" name="name" 
                                placeholder="${filesystem || pool.name}@snapshot-name" required>
-                        <div class="pf-c-form__helper-text">Format: filesystem@snapshot-name</div>
+                        <div class="pf-v6-c-form__helper-text">Format: filesystem@snapshot-name</div>
                     </div>
                 </form>
             `;
@@ -1250,12 +1250,12 @@
         showCloneFileSystemModal(fsName) {
             const content = `
                 <form id="clone-filesystem-form">
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label" for="clone-name">
-                            <span class="pf-c-form__label-text">Clone Name</span>
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label" for="clone-name">
+                            <span class="pf-v6-c-form__label-text">Clone Name</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="clone-name" name="name" required>
-                        <div class="pf-c-form__helper-text">Name for the cloned file system</div>
+                        <input class="pf-v6-c-form-control" type="text" id="clone-name" name="name" required>
+                        <div class="pf-v6-c-form__helper-text">Name for the cloned file system</div>
                     </div>
                 </form>
             `;
@@ -1300,12 +1300,12 @@
         showCloneSnapshotModal(snapName) {
             const content = `
                 <form id="clone-snapshot-form">
-                    <div class="pf-c-form__group">
-                        <label class="pf-c-form__label" for="clone-snapshot-name">
-                            <span class="pf-c-form__label-text">Clone Name</span>
+                    <div class="pf-v6-c-form__group">
+                        <label class="pf-v6-c-form__label" for="clone-snapshot-name">
+                            <span class="pf-v6-c-form__label-text">Clone Name</span>
                         </label>
-                        <input class="pf-c-form-control" type="text" id="clone-snapshot-name" name="name" required>
-                        <div class="pf-c-form__helper-text">Name for the cloned file system from snapshot</div>
+                        <input class="pf-v6-c-form-control" type="text" id="clone-snapshot-name" name="name" required>
+                        <div class="pf-v6-c-form__helper-text">Name for the cloned file system from snapshot</div>
                     </div>
                 </form>
             `;

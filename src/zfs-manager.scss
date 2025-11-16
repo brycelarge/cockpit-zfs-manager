@@ -90,3 +90,25 @@
     max-width: 400px;
 }
 
+// Modal backdrop (PatternFly 6 doesn't include a backdrop component)
+.pf-v6-c-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: calc(var(--pf-t--global--z-index--xl) - 1);
+}
+
+// Ensure modal is positioned correctly
+.pf-v6-c-modal-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: var(--pf-t--global--z-index--xl);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
