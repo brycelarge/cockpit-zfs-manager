@@ -14,7 +14,7 @@ A modern Cockpit plugin for managing ZFS pools, datasets, and snapshots. Built w
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/cockpit-zfs-manager.git
+   git clone https://github.com/brycelarge/cockpit-zfs-manager.git
    cd cockpit-zfs-manager
    ```
 
@@ -34,7 +34,7 @@ Done! The plugin will appear in Cockpit's sidebar.
 
 On your server:
 ```bash
-git clone https://github.com/YOUR-USERNAME/cockpit-zfs-manager.git
+git clone https://github.com/brycelarge/cockpit-zfs-manager.git
 cd cockpit-zfs-manager
 sudo cp -r zfs-manager /usr/share/cockpit/
 sudo systemctl restart cockpit
