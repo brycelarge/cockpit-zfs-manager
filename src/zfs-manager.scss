@@ -4,6 +4,7 @@
 
 // Import PatternFly components (using short paths like cockpit-machines)
 @use "@patternfly/patternfly/components/Page/page.scss";
+@use "@patternfly/patternfly/components/Card/card.scss";
 @use "@patternfly/patternfly/components/Table/table.scss";
 @use "@patternfly/patternfly/components/Button/button.scss";
 @use "@patternfly/patternfly/components/Menu/menu.scss";
@@ -106,7 +107,7 @@
     position: fixed;
     top: var(--pf-t--global--spacer--md);
     right: var(--pf-t--global--spacer--md);
-    z-index: var(--pf-t--global--ZIndex--2xl);
+    z-index: 9999;
     max-width: 400px;
 }
 
@@ -135,5 +136,10 @@
     z-index: var(--pf-t--global--z-index--xl);
     max-height: 90vh;
     overflow-y: auto;
+}
+
+// Ensure table is full width inside card
+.pf-v6-c-card .pf-v6-c-table {
+    width: 100%;
 }
 
