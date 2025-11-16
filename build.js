@@ -35,7 +35,8 @@ function build() {
     try {
         const sassPath = path.join(__dirname, 'node_modules', '.bin', 'sass');
         const sassCmd = fs.existsSync(sassPath) ? sassPath : 'npx sass';
-        execSync(`${sassCmd} --quiet-deps ${path.join(srcDir, 'zfs-manager.scss')} ${path.join(distDir, 'zfs-manager.css')}`, { stdio: 'inherit' });
+        // Suppress deprecation warnings from PatternFly dependencies (they're harmless)
+        execSync(`${sassCmd} --quiet-deps --quiet ${path.join(srcDir, 'zfs-manager.scss')} ${path.join(distDir, 'zfs-manager.css')}`, { stdio: 'inherit' });
     } catch (error) {
         console.error('SCSS compilation failed:', error.message);
         process.exit(1);
