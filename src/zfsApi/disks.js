@@ -44,26 +44,38 @@ export class DisksApi {
                     for (const line of lines) {
                         const trimmed = line.trim();
                         
-                        // Device table starts with "NAME" header
+                        // Device table starts with "NAME" header (can be indented)
                         if (trimmed.startsWith('NAME') || trimmed.match(/^\s*NAME\s+STATE\s+READ\s+WRITE\s+CHECKSUM/)) {
                             inDeviceTable = true;
                             continue;
                         }
                         
-                        // Parse device rows
-                        if (inDeviceTable && trimmed && !trimmed.startsWith('pool:') && !trimmed.startsWith('state:')) {
+                        // Stop parsing if we hit a new section (pool:, state:, etc.)
+                        if (trimmed.startsWith('pool:') || trimmed.startsWith('state:') || trimmed.startsWith('status:') || trimmed.startsWith('action:') || trimmed.startsWith('scan:') || trimmed.startsWith('errors:')) {
+                            inDeviceTable = false;
+                            continue;
+                        }
+                        
+                        // Parse device rows (can be indented)
+                        if (inDeviceTable && trimmed) {
                             // Skip separator lines
                             if (trimmed.match(/^-+$/)) continue;
                             
-                            // Skip the pool name row itself
-                            if (trimmed.startsWith(poolName + ' ')) continue;
+                            // Skip empty lines
+                            if (!trimmed) continue;
                             
+                            // Skip the pool name row itself (exact match or starts with pool name)
+                            if (trimmed === poolName || trimmed.startsWith(poolName + ' ') || trimmed.startsWith(poolName + '\t')) {
+                                continue;
+                            }
+                            
+                            // Split by whitespace (handles both spaces and tabs)
                             const parts = trimmed.split(/\s+/);
-                            if (parts.length >= 2) {
+                            if (parts.length >= 1) {
                                 const deviceName = parts[0];
                                 
                                 // Only process /dev/ paths (physical devices)
-                                if (deviceName.startsWith('/dev/')) {
+                                if (deviceName && deviceName.startsWith('/dev/')) {
                                     if (!deviceSet.has(deviceName)) {
                                         deviceSet.add(deviceName);
                                         
@@ -79,8 +91,28 @@ export class DisksApi {
                                 }
                             }
                         }
+                        
+                        // Also check for /dev/ paths anywhere in the output (fallback)
+                        // This catches cases where devices might be listed differently
+                        if (!inDeviceTable && trimmed.includes('/dev/')) {
+                            const devMatch = trimmed.match(/(\/dev\/[^\s]+)/g);
+                            if (devMatch) {
+                                for (const devPath of devMatch) {
+                                    if (!deviceSet.has(devPath) && devPath.startsWith('/dev/')) {
+                                        deviceSet.add(devPath);
+                                        const deviceShortName = devPath.replace('/dev/', '');
+                                        devices.push({
+                                            path: devPath,
+                                            name: deviceShortName,
+                                            type: DisksApi.getDeviceType(devPath)
+                                        });
+                                    }
+                                }
+                            }
+                        }
                     }
                     
+                    console.log(`Found ${devices.length} devices for pool ${poolName}:`, devices);
                     resolve(devices);
                 } else {
                     reject(new Error(`Failed to get pool devices: exit code ${exitCode}`));

@@ -21,8 +21,10 @@ function DisksTab({ pool }) {
         setError(null);
         try {
             const diskList = await DisksApi.getPoolDisks(pool.name);
+            console.log('Loaded disks for pool', pool.name, ':', diskList);
             setDisks(diskList);
         } catch (exc) {
+            console.error('Failed to load disks:', exc);
             setError(exc.message || String(exc));
         } finally {
             setLoading(false);
