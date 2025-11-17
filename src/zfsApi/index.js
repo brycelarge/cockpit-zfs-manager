@@ -2,7 +2,7 @@ const cockpit = window.cockpit;
 
 export class ZfsApi {
     static async listPools() {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const pools = [];
             const proc = cockpit.spawn(['zpool', 'list', '-H', '-o', 'name,size,allocated,free,fragmentation,health'], {
                 err: 'message'
@@ -25,12 +25,20 @@ export class ZfsApi {
                 });
             });
 
-            proc.done((exitCode, data) => {
+            proc.done(async (exitCode, data) => {
                 // Exit code 0 means success
                 // Exit code 1 typically means no pools found, which is fine - return empty array
                 // null/undefined/empty exit code means process completed (treat as success)
                 // If we have pool data, always resolve successfully regardless of exit code
                 if (pools.length > 0 || exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    // Get vdev type for each pool
+                    for (const pool of pools) {
+                        try {
+                            pool.vdevType = await this.getPoolVdevType(pool.name);
+                        } catch {
+                            pool.vdevType = 'stripe'; // Default to stripe if detection fails
+                        }
+                    }
                     resolve(pools);
                 } else {
                     // For other exit codes, check if there's an error message
@@ -675,6 +683,77 @@ export class ZfsApi {
                 } else {
                     const errorMsg = data || `zpool add exited with code ${exitCode}`;
                     reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    // Get pool VDEV type (RAID configuration)
+    static async getPoolVdevType(poolName) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zpool', 'status', poolName], {
+                err: 'message'
+            });
+            let output = '';
+
+            proc.stream((data) => {
+                output += data;
+            });
+
+            proc.done((exitCode) => {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (output.trim().length > 0 || exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    const lines = output.split('\n');
+                    let vdevType = 'stripe'; // Default to stripe
+                    
+                    // Look for vdev type in the status output
+                    // Format: "pool: poolname" followed by vdev configuration
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        
+                        // Look for the pool name line, then check the next lines for vdev info
+                        if (line.startsWith('pool:') || line.startsWith('NAME')) {
+                            // Check subsequent lines for vdev type indicators
+                            for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
+                                const nextLine = lines[j].trim();
+                                
+                                // Check for mirror
+                                if (nextLine.includes('mirror') || nextLine.match(/^\s+mirror-/)) {
+                                    vdevType = 'mirror';
+                                    break;
+                                }
+                                // Check for raidz3
+                                if (nextLine.includes('raidz3') || nextLine.match(/^\s+raidz3-/)) {
+                                    vdevType = 'raidz3';
+                                    break;
+                                }
+                                // Check for raidz2
+                                if (nextLine.includes('raidz2') || nextLine.match(/^\s+raidz2-/)) {
+                                    vdevType = 'raidz2';
+                                    break;
+                                }
+                                // Check for raidz (must be after raidz2 and raidz3)
+                                if (nextLine.includes('raidz') || nextLine.match(/^\s+raidz-/)) {
+                                    vdevType = 'raidz';
+                                    break;
+                                }
+                                // If we see device paths directly after pool name, it's likely stripe
+                                if (nextLine.startsWith('/dev/') && !nextLine.includes('mirror') && !nextLine.includes('raidz')) {
+                                    vdevType = 'stripe';
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    
+                    resolve(vdevType);
+                } else {
+                    reject(new Error(`zpool status exited with code ${exitCode}`));
                 }
             });
 

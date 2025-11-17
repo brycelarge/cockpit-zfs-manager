@@ -75,14 +75,15 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                     aria-label="Storage pools"
                     variant="compact"
                     columns={[
-                        { title: "Name", header: true, props: { width: 15 } },
-                        { title: "Health", props: { width: 15 } },
-                        { title: "Size", props: { width: 15 } },
-                        { title: "Allocated", props: { width: 15 } },
-                        { title: "Free", props: { width: 15 } },
-                        { title: "Fragmentation", props: { width: 15 } },
-                        { title: "Usage", props: { width: 20 } },
-                        { title: "", props: { width: 15, "aria-label": "Actions" } },
+                        { title: "Name", header: true, props: { width: 12 } },
+                        { title: "RAID Type", props: { width: 12 } },
+                        { title: "Health", props: { width: 12 } },
+                        { title: "Size", props: { width: 12 } },
+                        { title: "Allocated", props: { width: 12 } },
+                        { title: "Free", props: { width: 12 } },
+                        { title: "Fragmentation", props: { width: 12 } },
+                        { title: "Usage", props: { width: 16 } },
+                        { title: "", props: { width: 12, "aria-label": "Actions" } },
                     ]}
                     emptyCaption="No storage pool is defined on this host"
                     rows={pools.map(pool => {
@@ -125,9 +126,23 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                             }
                         ];
 
+                        // Format vdev type for display
+                        const formatVdevType = (type) => {
+                            const types = {
+                                'stripe': 'Stripe',
+                                'mirror': 'Mirror',
+                                'raidz': 'RAID-Z',
+                                'raidz2': 'RAID-Z2',
+                                'raidz3': 'RAID-Z3',
+                                'Unknown': 'Unknown'
+                            };
+                            return types[type] || type || 'Stripe';
+                        };
+
                         return {
                             columns: [
                                 { title: pool.name, header: true },
+                                { title: formatVdevType(pool.vdevType) },
                                 { title: pool.health },
                                 { title: pool.size },
                                 { title: pool.allocated },
