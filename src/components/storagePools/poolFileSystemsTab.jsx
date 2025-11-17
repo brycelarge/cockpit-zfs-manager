@@ -117,11 +117,11 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
     };
 
     // Render tree nodes recursively
-    const renderTreeNodes = (nodes, level = 0) => {
+    const renderTreeNodes = (nodes, level = 0, expandedSet = expandedNodes) => {
         const rows = [];
         
         nodes.forEach(node => {
-            const isExpanded = expandedNodes.has(node.name);
+            const isExpanded = expandedSet.has(node.name);
             const hasChildren = node.children.length > 0;
             const usagePercent = calculateUsagePercent(node.used, node.quota, node.available);
             const compressionRatio = formatCompressionRatio(node.compressratio);
@@ -279,7 +279,7 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
 
             // Add children if expanded
             if (hasChildren && isExpanded) {
-                rows.push(...renderTreeNodes(node.children, level + 1));
+                rows.push(...renderTreeNodes(node.children, level + 1, expandedSet));
             }
         });
 
