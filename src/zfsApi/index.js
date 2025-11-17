@@ -195,14 +195,23 @@ export class ZfsApi {
                 if (exitCode === 0) {
                     resolve();
                 } else {
-                    const errorMsg = errorOutput || data || `zpool create exited with code ${exitCode}`;
+                    // Prefer errorOutput (stderr) over data (stdout)
+                    const errorMsg = errorOutput.trim() || data || `zpool create exited with code ${exitCode}`;
                     reject(new Error(errorMsg));
                 }
             });
 
             proc.fail((error) => {
                 // Cockpit error objects have a message property
-                const errorMsg = error?.message || error?.toString() || String(error) || 'Failed to create pool';
+                // Handle both Error objects and plain cockpit error objects
+                let errorMsg = 'Failed to create pool';
+                if (error instanceof Error) {
+                    errorMsg = error.message;
+                } else if (error && typeof error === 'object') {
+                    errorMsg = error.message || error.toString() || String(error);
+                } else {
+                    errorMsg = String(error);
+                }
                 reject(new Error(errorMsg));
             });
         });
