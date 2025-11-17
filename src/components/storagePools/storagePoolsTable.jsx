@@ -16,7 +16,7 @@ import PoolStatusTab from './poolStatusTab.jsx';
 import UnlockFileSystemsDialog from './unlockFileSystemsDialog.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
 
-function StoragePoolsTable({ pools, loading, onRefresh }) {
+function StoragePoolsTableContent({ pools, loading, onRefresh }) {
     const Dialogs = useDialogs();
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
@@ -68,7 +68,7 @@ function StoragePoolsTable({ pools, loading, onRefresh }) {
     }
 
     return (
-        <WithDialogs>
+        <>
             <Card isPlain>
                 <CardHeader actions={{ actions }}>
                     <CardTitle component="h2">Storage Pools</CardTitle>
@@ -131,6 +131,14 @@ function StoragePoolsTable({ pools, loading, onRefresh }) {
                 onClose={() => setCreateDialogOpen(false)}
                 onCreate={handleCreatePool}
             />
+        </>
+    );
+}
+
+function StoragePoolsTable({ pools, loading, onRefresh }) {
+    return (
+        <WithDialogs>
+            <StoragePoolsTableContent pools={pools} loading={loading} onRefresh={onRefresh} />
         </WithDialogs>
     );
 }
