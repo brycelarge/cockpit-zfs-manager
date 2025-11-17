@@ -3,10 +3,21 @@ const cockpit = window.cockpit;
 export class SanoidApi {
     static async isInstalled() {
         return new Promise((resolve) => {
-            const proc = cockpit.spawn(['which', 'sanoid']);
+            // Try running sanoid --version directly - this is the most reliable way to check
+            // If sanoid is installed, this will succeed (exit code 0 or null/undefined)
+            // If not installed, it will fail with a clear error
+            const proc = cockpit.spawn(['sanoid', '--version'], { err: 'message' });
+            let output = '';
+            
+            proc.stream((data) => {
+                output += data;
+            });
+            
             proc.done((exitCode) => {
-                // Exit code 0 means found, null/undefined means process completed (treat as found)
-                resolve(exitCode === 0 || exitCode == null || exitCode === undefined);
+                // Exit code 0 means found and working
+                // null/undefined/empty exit code means process completed (treat as found if we got output)
+                // If we got output, sanoid is installed and working
+                resolve(exitCode === 0 || ((exitCode == null || exitCode === '' || exitCode === undefined) && output.trim().length > 0));
             });
             proc.fail(() => {
                 resolve(false);
