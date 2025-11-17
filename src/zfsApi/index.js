@@ -4,7 +4,9 @@ export class ZfsApi {
     static async listPools() {
         return new Promise((resolve, reject) => {
             const pools = [];
-            const proc = cockpit.spawn(['zpool', 'list', '-H', '-o', 'name,size,allocated,free,fragmentation,health']);
+            const proc = cockpit.spawn(['zpool', 'list', '-H', '-o', 'name,size,allocated,free,fragmentation,health'], {
+                err: 'message'
+            });
 
             proc.stream((data) => {
                 const lines = data.trim().split('\n');
@@ -23,11 +25,15 @@ export class ZfsApi {
                 });
             });
 
-            proc.done((exitCode) => {
-                if (exitCode === 0) {
+            proc.done((exitCode, data) => {
+                // Exit code 1 typically means no pools found, which is fine - return empty array
+                // Exit code 0 means success
+                if (exitCode === 0 || exitCode === 1) {
                     resolve(pools);
                 } else {
-                    reject(new Error(`zpool list exited with code ${exitCode}`));
+                    // For other exit codes, check if there's an error message
+                    const errorMsg = data || `zpool list exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
                 }
             });
 

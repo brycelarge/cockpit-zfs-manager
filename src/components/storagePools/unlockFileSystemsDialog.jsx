@@ -6,6 +6,7 @@ import {
 import { Form, FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import { FormSelect, FormSelectOption } from "@patternfly/react-core/dist/esm/components/FormSelect";
+import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 
 import { FormHelper } from 'cockpit-components-form-helper.jsx';
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
