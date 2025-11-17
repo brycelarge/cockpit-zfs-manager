@@ -1083,6 +1083,213 @@ export class ZfsApi {
         });
     }
 
+    // ZFS ARC Memory Statistics
+    static async getArcStats() {
+        return new Promise((resolve, reject) => {
+            // Try reading from /proc/spl/kstat/zfs/arcstats (Linux)
+            const proc = cockpit.spawn(['cat', '/proc/spl/kstat/zfs/arcstats'], {
+                err: 'message'
+            });
+            let output = '';
+
+            proc.stream((data) => {
+                output += data;
+            });
+
+            proc.done((exitCode) => {
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    const stats = {
+                        size: 0,
+                        max: 0,
+                        min: 0,
+                        metadata: 0,
+                        dnode: 0,
+                        dbuf: 0,
+                        available: false
+                    };
+
+                    // Parse arcstats file
+                    // Format: name type data
+                    // Example: size 4 1234567890
+                    const lines = output.split('\n');
+                    for (const line of lines) {
+                        const parts = line.trim().split(/\s+/);
+                        if (parts.length >= 3) {
+                            const name = parts[0];
+                            const value = parseInt(parts[2], 10);
+                            
+                            switch (name) {
+                                case 'size':
+                                    stats.size = value;
+                                    break;
+                                case 'c_max':
+                                    stats.max = value;
+                                    break;
+                                case 'c_min':
+                                    stats.min = value;
+                                    break;
+                                case 'metadata_size':
+                                    stats.metadata = value;
+                                    break;
+                                case 'dnode_size':
+                                    stats.dnode = value;
+                                    break;
+                                case 'dbuf_size':
+                                    stats.dbuf = value;
+                                    break;
+                            }
+                        }
+                    }
+
+                    // If we got any stats, mark as available
+                    if (stats.size > 0 || stats.max > 0) {
+                        stats.available = true;
+                    }
+
+                    resolve(stats);
+                } else {
+                    // If /proc/spl/kstat/zfs/arcstats doesn't exist, try arc_summary command
+                    const arcSummaryProc = cockpit.spawn(['arc_summary'], {
+                        err: 'message'
+                    });
+                    let arcOutput = '';
+
+                    arcSummaryProc.stream((data) => {
+                        arcOutput += data;
+                    });
+
+                    arcSummaryProc.done((arcExitCode) => {
+                        if (arcExitCode === 0 || arcExitCode == null || arcExitCode === '' || arcExitCode === undefined) {
+                            const stats = {
+                                size: 0,
+                                max: 0,
+                                min: 0,
+                                metadata: 0,
+                                dnode: 0,
+                                dbuf: 0,
+                                available: false
+                            };
+
+                            // Parse arc_summary output
+                            // Look for lines like "ARC size (current): 123.4 MiB"
+                            const sizeMatch = arcOutput.match(/ARC size \(current\):\s*([\d.]+)\s*(\w+)/i);
+                            if (sizeMatch) {
+                                stats.size = parseFloat(sizeMatch[1]) * parseSizeMultiplier(sizeMatch[2]);
+                                stats.available = true;
+                            }
+
+                            const maxMatch = arcOutput.match(/ARC size \(max\):\s*([\d.]+)\s*(\w+)/i);
+                            if (maxMatch) {
+                                stats.max = parseFloat(maxMatch[1]) * parseSizeMultiplier(maxMatch[2]);
+                            }
+
+                            resolve(stats);
+                        } else {
+                            // No ARC stats available
+                            resolve({
+                                size: 0,
+                                max: 0,
+                                min: 0,
+                                metadata: 0,
+                                dnode: 0,
+                                dbuf: 0,
+                                available: false
+                            });
+                        }
+                    });
+
+                    arcSummaryProc.fail(() => {
+                        resolve({
+                            size: 0,
+                            max: 0,
+                            min: 0,
+                            metadata: 0,
+                            dnode: 0,
+                            dbuf: 0,
+                            available: false
+                        });
+                    });
+                }
+            });
+
+            proc.fail(() => {
+                // Try arc_summary as fallback
+                const arcSummaryProc = cockpit.spawn(['arc_summary'], {
+                    err: 'message'
+                });
+                let arcOutput = '';
+
+                arcSummaryProc.stream((data) => {
+                    arcOutput += data;
+                });
+
+                arcSummaryProc.done((arcExitCode) => {
+                    if (arcExitCode === 0 || arcExitCode == null || arcExitCode === '' || arcExitCode === undefined) {
+                        const stats = {
+                            size: 0,
+                            max: 0,
+                            min: 0,
+                            metadata: 0,
+                            dnode: 0,
+                            dbuf: 0,
+                            available: false
+                        };
+
+                        const sizeMatch = arcOutput.match(/ARC size \(current\):\s*([\d.]+)\s*(\w+)/i);
+                        if (sizeMatch) {
+                            stats.size = parseFloat(sizeMatch[1]) * parseSizeMultiplier(sizeMatch[2]);
+                            stats.available = true;
+                        }
+
+                        const maxMatch = arcOutput.match(/ARC size \(max\):\s*([\d.]+)\s*(\w+)/i);
+                        if (maxMatch) {
+                            stats.max = parseFloat(maxMatch[1]) * parseSizeMultiplier(maxMatch[2]);
+                        }
+
+                        resolve(stats);
+                    } else {
+                        resolve({
+                            size: 0,
+                            max: 0,
+                            min: 0,
+                            metadata: 0,
+                            dnode: 0,
+                            dbuf: 0,
+                            available: false
+                        });
+                    }
+                });
+
+                arcSummaryProc.fail(() => {
+                    resolve({
+                        size: 0,
+                        max: 0,
+                        min: 0,
+                        metadata: 0,
+                        dnode: 0,
+                        dbuf: 0,
+                        available: false
+                    });
+                });
+            });
+        });
+
+        function parseSizeMultiplier(unit) {
+            const multipliers = {
+                'B': 1,
+                'KB': 1024,
+                'MB': 1024 ** 2,
+                'GB': 1024 ** 3,
+                'TB': 1024 ** 4,
+                'KiB': 1024,
+                'MiB': 1024 ** 2,
+                'GiB': 1024 ** 3,
+                'TiB': 1024 ** 4
+            };
+            return multipliers[unit] || 1;
+        }
+    }
+
     // Performance Statistics
     static async getIOStats(poolName, interval = 1) {
         return new Promise((resolve, reject) => {

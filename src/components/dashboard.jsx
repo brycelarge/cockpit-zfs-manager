@@ -60,6 +60,14 @@ function Dashboard({ pools, loading }) {
                 }
             }
 
+            // Get ZFS ARC memory stats
+            let arcStats = null;
+            try {
+                arcStats = await ZfsApi.getArcStats();
+            } catch (error) {
+                console.error('Failed to load ARC stats:', error);
+            }
+
             setStats({
                 totalPools: pools.length,
                 healthyPools,
@@ -70,7 +78,8 @@ function Dashboard({ pools, loading }) {
                 totalFree,
                 totalFilesystems,
                 totalSnapshots,
-                usagePercent: totalSize > 0 ? ((totalUsed / totalSize) * 100).toFixed(1) : 0
+                usagePercent: totalSize > 0 ? ((totalUsed / totalSize) * 100).toFixed(1) : 0,
+                arcStats
             });
         } catch (error) {
             console.error('Failed to load dashboard stats:', error);
@@ -205,6 +214,52 @@ function Dashboard({ pools, loading }) {
                     </DescriptionList>
                 </CardBody>
             </Card>
+
+            {stats.arcStats && stats.arcStats.available && (
+                <Card>
+                    <CardTitle>ZFS ARC Memory</CardTitle>
+                    <CardBody>
+                        <DescriptionList isHorizontal>
+                            <DescriptionListGroup>
+                                <DescriptionListTerm>Current Size</DescriptionListTerm>
+                                <DescriptionListDescription>{formatBytes(stats.arcStats.size)}</DescriptionListDescription>
+                            </DescriptionListGroup>
+                            {stats.arcStats.max > 0 && (
+                                <>
+                                    <DescriptionListGroup>
+                                        <DescriptionListTerm>Maximum Size</DescriptionListTerm>
+                                        <DescriptionListDescription>{formatBytes(stats.arcStats.max)}</DescriptionListDescription>
+                                    </DescriptionListGroup>
+                                    <DescriptionListGroup>
+                                        <DescriptionListTerm>Usage</DescriptionListTerm>
+                                        <DescriptionListDescription>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--sm)' }}>
+                                                <div style={{ flex: 1, height: '20px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                    <div
+                                                        style={{
+                                                            height: '100%',
+                                                            width: `${Math.min((stats.arcStats.size / stats.arcStats.max) * 100, 100).toFixed(1)}%`,
+                                                            backgroundColor: (stats.arcStats.size / stats.arcStats.max) > 0.9 ? '#c9190b' : (stats.arcStats.size / stats.arcStats.max) > 0.7 ? '#f0ab00' : '#3e8635',
+                                                            transition: 'width 0.3s ease'
+                                                        }}
+                                                    />
+                                                </div>
+                                                <span>{((stats.arcStats.size / stats.arcStats.max) * 100).toFixed(1)}%</span>
+                                            </div>
+                                        </DescriptionListDescription>
+                                    </DescriptionListGroup>
+                                </>
+                            )}
+                            {stats.arcStats.metadata > 0 && (
+                                <DescriptionListGroup>
+                                    <DescriptionListTerm>Metadata Cache</DescriptionListTerm>
+                                    <DescriptionListDescription>{formatBytes(stats.arcStats.metadata)}</DescriptionListDescription>
+                                </DescriptionListGroup>
+                            )}
+                        </DescriptionList>
+                    </CardBody>
+                </Card>
+            )}
         </div>
     );
 }
