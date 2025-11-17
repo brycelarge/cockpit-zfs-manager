@@ -219,26 +219,59 @@ Persistent=true
 WantedBy=timers.target
 `;
 
-            // Write files and enable timer
+            // Write files and enable timer using temp files
+            const serviceTemp = `/tmp/${serviceName}.$$`;
+            const timerTemp = `/tmp/${timerName}.$$`;
             const commands = [
-                `echo ${cockpit.escape(serviceContent)} > ${servicePath}`,
-                `echo ${cockpit.escape(timerContent)} > ${timerPath}`,
+                `cat > ${serviceTemp} && mv ${serviceTemp} ${servicePath}`,
+                `cat > ${timerTemp} && mv ${timerTemp} ${timerPath}`,
                 'systemctl daemon-reload',
                 `systemctl enable ${timerName}`,
                 `systemctl start ${timerName}`
             ].join(' && ');
 
-            const proc = cockpit.spawn(['sh', '-c', commands], { err: 'message' });
-
-            proc.done((exitCode) => {
-                if (exitCode === 0) {
-                    resolve();
-                } else {
-                    reject(new Error(`Failed to create systemd timer: exit code ${exitCode}`));
+            // Write service file
+            const serviceProc = cockpit.spawn(['sh', '-c', `cat > ${servicePath}`], { err: 'message' });
+            serviceProc.input(serviceContent);
+            
+            serviceProc.done(async (exitCode) => {
+                if (exitCode !== 0) {
+                    reject(new Error(`Failed to write service file: exit code ${exitCode}`));
+                    return;
                 }
+                
+                // Write timer file
+                const timerProc = cockpit.spawn(['sh', '-c', `cat > ${timerPath}`], { err: 'message' });
+                timerProc.input(timerContent);
+                
+                timerProc.done(async (timerExitCode) => {
+                    if (timerExitCode !== 0) {
+                        reject(new Error(`Failed to write timer file: exit code ${timerExitCode}`));
+                        return;
+                    }
+                    
+                    // Reload and enable
+                    const enableProc = cockpit.spawn(['sh', '-c', `systemctl daemon-reload && systemctl enable ${timerName} && systemctl start ${timerName}`], { err: 'message' });
+                    
+                    enableProc.done((enableExitCode) => {
+                        if (enableExitCode === 0) {
+                            resolve();
+                        } else {
+                            reject(new Error(`Failed to enable timer: exit code ${enableExitCode}`));
+                        }
+                    });
+                    
+                    enableProc.fail((error) => {
+                        reject(error);
+                    });
+                });
+                
+                timerProc.fail((error) => {
+                    reject(error);
+                });
             });
-
-            proc.fail((error) => {
+            
+            serviceProc.fail((error) => {
                 reject(error);
             });
         });
@@ -259,7 +292,9 @@ WantedBy=timers.target
 
             proc.done((exitCode) => {
                 const newCrontab = (currentCrontab || '') + '\n' + cronLine + '\n';
-                const writeProc = cockpit.spawn(['sh', '-c', `echo ${cockpit.escape(newCrontab)} | crontab -`], { err: 'message' });
+                // Write crontab via stdin
+                const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
+                writeProc.input(newCrontab);
 
                 writeProc.done((writeExitCode) => {
                     if (writeExitCode === 0) {
@@ -276,7 +311,9 @@ WantedBy=timers.target
 
             proc.fail(() => {
                 // No existing crontab, create new one
-                const writeProc = cockpit.spawn(['sh', '-c', `echo ${cockpit.escape(cronLine + '\n')} | crontab -`], { err: 'message' });
+                const cronContent = cronLine + '\n';
+                const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
+                writeProc.input(cronContent);
 
                 writeProc.done((writeExitCode) => {
                     if (writeExitCode === 0) {
@@ -338,7 +375,8 @@ WantedBy=timers.target
                         !(line.includes('zpool') && line.includes('scrub') && line.includes(poolName))
                     ).join('\n') + '\n';
 
-                    const writeProc = cockpit.spawn(['sh', '-c', `echo ${cockpit.escape(filtered)} | crontab -`], { err: 'message' });
+                    const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
+                    writeProc.input(filtered);
 
                     writeProc.done((writeExitCode) => {
                         if (writeExitCode === 0) {
