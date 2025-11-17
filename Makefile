@@ -30,10 +30,10 @@ $(COCKPIT_REPO_STAMP): Makefile
 
 # Build the plugin
 $(DIST_TEST): $(COCKPIT_REPO_STAMP) $(shell find src/ -type f) package.json build.js
-	$(MAKE) package-lock.json && NODE_ENV=$(NODE_ENV) ./build.js
+	$(MAKE) package-lock.json && NODE_ENV=$(NODE_ENV) node build.js
 
 watch: $(NODE_MODULES_TEST) $(COCKPIT_REPO_STAMP)
-	NODE_ENV=$(NODE_ENV) ./build.js -w
+	NODE_ENV=$(NODE_ENV) node build.js -w
 
 clean:
 	rm -rf dist/
