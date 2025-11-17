@@ -218,13 +218,14 @@ ExecStart=/usr/sbin/zpool scrub ${poolName}
 `;
 
             // Create timer file
+            // Note: Persistent=false means it won't trigger immediately if scheduled time has passed
             const timerContent = `[Unit]
 Description=ZFS Scrub Timer for ${poolName}
 Requires=${serviceName}
 
 [Timer]
 OnCalendar=${onCalendar}
-Persistent=true
+Persistent=false
 
 [Install]
 WantedBy=timers.target
@@ -265,8 +266,9 @@ WantedBy=timers.target
                         return;
                     }
                     
-                    // Reload and enable
-                    const enableProc = cockpit.spawn(['sh', '-c', `systemctl daemon-reload && systemctl enable ${timerName} && systemctl start ${timerName}`], { err: 'message' });
+                    // Reload, enable, and start the timer
+                    // With Persistent=false, it won't trigger immediately even if scheduled time has passed
+                    const enableProc = cockpit.spawn(['sh', '-c', `systemctl daemon-reload && systemctl enable --now ${timerName}`], { err: 'message' });
                     
                     enableProc.done((enableExitCode) => {
                         // Exit code 0 means success

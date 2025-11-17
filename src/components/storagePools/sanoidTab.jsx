@@ -239,6 +239,7 @@ function SanoidTab({ pool }) {
                 <Alert variant="info" title="Example configuration" style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
                     <pre style={{
                         background: 'var(--pf-t--global--background--color--200)',
+                        color: 'var(--pf-t--global--text--color--100)',
                         padding: 'var(--pf-t--global--spacer--md)',
                         borderRadius: 'var(--pf-t--global--border--radius--small)',
                         overflow: 'auto',

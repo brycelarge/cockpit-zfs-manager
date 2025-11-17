@@ -153,7 +153,12 @@ autoprune = yes
         for (const path of paths) {
             const proc = cockpit.spawn(['test', '-f', path]);
             const exists = await new Promise((resolve) => {
-                proc.done((exitCode) => resolve(exitCode === 0));
+                proc.done((exitCode) => {
+                    // Exit code 0 means file exists
+                    // Exit code 1 means file doesn't exist
+                    // null/undefined/empty exit code means process completed - treat as "doesn't exist" (not found)
+                    resolve(exitCode === 0);
+                });
                 proc.fail(() => resolve(false));
             });
             if (exists) {
@@ -173,7 +178,9 @@ autoprune = yes
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success if we got output)
+                if (exitCode === 0 || ((exitCode == null || exitCode === '' || exitCode === undefined) && output.trim().length > 0)) {
                     resolve(output);
                 } else {
                     reject(new Error(`Failed to read config: exit code ${exitCode}`));
@@ -199,11 +206,15 @@ autoprune = yes
             proc.input(content);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     // Move temp file to final location
                     const moveProc = cockpit.spawn(['mv', tempPath, configPath]);
                     moveProc.done((moveExitCode) => {
-                        if (moveExitCode === 0) {
+                        // Exit code 0 means success
+                        // null/undefined/empty exit code means process completed (treat as success)
+                        if (moveExitCode === 0 || moveExitCode == null || moveExitCode === '' || moveExitCode === undefined) {
                             resolve();
                         } else {
                             reject(new Error(`Failed to move config file: exit code ${moveExitCode}`));
@@ -256,7 +267,9 @@ autoprune = yes
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means config is valid
+                // null/undefined/empty exit code means process completed (treat as valid if exitCode is 0 or null/undefined)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve({ valid: true, output });
                 } else {
                     resolve({ valid: false, output });
