@@ -37,21 +37,27 @@ export class DisksApi {
 
             proc.done((exitCode) => {
                 if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined || output.trim().length > 0) {
+                    console.log(`zpool status output for ${poolName}:`, output);
                     const lines = output.split('\n');
                     const deviceSet = new Set();
                     let inDeviceTable = false;
                     
                     for (const line of lines) {
                         const trimmed = line.trim();
+                        const originalLine = line;
                         
                         // Device table starts with "NAME" header (can be indented)
                         if (trimmed.startsWith('NAME') || trimmed.match(/^\s*NAME\s+STATE\s+READ\s+WRITE\s+CHECKSUM/)) {
                             inDeviceTable = true;
+                            console.log('Found NAME header, entering device table');
                             continue;
                         }
                         
                         // Stop parsing if we hit a new section (pool:, state:, etc.)
                         if (trimmed.startsWith('pool:') || trimmed.startsWith('state:') || trimmed.startsWith('status:') || trimmed.startsWith('action:') || trimmed.startsWith('scan:') || trimmed.startsWith('errors:')) {
+                            if (inDeviceTable) {
+                                console.log('Leaving device table, found section:', trimmed);
+                            }
                             inDeviceTable = false;
                             continue;
                         }
@@ -66,6 +72,7 @@ export class DisksApi {
                             
                             // Skip the pool name row itself (exact match or starts with pool name)
                             if (trimmed === poolName || trimmed.startsWith(poolName + ' ') || trimmed.startsWith(poolName + '\t')) {
+                                console.log('Skipping pool name row:', trimmed);
                                 continue;
                             }
                             
@@ -73,6 +80,7 @@ export class DisksApi {
                             const parts = trimmed.split(/\s+/);
                             if (parts.length >= 1) {
                                 const deviceName = parts[0];
+                                console.log('Checking device row:', trimmed, 'First part:', deviceName);
                                 
                                 // Only process /dev/ paths (physical devices)
                                 if (deviceName && deviceName.startsWith('/dev/')) {
@@ -87,6 +95,7 @@ export class DisksApi {
                                             name: deviceShortName,
                                             type: DisksApi.getDeviceType(deviceName)
                                         });
+                                        console.log('Added device:', deviceName);
                                     }
                                 }
                             }
@@ -94,18 +103,21 @@ export class DisksApi {
                         
                         // Also check for /dev/ paths anywhere in the output (fallback)
                         // This catches cases where devices might be listed differently
-                        if (!inDeviceTable && trimmed.includes('/dev/')) {
-                            const devMatch = trimmed.match(/(\/dev\/[^\s]+)/g);
+                        if (trimmed.includes('/dev/')) {
+                            const devMatch = trimmed.match(/(\/dev\/[^\s\)]+)/g);
                             if (devMatch) {
                                 for (const devPath of devMatch) {
-                                    if (!deviceSet.has(devPath) && devPath.startsWith('/dev/')) {
-                                        deviceSet.add(devPath);
-                                        const deviceShortName = devPath.replace('/dev/', '');
+                                    // Clean up any trailing punctuation
+                                    const cleanPath = devPath.replace(/[,\)]+$/, '');
+                                    if (!deviceSet.has(cleanPath) && cleanPath.startsWith('/dev/')) {
+                                        deviceSet.add(cleanPath);
+                                        const deviceShortName = cleanPath.replace('/dev/', '');
                                         devices.push({
-                                            path: devPath,
+                                            path: cleanPath,
                                             name: deviceShortName,
-                                            type: DisksApi.getDeviceType(devPath)
+                                            type: DisksApi.getDeviceType(cleanPath)
                                         });
+                                        console.log('Added device from fallback search:', cleanPath);
                                     }
                                 }
                             }

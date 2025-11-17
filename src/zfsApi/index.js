@@ -255,7 +255,7 @@ export class ZfsApi {
     static async listFileSystems(poolName) {
         return new Promise(async (resolve, reject) => {
             const filesystems = [];
-            const proc = cockpit.spawn(['zfs', 'list', '-H', '-o', 'name,used,available,referenced,mountpoint,encryption,quota,reservation,compressratio,dedupratio', '-t', 'filesystem', '-r', poolName], {
+            const proc = cockpit.spawn(['zfs', 'list', '-H', '-o', 'name,used,available,referenced,mountpoint,encryption,quota,reservation,compressratio', '-t', 'filesystem', '-r', poolName], {
                 err: 'message'
             });
 
@@ -264,7 +264,7 @@ export class ZfsApi {
                 lines.forEach(line => {
                     if (line.trim() && !line.startsWith(poolName + '\t')) {
                         const parts = line.split('\t');
-                        const [name, used, available, referenced, mountpoint, encryption, quota, reservation, compressratio, dedupratio] = parts;
+                        const [name, used, available, referenced, mountpoint, encryption, quota, reservation, compressratio] = parts;
                         filesystems.push({
                             name,
                             used,
@@ -275,7 +275,7 @@ export class ZfsApi {
                             quota: quota && quota !== '-' ? quota : null,
                             reservation: reservation && reservation !== '-' ? reservation : null,
                             compressratio: compressratio && compressratio !== '-' ? compressratio : null,
-                            dedupratio: dedupratio && dedupratio !== '-' ? dedupratio : null
+                            dedupratio: null // Will be fetched separately if needed
                         });
                     }
                 });
@@ -289,14 +289,18 @@ export class ZfsApi {
                 if (filesystems.length > 0 || exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     // Get compression and dedup stats for filesystems that don't have them
                     for (const fs of filesystems) {
-                        if (!fs.compressratio || !fs.dedupratio) {
+                        if (!fs.compressratio) {
                             try {
                                 const props = await this.getDatasetProperties(fs.name);
-                                if (!fs.compressratio && props.compressratio) {
+                                if (props.compressratio) {
                                     fs.compressratio = props.compressratio.value;
                                 }
-                                if (!fs.dedupratio && props.dedupratio) {
-                                    fs.dedupratio = props.dedupratio.value;
+                                // Try to get dedupratio if dedup is enabled
+                                if (props.dedup && props.dedup.value !== 'off') {
+                                    // dedupratio might not be available, but we can try
+                                    if (props.dedupratio) {
+                                        fs.dedupratio = props.dedupratio.value;
+                                    }
                                 }
                             } catch {
                                 // Ignore errors getting properties
