@@ -5,7 +5,8 @@ export class DisksApi {
         return new Promise((resolve) => {
             // Check common locations for smartctl (prioritize direct path checks since PATH might be restricted)
             // Order: /usr/sbin (most common), /sbin, /usr/bin, then try command -v/which
-            const checkProc = cockpit.spawn(['sh', '-c', 'test -x /usr/sbin/smartctl && echo /usr/sbin/smartctl || test -x /sbin/smartctl && echo /sbin/smartctl || test -x /usr/bin/smartctl && echo /usr/bin/smartctl || command -v smartctl 2>/dev/null || which smartctl 2>/dev/null || echo ""'], { err: 'message' });
+            // Use a function to stop after first match
+            const checkProc = cockpit.spawn(['sh', '-c', 'for path in /usr/sbin/smartctl /sbin/smartctl /usr/bin/smartctl; do if test -x "$path"; then echo "$path"; exit 0; fi; done; command -v smartctl 2>/dev/null || which smartctl 2>/dev/null || exit 1'], { err: 'message' });
             let checkOutput = '';
             
             checkProc.stream((data) => {
@@ -13,8 +14,8 @@ export class DisksApi {
             });
             
             checkProc.done((exitCode) => {
-                const path = checkOutput.trim();
-                const found = path.length > 0;
+                const path = checkOutput.trim().split('\n')[0]; // Take first line only
+                const found = path.length > 0 && path !== 'exit';
                 console.log(`smartctl check: exitCode=${exitCode}, output="${path}", found=${found}`);
                 resolve(found ? path : null);
             });
@@ -214,7 +215,7 @@ export class DisksApi {
             // If no path provided, try to find it
             if (!smartctlPath) {
                 // Fallback: try common locations (prioritize direct path checks)
-                const checkProc = cockpit.spawn(['sh', '-c', 'test -x /usr/sbin/smartctl && echo /usr/sbin/smartctl || test -x /sbin/smartctl && echo /sbin/smartctl || test -x /usr/bin/smartctl && echo /usr/bin/smartctl || command -v smartctl 2>/dev/null || which smartctl 2>/dev/null || echo ""'], { err: 'message' });
+                const checkProc = cockpit.spawn(['sh', '-c', 'for path in /usr/sbin/smartctl /sbin/smartctl /usr/bin/smartctl; do if test -x "$path"; then echo "$path"; exit 0; fi; done; command -v smartctl 2>/dev/null || which smartctl 2>/dev/null || exit 1'], { err: 'message' });
                 let checkOutput = '';
                 
                 checkProc.stream((data) => {
@@ -222,12 +223,13 @@ export class DisksApi {
                 });
                 
                 checkProc.done((checkExitCode) => {
-                    if (!checkOutput.trim()) {
+                    const path = checkOutput.trim().split('\n')[0]; // Take first line only
+                    if (!path || path === 'exit') {
                         console.log(`smartctl not found (exit code: ${checkExitCode})`);
                         resolve(null);
                         return;
                     }
-                    smartctlPath = checkOutput.trim();
+                    smartctlPath = path;
                     console.log(`smartctl found at: ${smartctlPath}`);
                     proceedWithSmartInfo();
                 });
@@ -262,7 +264,9 @@ export class DisksApi {
                 if (isNVMe) {
                     console.log(`Getting NVMe SMART info for ${devicePath}`);
                     // Get NVMe SMART info directly - use full path if we found it, otherwise try smartctl
-                    const smartctlCmd = smartctlPath || 'smartctl';
+                    // Ensure we only use the first path if multiple were returned
+                    const smartctlCmd = (smartctlPath || 'smartctl').split('\n')[0].trim();
+                    console.log(`Using smartctl command: "${smartctlCmd}"`);
                     const nvmeProc = cockpit.spawn([smartctlCmd, '-a', devicePath], { err: 'message' });
                     let nvmeOutput = '';
                     
@@ -347,7 +351,9 @@ export class DisksApi {
             } else {
                 // Traditional SATA/SAS device handling
                 // Get SMART health status - use full path if we found it
-                const smartctlCmd = smartctlPath || 'smartctl';
+                // Ensure we only use the first path if multiple were returned
+                const smartctlCmd = (smartctlPath || 'smartctl').split('\n')[0].trim();
+                console.log(`Using smartctl command: "${smartctlCmd}"`);
                 const healthProc = cockpit.spawn([smartctlCmd, '-H', devicePath], { err: 'message' });
                 let healthOutput = '';
                 
