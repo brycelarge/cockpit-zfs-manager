@@ -530,16 +530,40 @@ WantedBy=timers.target
                     const lines = currentCrontab.split('\n');
                     const filtered = lines.filter(line => 
                         !(line.includes('zpool') && line.includes('scrub') && line.includes(poolName))
-                    ).join('\n') + '\n';
+                    ).filter(line => line.trim() || line === ''); // Keep empty lines for formatting
+                    
+                    const filteredContent = filtered.join('\n');
+                    
+                    // If no lines remain (or only empty lines), remove crontab entirely
+                    if (!filteredContent.trim()) {
+                        const removeProc = cockpit.spawn(['crontab', '-r'], { err: 'message' });
+                        removeProc.done((removeExitCode) => {
+                            // Exit code 0 means success
+                            // null/undefined/empty exit code means process completed (treat as success)
+                            if (removeExitCode === 0 || removeExitCode == null || removeExitCode === '' || removeExitCode === undefined) {
+                                resolve();
+                            } else {
+                                reject(new Error(`Failed to remove crontab: exit code ${removeExitCode}`));
+                            }
+                        });
+                        removeProc.fail((error) => {
+                            reject(error);
+                        });
+                        return;
+                    }
+                    
+                    const newCrontab = filteredContent + (filteredContent.endsWith('\n') ? '' : '\n');
 
                     // Use temp file approach
                     const tempFile = `/tmp/crontab.${Date.now()}`;
                     const pythonCmd = `import sys; f=open('${tempFile}', 'w'); f.write(sys.stdin.read()); f.close()`;
                     const writeProc = cockpit.spawn(['python3', '-c', pythonCmd], { err: 'message' });
-                    writeProc.input(filtered);
+                    writeProc.input(newCrontab);
 
                     writeProc.done((writeExitCode) => {
-                        if (writeExitCode !== 0) {
+                        // Exit code 0 means success
+                        // null/undefined/empty exit code means process completed (treat as success)
+                        if (writeExitCode !== 0 && writeExitCode != null && writeExitCode !== '' && writeExitCode !== undefined) {
                             reject(new Error(`Failed to write temp crontab: exit code ${writeExitCode}`));
                             return;
                         }
@@ -550,7 +574,9 @@ WantedBy=timers.target
                             // Clean up temp file
                             cockpit.spawn(['rm', '-f', tempFile]);
                             
-                            if (installExitCode === 0) {
+                            // Exit code 0 means success
+                            // null/undefined/empty exit code means process completed (treat as success)
+                            if (installExitCode === 0 || installExitCode == null || installExitCode === '' || installExitCode === undefined) {
                                 resolve();
                             } else {
                                 reject(new Error(`Failed to install cron job: exit code ${installExitCode}`));
