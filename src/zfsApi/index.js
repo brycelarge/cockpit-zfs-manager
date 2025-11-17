@@ -182,13 +182,21 @@ export class ZfsApi {
             // Add devices
             args.push(...devices);
 
-            const proc = cockpit.spawn(args);
+            const proc = cockpit.spawn(args, {
+                err: 'message'
+            });
+            
+            let errorOutput = '';
+            proc.stream((data) => {
+                errorOutput += data;
+            });
 
-            proc.done((exitCode) => {
+            proc.done((exitCode, data) => {
                 if (exitCode === 0) {
                     resolve();
                 } else {
-                    reject(new Error(`zpool create exited with code ${exitCode}`));
+                    const errorMsg = errorOutput || data || `zpool create exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
                 }
             });
 

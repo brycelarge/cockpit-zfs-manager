@@ -9,6 +9,7 @@ import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput"
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
+import { Alert } from "@patternfly/react-core/dist/esm/components/Alert";
 import { Tooltip } from "@patternfly/react-core/dist/esm/components/Tooltip";
 import { HelpIcon } from '@patternfly/react-icons';
 
@@ -23,11 +24,23 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
     const [devices, setDevices] = useState([]);
     const [availableDisks, setAvailableDisks] = useState([]);
     const [loadingDisks, setLoadingDisks] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [confirmText, setConfirmText] = useState('');
     const [validationFailed, setValidationFailed] = useState({});
     const [error, setError] = useState({});
 
     React.useEffect(() => {
         if (isOpen) {
+            // Reset state when dialog opens
+            setPoolName('');
+            setVdevType('stripe');
+            setDevices([]);
+            setValidationFailed({});
+            setError({});
+            setCreating(false);
+            setShowConfirm(false);
+            setConfirmText('');
             loadDisks();
         }
     }, [isOpen]);
@@ -97,12 +110,37 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
             return;
         }
 
-        onCreate({
-            name: trimmedName,
-            vdevType,
-            devices
-        });
-        onClose();
+        // Show confirmation step
+        setShowConfirm(true);
+        setError({});
+    };
+
+    const handleConfirmCreate = async () => {
+        if (confirmText.toLowerCase() !== 'yes') {
+            setError({
+                dialogError: 'Confirmation required',
+                dialogErrorDetail: 'Please type "yes" to confirm pool creation'
+            });
+            return;
+        }
+
+        setCreating(true);
+        setError({});
+        
+        try {
+            await onCreate({
+                name: poolName.trim(),
+                vdevType,
+                devices
+            });
+            onClose();
+        } catch (exc) {
+            setError({
+                dialogError: 'Failed to create pool',
+                dialogErrorDetail: exc.message || String(exc)
+            });
+            setCreating(false);
+        }
     };
 
     return (
@@ -113,10 +151,51 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
             isOpen={isOpen}
             onClose={onClose}
         >
-            <ModalHeader title="Create Storage Pool" />
+            <ModalHeader title={showConfirm ? "Confirm Pool Creation" : "Create Storage Pool"} />
             <ModalBody>
                 {loadingDisks ? (
                     <Spinner size="lg" />
+                ) : showConfirm ? (
+                    <Form isHorizontal>
+                        {error.dialogError && (
+                            <ModalError
+                                dialogError={error.dialogError}
+                                {...(error.dialogErrorDetail && { dialogErrorDetail: error.dialogErrorDetail })}
+                            />
+                        )}
+                        
+                        <Alert variant="warning" title="Warning: Data Loss Risk" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
+                            <p>
+                                <strong>Creating this pool will destroy all existing data on the selected devices:</strong>
+                            </p>
+                            <ul style={{ marginTop: 'var(--pf-t--global--spacer--sm)', marginBottom: 'var(--pf-t--global--spacer--sm)' }}>
+                                {devices.map(device => (
+                                    <li key={device}><code>{device}</code></li>
+                                ))}
+                            </ul>
+                            <p>
+                                <strong>This action cannot be undone.</strong> All data on these devices will be permanently lost.
+                            </p>
+                        </Alert>
+
+                        <FormGroup
+                            label={`Type "yes" to confirm creation of pool "${poolName.trim()}"`}
+                            fieldId="confirm-text"
+                        >
+                            <TextInput
+                                id="confirm-text"
+                                value={confirmText}
+                                onChange={(_, value) => {
+                                    setConfirmText(value);
+                                    if (error.dialogError) {
+                                        setError({});
+                                    }
+                                }}
+                                placeholder="yes"
+                                validated={confirmText && confirmText.toLowerCase() !== 'yes' ? 'error' : 'default'}
+                            />
+                        </FormGroup>
+                    </Form>
                 ) : (
                     <Form isHorizontal>
                         {error.dialogError && (
@@ -237,16 +316,37 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
                 )}
             </ModalBody>
             <ModalFooter>
-                <Button
-                    variant="primary"
-                    onClick={handleCreate}
-                    isDisabled={loadingDisks}
-                >
-                    Create Pool
-                </Button>
-                <Button variant="link" onClick={onClose}>
-                    Cancel
-                </Button>
+                {showConfirm ? (
+                    <>
+                        <Button
+                            variant="danger"
+                            onClick={handleConfirmCreate}
+                            isDisabled={confirmText.toLowerCase() !== 'yes' || creating}
+                            isLoading={creating}
+                        >
+                            Create Pool
+                        </Button>
+                        <Button variant="secondary" onClick={() => setShowConfirm(false)} isDisabled={creating}>
+                            Back
+                        </Button>
+                        <Button variant="link" onClick={onClose} isDisabled={creating}>
+                            Cancel
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Button
+                            variant="primary"
+                            onClick={handleCreate}
+                            isDisabled={loadingDisks}
+                        >
+                            Continue
+                        </Button>
+                        <Button variant="link" onClick={onClose}>
+                            Cancel
+                        </Button>
+                    </>
+                )}
             </ModalFooter>
         </Modal>
     );
