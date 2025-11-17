@@ -292,24 +292,41 @@ WantedBy=timers.target
 
             proc.done((exitCode) => {
                 const newCrontab = (currentCrontab.trim() || '') + '\n' + cronLine + '\n';
-                // Write crontab via stdin - ensure we have valid content
+                // Write crontab via temp file - ensure we have valid content
                 if (!cronLine.trim()) {
                     reject(new Error('Invalid cron schedule format'));
                     return;
                 }
                 
-                const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
-                // Send input immediately
+                // Use temp file approach like sanoid config writing
+                const tempFile = `/tmp/crontab.${Date.now()}`;
+                const pythonCmd = `import sys; f=open('${tempFile}', 'w'); f.write(sys.stdin.read()); f.close()`;
+                const writeProc = cockpit.spawn(['python3', '-c', pythonCmd], { err: 'message' });
                 writeProc.input(newCrontab);
-                // Close stdin to signal end of input
-                writeProc.close('stdin');
 
                 writeProc.done((writeExitCode) => {
-                    if (writeExitCode === 0) {
-                        resolve();
-                    } else {
-                        reject(new Error(`Failed to create cron job: exit code ${writeExitCode}`));
+                    if (writeExitCode !== 0) {
+                        reject(new Error(`Failed to write temp crontab: exit code ${writeExitCode}`));
+                        return;
                     }
+                    
+                    // Install crontab from temp file
+                    const installProc = cockpit.spawn(['crontab', tempFile], { err: 'message' });
+                    installProc.done((installExitCode) => {
+                        // Clean up temp file
+                        cockpit.spawn(['rm', '-f', tempFile]);
+                        
+                        if (installExitCode === 0) {
+                            resolve();
+                        } else {
+                            reject(new Error(`Failed to install cron job: exit code ${installExitCode}`));
+                        }
+                    });
+                    
+                    installProc.fail((error) => {
+                        cockpit.spawn(['rm', '-f', tempFile]);
+                        reject(error);
+                    });
                 });
 
                 writeProc.fail((error) => {
@@ -325,16 +342,35 @@ WantedBy=timers.target
                 }
                 
                 const cronContent = cronLine + '\n';
-                const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
+                // Use temp file approach
+                const tempFile = `/tmp/crontab.${Date.now()}`;
+                const pythonCmd = `import sys; f=open('${tempFile}', 'w'); f.write(sys.stdin.read()); f.close()`;
+                const writeProc = cockpit.spawn(['python3', '-c', pythonCmd], { err: 'message' });
                 writeProc.input(cronContent);
-                writeProc.close('stdin');
 
                 writeProc.done((writeExitCode) => {
-                    if (writeExitCode === 0) {
-                        resolve();
-                    } else {
-                        reject(new Error(`Failed to create cron job: exit code ${writeExitCode}`));
+                    if (writeExitCode !== 0) {
+                        reject(new Error(`Failed to write temp crontab: exit code ${writeExitCode}`));
+                        return;
                     }
+                    
+                    // Install crontab from temp file
+                    const installProc = cockpit.spawn(['crontab', tempFile], { err: 'message' });
+                    installProc.done((installExitCode) => {
+                        // Clean up temp file
+                        cockpit.spawn(['rm', '-f', tempFile]);
+                        
+                        if (installExitCode === 0) {
+                            resolve();
+                        } else {
+                            reject(new Error(`Failed to install cron job: exit code ${installExitCode}`));
+                        }
+                    });
+                    
+                    installProc.fail((error) => {
+                        cockpit.spawn(['rm', '-f', tempFile]);
+                        reject(error);
+                    });
                 });
 
                 writeProc.fail((error) => {
@@ -389,18 +425,37 @@ WantedBy=timers.target
                         !(line.includes('zpool') && line.includes('scrub') && line.includes(poolName))
                     ).join('\n') + '\n';
 
-                    const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
+                    // Use temp file approach
+                    const tempFile = `/tmp/crontab.${Date.now()}`;
+                    const pythonCmd = `import sys; f=open('${tempFile}', 'w'); f.write(sys.stdin.read()); f.close()`;
+                    const writeProc = cockpit.spawn(['python3', '-c', pythonCmd], { err: 'message' });
                     writeProc.input(filtered);
-                    writeProc.close('stdin');
 
                     writeProc.done((writeExitCode) => {
-                        if (writeExitCode === 0) {
-                            resolve();
-                        } else {
-                            reject(new Error(`Failed to remove cron job: exit code ${writeExitCode}`));
+                        if (writeExitCode !== 0) {
+                            reject(new Error(`Failed to write temp crontab: exit code ${writeExitCode}`));
+                            return;
                         }
+                        
+                        // Install crontab from temp file
+                        const installProc = cockpit.spawn(['crontab', tempFile], { err: 'message' });
+                        installProc.done((installExitCode) => {
+                            // Clean up temp file
+                            cockpit.spawn(['rm', '-f', tempFile]);
+                            
+                            if (installExitCode === 0) {
+                                resolve();
+                            } else {
+                                reject(new Error(`Failed to install cron job: exit code ${installExitCode}`));
+                            }
+                        });
+                        
+                        installProc.fail((error) => {
+                            cockpit.spawn(['rm', '-f', tempFile]);
+                            reject(error);
+                        });
                     });
-
+                    
                     writeProc.fail((error) => {
                         reject(error);
                     });
