@@ -250,7 +250,7 @@ function DisksTab({ pool }) {
 
                             {/* S.M.A.R.T. Attributes Table */}
                             {disk.smart.attributes && disk.smart.attributes.length > 0 && (
-                                <Card>
+                                <Card style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
                                     <CardTitle>S.M.A.R.T.</CardTitle>
                                     <CardBody>
                                         <ListingTable
@@ -271,7 +271,11 @@ function DisksTab({ pool }) {
                                                     { title: attr.value.toString() },
                                                     { title: attr.worst.toString() },
                                                     { title: attr.threshold.toString() },
-                                                    { title: attr.rawValue !== null ? attr.rawValue.toString() : '-' },
+                                                    { 
+                                                        title: attr.rawValue !== null && attr.rawValue !== undefined 
+                                                            ? attr.rawValue.toLocaleString() 
+                                                            : '-' 
+                                                    },
                                                 ],
                                                 key: `attr-${attr.id}`,
                                             }))}

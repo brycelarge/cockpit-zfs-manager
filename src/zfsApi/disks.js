@@ -569,7 +569,9 @@ export class DisksApi {
                             const lines = attrsOutput.split('\n');
                             for (const line of lines) {
                                 // Parse attribute lines (ID# ATTRIBUTE_NAME FLAG VALUE WORST THRESH TYPE UPDATED WHEN_FAILED RAW_VALUE)
-                                const attrMatch = line.match(/^\s*(\d+)\s+(\w+(?:\s+\w+)*)\s+\w+\s+(\d+)\s+(\d+)\s+(\d+)/);
+                                // Format: ID# ATTRIBUTE_NAME FLAG VALUE WORST THRESH TYPE UPDATED WHEN_FAILED RAW_VALUE
+                                // Example: "  5 Reallocated_Sector_Ct   0x0033   100   100   010    Pre-fail  Always       -       0"
+                                const attrMatch = line.match(/^\s*(\d+)\s+([A-Za-z0-9_][A-Za-z0-9_\s]+?)\s+\w+\s+(\d+)\s+(\d+)\s+(\d+)/);
                                 if (attrMatch) {
                                     const id = parseInt(attrMatch[1]);
                                     const name = attrMatch[2].trim();
@@ -577,9 +579,29 @@ export class DisksApi {
                                     const worst = parseInt(attrMatch[4]);
                                     const threshold = parseInt(attrMatch[5]);
                                     
-                                    // Extract RAW_VALUE (last field)
+                                    // Extract RAW_VALUE (last numeric field, can be very large)
+                                    // Try to match the last number in the line, handling large numbers
                                     const rawMatch = line.match(/\s+(\d+)\s*$/);
-                                    const rawValue = rawMatch ? parseInt(rawMatch[1]) : null;
+                                    // If that doesn't work, try matching any large number at the end
+                                    const rawMatchAlt = line.match(/\s+(\d{1,20})\s*$/);
+                                    let rawValue = null;
+                                    if (rawMatch) {
+                                        rawValue = parseInt(rawMatch[1]);
+                                    } else if (rawMatchAlt) {
+                                        rawValue = parseInt(rawMatchAlt[1]);
+                                    }
+                                    
+                                    // If still no match, try to extract from the last field after splitting
+                                    if (rawValue === null) {
+                                        const parts = line.trim().split(/\s+/);
+                                        if (parts.length >= 10) {
+                                            // RAW_VALUE is typically the last field
+                                            const lastPart = parts[parts.length - 1];
+                                            if (lastPart && lastPart.match(/^\d+$/)) {
+                                                rawValue = parseInt(lastPart);
+                                            }
+                                        }
+                                    }
                                     
                                     smartInfo.attributes.push({
                                         id,
