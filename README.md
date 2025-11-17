@@ -64,13 +64,21 @@ ssh user@server "sudo cp -r /tmp/dist /usr/share/cockpit/zfs-manager"
 
 4. **Manage ZFS**:
    - View all storage pools with health status and usage statistics
-   - Expand pools to see file systems, snapshots, and detailed status
+   - Expand pools to see file systems, snapshots, performance stats, and detailed status
    - Create new pools with various VDEV configurations (stripe, mirror, RAID-Z variants)
+   - Expand pools by adding VDEVs
+   - Replace failed disks
+   - Configure pool and dataset properties
    - Create file systems and snapshots
    - Manage encryption and unlock encrypted datasets
    - Clone file systems and snapshots
    - Rollback to snapshots
-   - Export and destroy pools (with appropriate warnings)
+   - Replicate snapshots (send/receive) for backups
+   - Manage mount points and mount options
+   - Configure NFS and SMB shares
+   - Set up automated snapshots with Sanoid
+   - Schedule ZFS scrubs for disk health
+   - Export and destroy pools (with name confirmation)
 
 ## Features
 
@@ -85,34 +93,91 @@ ssh user@server "sudo cp -r /tmp/dist /usr/share/cockpit/zfs-manager"
   - RAID-Z3 (triple parity)
 - Import existing pools
 - Export pools
-- Destroy pools (with confirmation)
-- View detailed pool status
+- Destroy pools (with name confirmation)
+- Expand pools by adding VDEVs
+- Replace failed disks in pools
+- Configure pool properties (comment, auto-replace, auto-trim, bootfs, cachefile, fail mode, readonly, delegation, listsnapshots)
+- View detailed pool status with device information
+- Performance statistics (I/O operations, throughput)
 
 ### File System Management
 - List all file systems within pools
 - Create new file systems
 - Support for encrypted file systems with passphrase
 - Clone file systems
-- Destroy file systems
+- Destroy file systems (with name confirmation)
+- Configure dataset properties:
+  - General: compression, deduplication, atime, sync, recordsize, readonly, exec, setuid
+  - Quota & Reservation: set storage limits and guarantees
+  - Mount Options: configure mount points and mount behavior
+- Manage mount points (mount/unmount, custom mount points, mount options)
+- Configure NFS and SMB/CIFS shares
 
 ### Snapshot Management
 - List all snapshots
-- Create snapshots
+- Create snapshots (pool-level or dataset-specific)
 - Clone snapshots to new file systems
-- Rollback to snapshots
-- Destroy snapshots
+- Rollback to snapshots (with recursive option)
+- Destroy snapshots (with name confirmation)
+- Replicate snapshots (send/receive):
+  - Send to local file or remote system via SSH
+  - Receive from local file or remote system via SSH
+  - Support for incremental and recursive replication
+  - Include properties option
+
+### Replication
+- Send snapshots to backup locations
+- Receive snapshots from remote systems
+- Support for incremental replication
+- SSH-based remote replication
+- Dry-run mode for testing
+
+### Mount Point Management
+- View mount status
+- Mount/unmount datasets
+- Configure custom mount points
+- Set mount options (noatime, nosuid, etc.)
+- Overlay mount support
+
+### Performance Statistics
+- Real-time I/O statistics
+- Read/write operations per second
+- Throughput metrics
+- Auto-refresh capability
+- Pool-level performance monitoring
+
+### Share Management
+- Configure NFS shares with custom options
+- Configure SMB/CIFS shares with custom names
+- View current share configuration
+- Enable/disable sharing per dataset
+
+### Automation & Maintenance
+- **Sanoid Integration**: Automated snapshot management
+  - View Sanoid installation status
+  - Edit Sanoid configuration
+  - Validate configuration
+  - View managed snapshots count
+- **Scrub Scheduling**: Automated disk health checks
+  - Manual scrub start/stop
+  - Schedule weekly scrubs
+  - Schedule monthly scrubs
+  - Custom cron-based schedules
+  - View scrub status and history
 
 ### Encryption Support
 - Create encrypted file systems
 - Unlock encrypted file systems with passphrase
 - Visual indicators for encrypted datasets
+- Bulk unlock for multiple encrypted datasets
 
 ### User Interface
 - Modern PatternFly 6 design
 - Expandable table rows for detailed views
-- Tabbed interface (File Systems, Snapshots, Status)
+- Tabbed interface (File Systems, Snapshots, Status, Performance, Sanoid, Scrub)
 - Toast notifications for actions
 - Responsive design
+- Consistent with Cockpit's design language
 
 ## Uninstallation
 
