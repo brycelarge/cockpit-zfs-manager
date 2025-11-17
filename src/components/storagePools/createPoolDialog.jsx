@@ -13,6 +13,7 @@ import { Tooltip } from "@patternfly/react-core/dist/esm/components/Tooltip";
 import { HelpIcon } from '@patternfly/react-icons';
 
 import { FormHelper } from 'cockpit-components-form-helper.jsx';
+import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
 import { VDEV_TYPES } from '../../constants/index.js';
 
@@ -23,6 +24,7 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
     const [availableDisks, setAvailableDisks] = useState([]);
     const [loadingDisks, setLoadingDisks] = useState(false);
     const [validationFailed, setValidationFailed] = useState({});
+    const [error, setError] = useState({});
 
     React.useEffect(() => {
         if (isOpen) {
@@ -32,19 +34,17 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
 
     const loadDisks = async () => {
         setLoadingDisks(true);
-        setValidationFailed({});
         try {
             const disks = await ZfsApi.listAvailableDisks();
             setAvailableDisks(disks);
             if (disks.length === 0) {
-                setValidationFailed({
-                    devices: 'No available disks found. Make sure disks are not already in use by ZFS or other systems.'
-                });
+                console.warn('No disks found. Make sure lsblk is installed and you have permissions to list block devices.');
             }
         } catch (error) {
             console.error('Failed to load disks:', error);
-            setValidationFailed({
-                devices: `Failed to load disks: ${error.message || error}`
+            setError({
+                dialogError: 'Failed to load available disks',
+                dialogErrorDetail: error.message || String(error)
             });
         } finally {
             setLoadingDisks(false);
@@ -98,6 +98,12 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
                     <Spinner size="lg" />
                 ) : (
                     <Form isHorizontal>
+                        {error.dialogError && (
+                            <ModalError
+                                dialogError={error.dialogError}
+                                {...(error.dialogErrorDetail && { dialogErrorDetail: error.dialogErrorDetail })}
+                            />
+                        )}
                         <FormGroup
                             label="Pool Name"
                             fieldId="pool-name"
@@ -157,14 +163,9 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
                             validated={validationFailed.devices ? 'error' : 'default'}
                         >
                             <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--pf-t--global--border--color--default)', borderRadius: 'var(--pf-t--global--border--radius--small)', padding: 'var(--pf-t--global--spacer--sm)' }}>
-                                {loadingDisks ? (
-                                    <div style={{ padding: 'var(--pf-t--global--spacer--md)', textAlign: 'center' }}>
-                                        <Spinner size="sm" />
-                                        <span style={{ marginLeft: 'var(--pf-t--global--spacer--sm)' }}>Loading disks...</span>
-                                    </div>
-                                ) : availableDisks.length === 0 ? (
+                                {availableDisks.length === 0 ? (
                                     <div style={{ padding: 'var(--pf-t--global--spacer--md)', textAlign: 'center', color: 'var(--pf-t--global--text--color--muted)' }}>
-                                        {validationFailed.devices || 'No available disks found'}
+                                        No available disks found
                                     </div>
                                 ) : (
                                     availableDisks.map(disk => (

@@ -46,7 +46,77 @@ export class ZfsApi {
     static async listAvailableDisks() {
         return new Promise((resolve, reject) => {
             const disks = [];
-            // Use -e 7,11 to exclude loop devices (7) and ROM devices (11)
+            // Use -P for parseable output (key="value" format) to handle spaces in MODEL field
+            const proc = cockpit.spawn(['lsblk', '-P', '-o', 'NAME,TYPE,SIZE,MODEL', '-d', '-e', '7,11'], {
+                err: 'message'
+            });
+
+            proc.stream((data) => {
+                const lines = data.trim().split('\n');
+                lines.forEach(line => {
+                    if (line.trim()) {
+                        try {
+                            // Parse KEY="VALUE" format
+                            const nameMatch = line.match(/NAME="([^"]+)"/);
+                            const typeMatch = line.match(/TYPE="([^"]+)"/);
+                            const sizeMatch = line.match(/SIZE="([^"]+)"/);
+                            const modelMatch = line.match(/MODEL="([^"]+)"/);
+
+                            if (nameMatch && typeMatch && sizeMatch && typeMatch[1] === 'disk') {
+                                const name = nameMatch[1];
+                                // Skip loop devices and ram disks
+                                if (!name.startsWith('loop') && !name.startsWith('ram') && !name.startsWith('zram')) {
+                                    disks.push({
+                                        name: name,
+                                        path: `/dev/${name}`,
+                                        type: typeMatch[1],
+                                        size: sizeMatch[1],
+                                        model: modelMatch ? modelMatch[1] : name
+                                    });
+                                }
+                            }
+                        } catch (e) {
+                            // Skip malformed lines
+                            console.warn('Failed to parse lsblk line:', line, e);
+                        }
+                    }
+                });
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    if (disks.length === 0) {
+                        // Try fallback method
+                        this.listAvailableDisksFallback().then(resolve).catch(() => {
+                            resolve([]); // Return empty array instead of rejecting
+                        });
+                    } else {
+                        resolve(disks);
+                    }
+                } else {
+                    // Try fallback method
+                    const errorMsg = data || `lsblk exited with code ${exitCode}`;
+                    console.warn('lsblk failed:', errorMsg);
+                    this.listAvailableDisksFallback().then(resolve).catch(() => {
+                        reject(new Error(`Failed to list disks: ${errorMsg}`));
+                    });
+                }
+            });
+
+            proc.fail((error) => {
+                // Try fallback method
+                console.warn('lsblk failed:', error);
+                this.listAvailableDisksFallback().then(resolve).catch(() => {
+                    reject(error);
+                });
+            });
+        });
+    }
+
+    static async listAvailableDisksFallback() {
+        return new Promise((resolve, reject) => {
+            const disks = [];
+            // Fallback: use lsblk without -P flag and parse differently
             const proc = cockpit.spawn(['lsblk', '-o', 'NAME,TYPE,SIZE,MODEL', '-n', '-d', '-e', '7,11'], {
                 err: 'message'
             });
@@ -55,31 +125,22 @@ export class ZfsApi {
                 const lines = data.trim().split('\n');
                 lines.forEach(line => {
                     if (line.trim()) {
-                        // Parse line: NAME TYPE SIZE MODEL (MODEL may contain spaces)
-                        // Use regex to split on whitespace but keep MODEL together
-                        // Format: "sda disk 500G Model Name With Spaces"
-                        const match = line.match(/^(\S+)\s+(\S+)\s+(\S+)\s+(.*)$/);
-                        if (match) {
-                            const [, name, type, size, model] = match;
-                            if (type === 'disk' && !name.startsWith('loop') && !name.startsWith('ram')) {
+                        // Split by whitespace, but MODEL can have spaces
+                        // Format: NAME TYPE SIZE MODEL...
+                        const parts = line.trim().split(/\s+/);
+                        if (parts.length >= 3 && parts[1] === 'disk') {
+                            const name = parts[0];
+                            // Skip loop devices and ram disks
+                            if (!name.startsWith('loop') && !name.startsWith('ram') && !name.startsWith('zram')) {
+                                const size = parts[2];
+                                // Everything after SIZE is MODEL
+                                const model = parts.slice(3).join(' ') || name;
                                 disks.push({
                                     name: name,
                                     path: `/dev/${name}`,
-                                    type: type,
-                                    size: size,
-                                    model: model.trim() || name
-                                });
-                            }
-                        } else {
-                            // Fallback: try simple whitespace split
-                            const parts = line.trim().split(/\s+/);
-                            if (parts.length >= 3 && parts[1] === 'disk' && !parts[0].startsWith('loop') && !parts[0].startsWith('ram')) {
-                                disks.push({
-                                    name: parts[0],
-                                    path: `/dev/${parts[0]}`,
                                     type: parts[1],
-                                    size: parts[2],
-                                    model: parts.slice(3).join(' ') || parts[0]
+                                    size: size,
+                                    model: model
                                 });
                             }
                         }
@@ -87,17 +148,16 @@ export class ZfsApi {
                 });
             });
 
-            proc.done((exitCode, data) => {
+            proc.done((exitCode) => {
                 if (exitCode === 0) {
                     resolve(disks);
                 } else {
-                    const errorMsg = data || `lsblk exited with code ${exitCode}`;
-                    reject(new Error(`Failed to list disks: ${errorMsg}`));
+                    reject(new Error(`lsblk fallback exited with code ${exitCode}`));
                 }
             });
 
             proc.fail((error) => {
-                reject(new Error(`Failed to list disks: ${error}`));
+                reject(error);
             });
         });
     }
