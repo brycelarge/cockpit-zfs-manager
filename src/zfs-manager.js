@@ -67,7 +67,7 @@
             element.classList.add('pf-m-error');
 
             return popover;
-        }
+        },
 
         hidePopover(element) {
             const popover = document.querySelector('.pf-v6-c-popover');
@@ -78,7 +78,7 @@
                 element.removeAttribute('aria-invalid');
                 element.classList.remove('pf-m-error');
             }
-        }
+        },
 
         showNotification(status, title, description, timeout = 5000) {
             const alertContainer = document.getElementById('alerts-notifications') || document.body;
@@ -1169,7 +1169,22 @@
                     return true;
                 }
             });
-            modal.show();
+            modal.show().then(() => {
+                // Add input listeners to hide popovers on change
+                const nameInput = document.getElementById('pool-name');
+                const vdevTypeSelect = document.getElementById('pool-vdev-type');
+                const deviceCheckboxes = document.querySelectorAll('input[name="devices"]');
+                
+                if (nameInput) {
+                    nameInput.addEventListener('input', () => Utils.hidePopover(nameInput));
+                }
+                if (vdevTypeSelect) {
+                    vdevTypeSelect.addEventListener('change', () => Utils.hidePopover(vdevTypeSelect));
+                }
+                deviceCheckboxes.forEach(cb => {
+                    cb.addEventListener('change', () => Utils.hidePopover(document.getElementById('pool-devices-list')));
+                });
+            }).catch(() => {});
         }
 
         async listAvailableDisks() {
@@ -1571,10 +1586,14 @@
                 onConfirm: () => {
                     const form = document.getElementById('create-snapshot-form');
                     const formData = new FormData(form);
+                    const nameInput = document.getElementById('snapshot-name');
                     const name = formData.get('name');
 
+                    // Hide any existing popovers
+                    Utils.hidePopover();
+
                     if (!name || !name.includes('@')) {
-                        Utils.showNotification('warning', 'Validation Error', 'Snapshot name must be in format: filesystem@snapshot-name');
+                        Utils.showPopover(nameInput, 'Validation Error', 'Snapshot name must be in format: filesystem@snapshot-name');
                         return false;
                     }
 
@@ -1582,7 +1601,13 @@
                     return true;
                 }
             });
-            modal.show();
+            modal.show().then(() => {
+                // Add input listener to hide popover on change
+                const nameInput = document.getElementById('snapshot-name');
+                if (nameInput) {
+                    nameInput.addEventListener('input', () => Utils.hidePopover(nameInput));
+                }
+            }).catch(() => {});
         }
 
         async createSnapshot(name) {
