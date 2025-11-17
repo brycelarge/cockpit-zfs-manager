@@ -14,6 +14,7 @@ import { FormHelper } from 'cockpit-components-form-helper.jsx';
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { useDialogs } from 'dialogs.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
+import { DisksApi } from '../../zfsApi/disks.js';
 
 function ReplaceDiskDialog({ pool, onRefresh }) {
     const Dialogs = useDialogs();
@@ -35,7 +36,7 @@ function ReplaceDiskDialog({ pool, onRefresh }) {
         setLoading(true);
         try {
             const [devices, disks] = await Promise.all([
-                ZfsApi.getPoolDevices(pool.name),
+                DisksApi.getPoolDevices(pool.name),
                 ZfsApi.listAvailableDisks()
             ]);
             setPoolDevices(devices);
@@ -130,9 +131,9 @@ function ReplaceDiskDialog({ pool, onRefresh }) {
                                     <FormSelectOption value="" label="Select a device..." isDisabled />
                                     {poolDevices.map(device => (
                                         <FormSelectOption
-                                            key={device.name}
-                                            value={device.name}
-                                            label={`${device.name} (${device.state})`}
+                                            key={device.path}
+                                            value={device.path}
+                                            label={`${device.path}${device.name && device.name !== device.path.replace('/dev/', '') ? ` (${device.name})` : ''}`}
                                         />
                                     ))}
                                 </FormSelect>
