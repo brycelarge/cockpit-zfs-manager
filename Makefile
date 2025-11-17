@@ -12,10 +12,10 @@ all: $(DIST_TEST)
 
 # Build the plugin
 $(DIST_TEST): $(NODE_MODULES_TEST) $(shell find src/ -type f) package.json build.js
-	NODE_ENV=$(NODE_ENV) ./build.js
+	NODE_ENV=$(NODE_ENV) node build.js
 
 watch: $(NODE_MODULES_TEST)
-	NODE_ENV=$(NODE_ENV) ./build.js -w
+	NODE_ENV=$(NODE_ENV) node build.js --watch
 
 clean:
 	rm -rf dist/

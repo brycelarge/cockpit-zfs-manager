@@ -1,87 +1,173 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import process from 'node:process';
 
-const watch = process.argv.includes('-w') || process.argv.includes('--watch');
+import { sassPlugin } from 'esbuild-sass-plugin';
+
+const useWasm = os.arch() !== 'x64';
+const esbuild = (await import(useWasm ? 'esbuild-wasm' : 'esbuild'));
+
 const production = process.env.NODE_ENV === 'production';
+/* List of directories to use when resolving import statements */
+const nodePaths = ['pkg/lib'];
+const outdir = 'dist';
 
-const srcDir = path.join(__dirname, 'src');
-const distDir = path.join(__dirname, 'dist');
+// Obtain package name from package.json
+const packageJson = JSON.parse(fs.readFileSync('package.json'));
 
-function ensureDir(dir) {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
-}
+const parser = (await import('argparse')).default.ArgumentParser();
+parser.add_argument('-r', '--rsync', { help: "rsync bundles to ssh target after build", metavar: "HOST" });
+parser.add_argument('-w', '--watch', { action: 'store_true', help: "Enable watch mode", default: process.env.ESBUILD_WATCH === "true" });
+parser.add_argument('-m', '--metafile', { help: "Enable bundle size information file", metavar: "FILE" });
+const args = parser.parse_args();
 
-function copyFile(src, dest) {
-    ensureDir(path.dirname(dest));
-    fs.copyFileSync(src, dest);
-}
+if (args.rsync)
+    process.env.RSYNC = args.rsync;
 
-function build() {
-    console.log('Building cockpit-zfs-manager...');
-    
-    // Clean dist directory
-    if (fs.existsSync(distDir)) {
-        fs.rmSync(distDir, { recursive: true });
-    }
-    ensureDir(distDir);
-    
-    // Compile SCSS to CSS
-    console.log('Compiling SCSS...');
-    try {
-        const sassPath = path.join(__dirname, 'node_modules', '.bin', 'sass');
-        const sassCmd = fs.existsSync(sassPath) ? sassPath : 'npx sass';
-        // Suppress deprecation warnings from PatternFly dependencies (they're harmless)
-        execSync(`${sassCmd} --quiet-deps --quiet --load-path=node_modules ${path.join(srcDir, 'zfs-manager.scss')} ${path.join(distDir, 'zfs-manager.css')}`, { stdio: 'inherit' });
-    } catch (error) {
-        console.error('SCSS compilation failed:', error.message);
-        process.exit(1);
-    }
-    
-    // Copy manifest.json
-    if (fs.existsSync(path.join(srcDir, 'manifest.json'))) {
-        copyFile(path.join(srcDir, 'manifest.json'), path.join(distDir, 'manifest.json'));
-    }
-    
-    // Copy HTML files
-    if (fs.existsSync(path.join(srcDir, 'index.html'))) {
-        copyFile(path.join(srcDir, 'index.html'), path.join(distDir, 'index.html'));
-    }
-    
-    // Copy JavaScript files
-    if (fs.existsSync(path.join(srcDir, 'zfs-manager.js'))) {
-        copyFile(path.join(srcDir, 'zfs-manager.js'), path.join(distDir, 'zfs-manager.js'));
-    }
-    
-    console.log('Build complete! Output in dist/');
-    
-    // RSYNC support for remote development
-    if (process.env.RSYNC) {
-        const rsyncTarget = process.env.RSYNC;
-        const rsyncDest = process.env.RSYNC_DEVEL 
-            ? `${rsyncTarget}:~/.local/share/cockpit/zfs-manager`
-            : `${rsyncTarget}:/usr/share/cockpit/zfs-manager`;
-        
-        console.log(`Syncing to ${rsyncDest}...`);
-        execSync(`rsync -avz --delete ${distDir}/ ${rsyncDest}/`, { stdio: 'inherit' });
-    }
-}
-
-if (watch) {
-    console.log('Watching for changes...');
-    build();
-    
-    fs.watch(srcDir, { recursive: true }, (eventType, filename) => {
-        if (filename) {
-            console.log(`Change detected: ${filename}`);
-            build();
+function cleanPlugin() {
+    return {
+        name: 'clean',
+        setup(build) {
+            build.onStart(() => {
+                if (fs.existsSync(outdir)) {
+                    fs.rmSync(outdir, { recursive: true });
+                }
+                fs.mkdirSync(outdir, { recursive: true });
+            });
         }
-    });
-} else {
-    build();
+    };
 }
 
+function notifyEndPlugin() {
+    return {
+        name: 'notify-end',
+        setup(build) {
+            let startTime;
+
+            build.onStart(() => {
+                startTime = new Date();
+            });
+
+            build.onEnd(() => {
+                const endTime = new Date();
+                const timeStamp = endTime.toTimeString().split(' ')[0];
+                console.log(`${timeStamp}: Build finished in ${endTime - startTime} ms`);
+            });
+        }
+    };
+}
+
+function cockpitRsyncEsbuildPlugin({ dest }) {
+    return {
+        name: 'cockpit-rsync',
+        setup(build) {
+            build.onEnd((result) => {
+                if (result?.errors.length === 0 && process.env.RSYNC) {
+                    const rsyncTarget = process.env.RSYNC;
+                    const rsyncDest = process.env.RSYNC_DEVEL 
+                        ? `${rsyncTarget}:~/.local/share/cockpit/${dest}`
+                        : `${rsyncTarget}:/usr/share/cockpit/${dest}`;
+                    
+                    console.log(`Syncing to ${rsyncDest}...`);
+                    const { execSync } = await import('child_process');
+                    execSync(`rsync -avz --delete ${outdir}/ ${rsyncDest}/`, { stdio: 'inherit' });
+                }
+            });
+        }
+    };
+}
+
+// similar to fs.watch(), but recursively watches all subdirectories
+function watch_dirs(dir, on_change) {
+    const callback = (ev, dir, fname) => {
+        // only listen for "change" events, as renames are noisy
+        // ignore hidden files and the "4913" temporary file created by vim
+        if (ev !== "change" || fname.startsWith('.') || fname === "4913")
+            return;
+        on_change(path.join(dir, fname));
+    };
+
+    fs.watch(dir, {}, (ev, path) => callback(ev, dir, path));
+
+    // watch all subdirectories in dir
+    const d = fs.opendirSync(dir);
+    let dirent;
+    while ((dirent = d.readSync()) !== null) {
+        if (dirent.isDirectory())
+            watch_dirs(path.join(dir, dirent.name), on_change);
+    }
+    d.closeSync();
+}
+
+const context = await esbuild.context({
+    ...!production ? { sourcemap: "linked" } : {},
+    bundle: true,
+    entryPoints: ["./src/index.js"],
+    external: ['*.woff', '*.woff2', '*.jpg', '*.svg', '../../assets*'],
+    legalComments: 'external',
+    loader: {
+        ".js": "js",
+    },
+    metafile: !!args.metafile,
+    minify: production,
+    nodePaths,
+    outdir,
+    target: ['es2020'],
+    plugins: [
+        cleanPlugin(),
+
+        // Esbuild will only copy assets that are explicitly imported and used in the code.
+        // Copy the other files here.
+        {
+            name: 'copy-assets',
+            setup(build) {
+                build.onEnd((output, _outputFiles) => {
+                    if (output?.errors.length === 0) {
+                        fs.copyFileSync('./src/manifest.json', './dist/manifest.json');
+                        fs.copyFileSync('./src/index.html', './dist/index.html');
+                    }
+                });
+            }
+        },
+
+        sassPlugin({
+            loadPaths: [...nodePaths, 'node_modules'],
+            filter: /\.scss/,
+            quietDeps: true,
+        }),
+
+        cockpitRsyncEsbuildPlugin({ dest: packageJson.name }),
+
+        notifyEndPlugin(),
+    ]
+});
+
+try {
+    const result = await context.rebuild();
+    if (args.metafile) {
+        fs.writeFileSync(args.metafile, JSON.stringify(result.metafile));
+    }
+} catch (e) {
+    if (!args.watch)
+        process.exit(1);
+    // ignore errors in watch mode
+}
+
+if (args.watch) {
+    const on_change = async path => {
+        console.log("change detected:", path);
+        await context.cancel();
+        try {
+            await context.rebuild();
+        } catch (e) {} // ignore in watch mode
+    };
+
+    watch_dirs('src', on_change);
+    // wait forever until Control-C
+    await new Promise(() => {});
+}
+
+context.dispose();

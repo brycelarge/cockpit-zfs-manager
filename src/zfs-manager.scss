@@ -1,91 +1,17 @@
-// Import PatternFly base (Font Awesome will be skipped due to variable above)
-@use "@patternfly/patternfly/base" as *;
+@use "page.scss";
+@use "ct-card.scss";
+/* Imports 'pf-u-pt-md' class used for spacing */
+@use "../node_modules/@patternfly/patternfly/utilities/Spacing/spacing.css";
 
-// Import PatternFly components (only what we actually use)
-@use "@patternfly/patternfly/components/Page/page.scss";
-@use "@patternfly/patternfly/components/Card/card.scss";
-@use "@patternfly/patternfly/components/Table/table.scss";
-@use "@patternfly/patternfly/components/Button/button.scss";
-@use "@patternfly/patternfly/components/Menu/menu.scss";
-@use "@patternfly/patternfly/components/MenuToggle/menu-toggle.scss";
-@use "@patternfly/patternfly/components/ModalBox/modal-box.scss";
-@use "@patternfly/patternfly/components/Form/form.scss";
-@use "@patternfly/patternfly/components/Check/check.scss";
-@use "@patternfly/patternfly/components/Label/label.scss";
-@use "@patternfly/patternfly/components/Progress/progress.scss";
-@use "@patternfly/patternfly/components/Spinner/spinner.scss";
-@use "@patternfly/patternfly/components/Tabs/tabs.scss";
-@use "@patternfly/patternfly/components/EmptyState/empty-state.scss";
-@use "@patternfly/patternfly/components/Toolbar/toolbar.scss";
-@use "@patternfly/patternfly/components/CodeBlock/code-block.scss";
-@use "@patternfly/patternfly/components/Divider/divider.scss";
-
-// Import utilities (using .css like cockpit-machines)
-@use "@patternfly/patternfly/utilities/Spacing/spacing.css";
-
-// Import Alert component (for notifications)
+// for $alert
 @use "@patternfly/patternfly/components/Alert/alert.scss";
 
-// Import Text utility (using .css like cockpit-machines)
+/* for pf-v6-u-text-color-subtle */
 @use "@patternfly/patternfly/utilities/Text/text.css";
 
-.listing-ct-item {
-    cursor: pointer;
-}
-
-.listing-ct-item:hover {
-    background-color: var(--pf-t--global--BackgroundColor--200);
-}
-
-.listing-ct-item.expanded {
-    background-color: var(--pf-t--global--BackgroundColor--100);
-}
-
-.listing-ct-toggle {
-    width: 40px;
-    text-align: center;
-}
-
-.listing-ct-toggle button {
-    border: none;
-    background: none;
-    cursor: pointer;
-    padding: var(--pf-t--global--spacer--xs);
-}
-
-.listing-ct-toggle i {
-    transition: transform 0.2s;
-}
-
-.pool-details td {
-    padding: var(--pf-t--global--spacer--md);
-    background-color: var(--pf-t--global--BackgroundColor--100);
-}
-
-.tab-content {
-    margin-top: var(--pf-t--global--spacer--md);
-}
-
-.tab-pane {
-    padding: var(--pf-t--global--spacer--md) 0;
-}
-
-.tab-pane.active {
-    display: block;
-}
-
-.listing-ct-wordwrap {
-    white-space: normal;
-    word-wrap: break-word;
-}
-
-.listing-ct-icon {
-    width: 40px;
-}
-
-.listing-ct-actionsmenu {
-    width: 60px;
-    text-align: center;
+/* Style the list cards as ct-cards */
+.pf-v6-c-page__main-section > .pf-v6-c-card {
+    @extend .ct-card;
 }
 
 .hidden {
@@ -132,5 +58,3 @@
     max-height: 90vh;
     overflow-y: auto;
 }
-
-

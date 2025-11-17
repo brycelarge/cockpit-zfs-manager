@@ -6,4 +6,5 @@
 .cockpit/
 node_modules/
 dist/
+pkg/
 
