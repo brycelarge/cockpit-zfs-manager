@@ -20,54 +20,80 @@
                         <div class="pf-v6-c-card pf-m-plain">
                             <div class="pf-v6-c-card__header">
                                 <div class="pf-v6-c-card__actions">
-                                    <button id="btn-storagepools-create" class="pf-v6-c-button pf-m-primary" type="button">
-                                        <span class="pf-v6-c-button__text">Create Storage Pool</span>
-                                    </button>
-                                    <button id="btn-storagepools-import" class="pf-v6-c-button pf-m-secondary" type="button">
-                                        <span class="pf-v6-c-button__text">Import Storage Pool</span>
-                                    </button>
-                                    <button id="btn-storagepools-refresh" class="pf-v6-c-button pf-m-secondary" type="button">
-                                        <span class="pf-v6-c-button__text">Refresh</span>
-                                    </button>
-                                    <div class="menu-dropdown-wrapper">
-                                        <div class="pf-v6-c-menu-toggle pf-m-secondary">
-                                            <button class="pf-v6-c-menu-toggle__button" type="button" aria-expanded="false" id="actions-menu-toggle">
-                                                <span class="pf-v6-c-menu-toggle__text">Actions</span>
-                                                <span class="pf-v6-c-menu-toggle__controls">
-                                                    <span class="pf-v6-c-menu-toggle__toggle-icon">
-                                                        <svg class="pf-v6-svg" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
-                                                            <path d="M31.3 192h257.3c17.8 0 26.7 21.5 14.1 34.1L174.1 354.8c-7.8 7.8-20.5 7.8-28.3 0L17.2 226.1C4.6 213.5 13.5 192 31.3 192z"></path>
-                                                        </svg>
+                                    <div class="pf-v6-c-toolbar">
+                                        <div class="pf-v6-c-toolbar__content">
+                                            <div class="pf-v6-c-toolbar__content-section">
+                                                <div class="pf-v6-c-toolbar__item pf-m-align-self-baseline">
+                                                    <span style="display: contents;">
+                                                        <span>
+                                                            <button id="btn-storagepools-create" class="pf-v6-c-button pf-m-primary" type="button">
+                                                                <span class="pf-v6-c-button__text">Create Storage Pool</span>
+                                                            </button>
+                                                        </span>
                                                     </span>
-                                                </span>
-                                            </button>
-                                        </div>
-                                        <div class="pf-v6-c-menu" hidden id="actions-menu">
-                                            <div class="pf-v6-c-menu__content">
-                                                <ul role="menu" class="pf-v6-c-menu__list">
-                                                    <li class="pf-v6-c-menu__list-item" role="none">
-                                                        <button id="btn-filesystems-unlock" tabindex="0" class="pf-v6-c-menu__item" role="menuitem" type="button">
-                                                            <span class="pf-v6-c-menu__item-main">
-                                                                <span class="pf-v6-c-menu__item-text">Unlock File Systems</span>
-                                                            </span>
-                                                        </button>
-                                                    </li>
-                                                    <li class="pf-v6-c-divider" role="separator"></li>
-                                                    <li class="pf-v6-c-menu__list-item" role="none">
-                                                        <button id="btn-configure" tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button">
-                                                            <span class="pf-v6-c-menu__item-main">
-                                                                <span class="pf-v6-c-menu__item-text">Configure</span>
-                                                            </span>
-                                                        </button>
-                                                    </li>
-                                                    <li class="pf-v6-c-menu__list-item" role="none">
-                                                        <button id="btn-about" tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button">
-                                                            <span class="pf-v6-c-menu__item-main">
-                                                                <span class="pf-v6-c-menu__item-text">About</span>
-                                                            </span>
-                                                        </button>
-                                                    </li>
-                                                </ul>
+                                                </div>
+                                                <div class="pf-v6-c-toolbar__item pf-m-align-self-baseline">
+                                                    <span style="display: contents;">
+                                                        <span>
+                                                            <button id="btn-storagepools-import" class="pf-v6-c-button pf-m-secondary" type="button">
+                                                                <span class="pf-v6-c-button__text">Import Storage Pool</span>
+                                                            </button>
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                                <div class="pf-v6-c-toolbar__item pf-m-align-self-baseline">
+                                                    <span style="display: contents;">
+                                                        <span>
+                                                            <button id="btn-storagepools-refresh" class="pf-v6-c-button pf-m-secondary" type="button">
+                                                                <span class="pf-v6-c-button__text">Refresh</span>
+                                                            </button>
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                                <div class="pf-v6-c-toolbar__item pf-m-align-self-baseline">
+                                                    <div class="menu-dropdown-wrapper">
+                                                        <div class="pf-v6-c-menu-toggle pf-m-secondary">
+                                                            <button class="pf-v6-c-menu-toggle__button" type="button" aria-expanded="false" id="actions-menu-toggle">
+                                                                <span class="pf-v6-c-menu-toggle__text">Actions</span>
+                                                                <span class="pf-v6-c-menu-toggle__controls">
+                                                                    <span class="pf-v6-c-menu-toggle__toggle-icon">
+                                                                        <svg class="pf-v6-svg" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                                                            <path d="M31.3 192h257.3c17.8 0 26.7 21.5 14.1 34.1L174.1 354.8c-7.8 7.8-20.5 7.8-28.3 0L17.2 226.1C4.6 213.5 13.5 192 31.3 192z"></path>
+                                                                        </svg>
+                                                                    </span>
+                                                                </span>
+                                                            </button>
+                                                        </div>
+                                                        <div class="pf-v6-c-menu" hidden id="actions-menu">
+                                                            <div class="pf-v6-c-menu__content">
+                                                                <ul role="menu" class="pf-v6-c-menu__list">
+                                                                    <li class="pf-v6-c-menu__list-item" role="none">
+                                                                        <button id="btn-filesystems-unlock" tabindex="0" class="pf-v6-c-menu__item" role="menuitem" type="button">
+                                                                            <span class="pf-v6-c-menu__item-main">
+                                                                                <span class="pf-v6-c-menu__item-text">Unlock File Systems</span>
+                                                                            </span>
+                                                                        </button>
+                                                                    </li>
+                                                                    <li class="pf-v6-c-divider" role="separator"></li>
+                                                                    <li class="pf-v6-c-menu__list-item" role="none">
+                                                                        <button id="btn-configure" tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button">
+                                                                            <span class="pf-v6-c-menu__item-main">
+                                                                                <span class="pf-v6-c-menu__item-text">Configure</span>
+                                                                            </span>
+                                                                        </button>
+                                                                    </li>
+                                                                    <li class="pf-v6-c-menu__list-item" role="none">
+                                                                        <button id="btn-about" tabindex="-1" class="pf-v6-c-menu__item" role="menuitem" type="button">
+                                                                            <span class="pf-v6-c-menu__item-main">
+                                                                                <span class="pf-v6-c-menu__item-text">About</span>
+                                                                            </span>
+                                                                        </button>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
