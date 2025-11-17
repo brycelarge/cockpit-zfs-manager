@@ -257,7 +257,17 @@ export class DisksApi {
                     powerCycleCount: null,
                     reallocatedSectors: null,
                     pendingSectors: null,
-                    uncorrectableSectors: null
+                    uncorrectableSectors: null,
+                    // Additional fields for detailed view
+                    firmware: '',
+                    interface: '',
+                    transferMode: '',
+                    rotationRate: null,
+                    physicalBlockSize: '',
+                    wwn: '',
+                    hostReads: null,
+                    hostWrites: null,
+                    type: ''
                 };
                 
                 // For NVMe devices, use different approach
@@ -342,8 +352,17 @@ export class DisksApi {
                             smartInfo.reallocatedSectors = parseInt(mediaErrorMatch[1]);
                         }
                         
-                            console.log(`Parsed SMART info for ${devicePath}:`, smartInfo);
-                            resolve(smartInfo);
+                        // Parse firmware version
+                        const firmwareMatch = nvmeOutput.match(/Firmware Version:\s*(.+)/i);
+                        if (firmwareMatch) {
+                            smartInfo.firmware = firmwareMatch[1].trim();
+                        }
+                        
+                        // Set type for NVMe
+                        smartInfo.type = 'NVMe';
+                        
+                        console.log(`Parsed SMART info for ${devicePath}:`, smartInfo);
+                        resolve(smartInfo);
                         } else {
                             console.log(`smartctl failed for ${devicePath} with exit code: ${nvmeExitCode}, no output`);
                             console.log(`Output length: ${nvmeOutput.length}`);
@@ -410,6 +429,15 @@ export class DisksApi {
                         if (mediaErrorMatch) {
                             smartInfo.reallocatedSectors = parseInt(mediaErrorMatch[1]);
                         }
+                        
+                        // Parse firmware version
+                        const firmwareMatch = nvmeOutput.match(/Firmware Version:\s*(.+)/i);
+                        if (firmwareMatch) {
+                            smartInfo.firmware = firmwareMatch[1].trim();
+                        }
+                        
+                        // Set type for NVMe
+                        smartInfo.type = 'NVMe';
                         
                         // If we parsed at least the model, consider it successful
                         if (smartInfo.model || smartInfo.serial || smartInfo.capacity) {
@@ -480,6 +508,61 @@ export class DisksApi {
                             if (capacityMatch) {
                                 const bytes = parseInt(capacityMatch[1]);
                                 smartInfo.capacity = DisksApi.formatBytes(bytes);
+                            }
+                            
+                            // Parse firmware
+                            const firmwareMatch = infoOutput.match(/Firmware Version:\s*(.+)/i);
+                            if (firmwareMatch) {
+                                smartInfo.firmware = firmwareMatch[1].trim();
+                            }
+                            
+                            // Parse interface (SATA, SAS, etc.)
+                            const interfaceMatch = infoOutput.match(/SATA Version is:\s*(.+)/i) ||
+                                                  infoOutput.match(/Transport protocol:\s*(.+)/i);
+                            if (interfaceMatch) {
+                                smartInfo.interface = interfaceMatch[1].trim();
+                            } else if (infoOutput.match(/SATA/i)) {
+                                smartInfo.interface = 'SATA';
+                            } else if (infoOutput.match(/SAS/i)) {
+                                smartInfo.interface = 'SAS';
+                            }
+                            
+                            // Parse transfer mode
+                            const transferMatch = infoOutput.match(/SATA Version is:\s*.*?(\d+\.\d+\s*Gb\/s)/i) ||
+                                                   infoOutput.match(/SATA Version is:\s*.*?(\d+\.\d+\s*Gbps)/i);
+                            if (transferMatch) {
+                                smartInfo.transferMode = transferMatch[1].trim();
+                            }
+                            
+                            // Parse rotation rate
+                            const rotationMatch = infoOutput.match(/Rotation Rate:\s*(\d+)\s*rpm/i) ||
+                                                 infoOutput.match(/Rotation Rate:\s*Solid State Device/i);
+                            if (rotationMatch) {
+                                if (rotationMatch[1]) {
+                                    smartInfo.rotationRate = parseInt(rotationMatch[1]);
+                                } else {
+                                    smartInfo.rotationRate = 0; // SSD
+                                    smartInfo.type = 'SSD';
+                                }
+                            }
+                            
+                            // Parse physical block size
+                            const blockSizeMatch = infoOutput.match(/Sector Sizes?:\s*(\d+)\s*bytes/i) ||
+                                                  infoOutput.match(/Logical block size:\s*(\d+)\s*bytes/i);
+                            if (blockSizeMatch) {
+                                smartInfo.physicalBlockSize = blockSizeMatch[1] + ' bytes';
+                            }
+                            
+                            // Parse WWN
+                            const wwnMatch = infoOutput.match(/WWN:\s*(.+)/i) ||
+                                           infoOutput.match(/World Wide Name:\s*(.+)/i);
+                            if (wwnMatch) {
+                                smartInfo.wwn = wwnMatch[1].trim();
+                            }
+                            
+                            // Set type if not already set
+                            if (!smartInfo.type) {
+                                smartInfo.type = smartInfo.rotationRate === 0 ? 'SSD' : 'HDD';
                             }
                             
                             // Parse SMART attributes

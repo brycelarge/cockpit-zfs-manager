@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
+import { Card, CardBody, CardTitle } from "@patternfly/react-core/dist/esm/components/Card";
 import { ListingTable } from 'cockpit-components-table.jsx';
 import { DescriptionList, DescriptionListGroup, DescriptionListTerm, DescriptionListDescription } from "@patternfly/react-core/dist/esm/components/DescriptionList";
 import { Alert } from "@patternfly/react-core/dist/esm/components/Alert";
@@ -114,106 +115,169 @@ function DisksTab({ pool }) {
                     key: disk.path,
                     expandedContent: disk.smart && (
                         <div style={{ padding: 'var(--pf-t--global--spacer--md)' }}>
-                            <DescriptionList isHorizontal>
-                                {disk.smart.model && (
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Model</DescriptionListTerm>
-                                        <DescriptionListDescription>{disk.smart.model}</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                )}
-                                {disk.smart.serial && (
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Serial Number</DescriptionListTerm>
-                                        <DescriptionListDescription>{disk.smart.serial}</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                )}
-                                {disk.smart.capacity && (
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Capacity</DescriptionListTerm>
-                                        <DescriptionListDescription>{disk.smart.capacity}</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                )}
-                                <DescriptionListGroup>
-                                    <DescriptionListTerm>SMART Health</DescriptionListTerm>
-                                    <DescriptionListDescription>{formatHealth(disk.smart.health)}</DescriptionListDescription>
-                                </DescriptionListGroup>
-                                {disk.smart.temperature !== null && (
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Temperature</DescriptionListTerm>
-                                        <DescriptionListDescription>{formatTemperature(disk.smart.temperature)}</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                )}
-                                {disk.smart.powerOnHours !== null && (
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Power On Hours</DescriptionListTerm>
-                                        <DescriptionListDescription>{disk.smart.powerOnHours} hours</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                )}
-                                {disk.smart.powerCycleCount !== null && (
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Power Cycles</DescriptionListTerm>
-                                        <DescriptionListDescription>{disk.smart.powerCycleCount}</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                )}
-                                {disk.smart.reallocatedSectors !== null && (
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Reallocated Sectors</DescriptionListTerm>
-                                        <DescriptionListDescription>
-                                            <span style={{ color: disk.smart.reallocatedSectors > 0 ? '#c9190b' : undefined }}>
-                                                {disk.smart.reallocatedSectors}
-                                            </span>
-                                        </DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                )}
-                                {disk.smart.pendingSectors !== null && (
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Pending Sectors</DescriptionListTerm>
-                                        <DescriptionListDescription>
-                                            <span style={{ color: disk.smart.pendingSectors > 0 ? '#c9190b' : undefined }}>
-                                                {disk.smart.pendingSectors}
-                                            </span>
-                                        </DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                )}
-                                {disk.smart.uncorrectableSectors !== null && (
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Uncorrectable Sectors</DescriptionListTerm>
-                                        <DescriptionListDescription>
-                                            <span style={{ color: disk.smart.uncorrectableSectors > 0 ? '#c9190b' : undefined }}>
-                                                {disk.smart.uncorrectableSectors}
-                                            </span>
-                                        </DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                )}
-                            </DescriptionList>
-                            
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--pf-t--global--spacer--md)', marginBottom: 'var(--pf-t--global--spacer--lg)' }}>
+                                {/* Health Widget */}
+                                <Card>
+                                    <CardTitle>Health</CardTitle>
+                                    <CardBody>
+                                        <DescriptionList isHorizontal>
+                                            <DescriptionListGroup>
+                                                <DescriptionListTerm>Status</DescriptionListTerm>
+                                                <DescriptionListDescription>
+                                                    {formatHealth(disk.smart.health)}
+                                                </DescriptionListDescription>
+                                            </DescriptionListGroup>
+                                            {disk.smart.temperature !== null && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Temperature</DescriptionListTerm>
+                                                    <DescriptionListDescription>{formatTemperature(disk.smart.temperature)}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                        </DescriptionList>
+                                    </CardBody>
+                                </Card>
+
+                                {/* Information Widget */}
+                                <Card>
+                                    <CardTitle>Information</CardTitle>
+                                    <CardBody>
+                                        <DescriptionList isHorizontal>
+                                            {disk.smart.model && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Model</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.model}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.serial && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Serial Number</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.serial}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.capacity && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Size</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.capacity}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.type && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Type</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.type}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.interface && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Interface</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.interface}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.transferMode && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Transfer Mode</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.transferMode}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.rotationRate !== null && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Rotation Rate</DescriptionListTerm>
+                                                    <DescriptionListDescription>
+                                                        {disk.smart.rotationRate === 0 ? '-' : `${disk.smart.rotationRate} rpm`}
+                                                    </DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.firmware && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Firmware</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.firmware}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.physicalBlockSize && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Physical Block Size</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.physicalBlockSize}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.wwn && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>WWN</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.wwn}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            <DescriptionListGroup>
+                                                <DescriptionListTerm>Pools</DescriptionListTerm>
+                                                <DescriptionListDescription>
+                                                    <a href="#" onClick={(e) => { e.preventDefault(); }}>{pool.name}</a>
+                                                </DescriptionListDescription>
+                                            </DescriptionListGroup>
+                                        </DescriptionList>
+                                    </CardBody>
+                                </Card>
+
+                                {/* Stats Widget */}
+                                <Card>
+                                    <CardTitle>Stats</CardTitle>
+                                    <CardBody>
+                                        <DescriptionList isHorizontal>
+                                            {disk.smart.hostReads !== null && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Total Host Reads</DescriptionListTerm>
+                                                    <DescriptionListDescription>{DisksApi.formatBytes(disk.smart.hostReads)}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.hostWrites !== null && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Total Host Writes</DescriptionListTerm>
+                                                    <DescriptionListDescription>{DisksApi.formatBytes(disk.smart.hostWrites)}</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.powerCycleCount !== null && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Power On Count</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.powerCycleCount} times</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                            {disk.smart.powerOnHours !== null && (
+                                                <DescriptionListGroup>
+                                                    <DescriptionListTerm>Power On Hours</DescriptionListTerm>
+                                                    <DescriptionListDescription>{disk.smart.powerOnHours} hours</DescriptionListDescription>
+                                                </DescriptionListGroup>
+                                            )}
+                                        </DescriptionList>
+                                    </CardBody>
+                                </Card>
+                            </div>
+
+                            {/* S.M.A.R.T. Attributes Table */}
                             {disk.smart.attributes && disk.smart.attributes.length > 0 && (
-                                <div style={{ marginTop: 'var(--pf-t--global--spacer--lg)' }}>
-                                    <h4>SMART Attributes</h4>
-                                    <ListingTable
-                                        aria-label="SMART attributes"
-                                        variant="compact"
-                                        columns={[
-                                            { title: "ID", props: { width: 5 } },
-                                            { title: "Attribute", header: true, props: { width: 30 } },
-                                            { title: "Value", props: { width: 10 } },
-                                            { title: "Worst", props: { width: 10 } },
-                                            { title: "Threshold", props: { width: 12 } },
-                                            { title: "Raw Value", props: { width: 15 } },
-                                        ]}
-                                        rows={disk.smart.attributes.map(attr => ({
-                                            columns: [
-                                                { title: attr.id.toString() },
-                                                { title: attr.name, header: true },
-                                                { title: attr.value.toString() },
-                                                { title: attr.worst.toString() },
-                                                { title: attr.threshold.toString() },
-                                                { title: attr.rawValue !== null ? attr.rawValue.toString() : '-' },
-                                            ],
-                                            key: `attr-${attr.id}`,
-                                        }))}
-                                    />
-                                </div>
+                                <Card>
+                                    <CardTitle>S.M.A.R.T.</CardTitle>
+                                    <CardBody>
+                                        <ListingTable
+                                            aria-label="SMART attributes"
+                                            variant="compact"
+                                            columns={[
+                                                { title: "ID", props: { width: 5 } },
+                                                { title: "Attribute Name", header: true, props: { width: 25 } },
+                                                { title: "Current", props: { width: 10 } },
+                                                { title: "Worst", props: { width: 10 } },
+                                                { title: "Threshold", props: { width: 12 } },
+                                                { title: "Raw Value", props: { width: 20 } },
+                                            ]}
+                                            rows={disk.smart.attributes.map(attr => ({
+                                                columns: [
+                                                    { title: attr.id.toString() },
+                                                    { title: attr.name, header: true },
+                                                    { title: attr.value.toString() },
+                                                    { title: attr.worst.toString() },
+                                                    { title: attr.threshold.toString() },
+                                                    { title: attr.rawValue !== null ? attr.rawValue.toString() : '-' },
+                                                ],
+                                                key: `attr-${attr.id}`,
+                                            }))}
+                                        />
+                                    </CardBody>
+                                </Card>
                             )}
                         </div>
                     ),
