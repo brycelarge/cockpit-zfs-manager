@@ -115,7 +115,7 @@ const context = await esbuild.context({
         cockpitPoEsbuildPlugin(),
 
         ...production ? [cockpitCompressPlugin()] : [],
-        cockpitRsyncEsbuildPlugin({ dest: packageJson.name }),
+        cockpitRsyncEsbuildPlugin({ dest: 'zfs-manager' }),
 
         notifyEndPlugin(),
     ]

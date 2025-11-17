@@ -40,12 +40,12 @@ clean:
 
 install: $(DIST_TEST)
 	mkdir -p $(DESTDIR)$(PREFIX)/share/cockpit/$(PACKAGE_NAME)
-	cp -r dist/* $(DESTDIR)$(PREFIX)/share/cockpit/$(PACKAGE_NAME)/
+	cp -r dist/* $(DESTDIR)$(PREFIX)/share/cockpit/$(PACKAGE_NAME)
 
 # this requires a built source tree and avoids having to install anything system-wide
 devel-install: $(DIST_TEST)
 	mkdir -p ~/.local/share/cockpit
-	ln -sf `pwd`/dist ~/.local/share/cockpit/$(PACKAGE_NAME)
+	ln -s `pwd`/dist ~/.local/share/cockpit/$(PACKAGE_NAME)
 
 # assumes that there was symlink set up using the above devel-install target,
 # and removes it
