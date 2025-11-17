@@ -68,8 +68,21 @@ function DisksTab({ pool }) {
         );
     }
 
+    // Check if any disk has SMART data
+    const hasSmartData = disks.some(disk => disk.smart && disk.smart.available);
+    const smartctlMissing = disks.length > 0 && !hasSmartData && disks.every(disk => disk.smart === null);
+
     return (
         <div>
+            {smartctlMissing && (
+                <Alert variant="info" title="SMART data not available" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
+                    <p>SMART information is not available. To enable SMART data, install <code>smartmontools</code>:</p>
+                    <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)' }}>
+                        <strong>Debian/Ubuntu:</strong> <code>sudo apt install smartmontools</code><br />
+                        <strong>Fedora/RHEL:</strong> <code>sudo dnf install smartmontools</code>
+                    </p>
+                </Alert>
+            )}
             <ListingTable
                 aria-label="Pool disks"
                 variant="compact"
