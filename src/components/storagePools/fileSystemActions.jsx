@@ -9,6 +9,8 @@ import CloneFileSystemDialog from './cloneFileSystemDialog.jsx';
 import DeleteFileSystemDialog from './deleteFileSystemDialog.jsx';
 import CreateSnapshotDialog from './createSnapshotDialog.jsx';
 import DatasetPropertiesDialog from './datasetPropertiesDialog.jsx';
+import MountPointDialog from './mountPointDialog.jsx';
+import SharesDialog from './sharesDialog.jsx';
 
 function FileSystemActions({ filesystem, pool, onRefresh }) {
     const Dialogs = useDialogs();
@@ -20,6 +22,20 @@ function FileSystemActions({ filesystem, pool, onRefresh }) {
             onClick={() => Dialogs.show(<DatasetPropertiesDialog filesystem={filesystem} onRefresh={onRefresh} />)}
         >
             Properties
+        </DropdownItem>,
+        <DropdownItem
+            key={`${filesystem.name}-mount`}
+            id={`${filesystem.name}-mount`}
+            onClick={() => Dialogs.show(<MountPointDialog filesystem={filesystem} onRefresh={onRefresh} />)}
+        >
+            Mount Point
+        </DropdownItem>,
+        <DropdownItem
+            key={`${filesystem.name}-shares`}
+            id={`${filesystem.name}-shares`}
+            onClick={() => Dialogs.show(<SharesDialog filesystem={filesystem} onRefresh={onRefresh} />)}
+        >
+            Shares (NFS/SMB)
         </DropdownItem>,
         <Divider key={`${filesystem.name}-separator-1`} />,
         <DropdownItem

@@ -13,6 +13,7 @@ import PoolActions from './poolActions.jsx';
 import PoolFileSystemsTab from './poolFileSystemsTab.jsx';
 import PoolSnapshotsTab from './poolSnapshotsTab.jsx';
 import PoolStatusTab from './poolStatusTab.jsx';
+import PerformanceStatsTab from './performanceStatsTab.jsx';
 import SanoidTab from './sanoidTab.jsx';
 import ScrubTab from './scrubTab.jsx';
 import UnlockFileSystemsDialog from './unlockFileSystemsDialog.jsx';
@@ -108,6 +109,12 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                                 renderer: PoolStatusTab,
                                 data: { pool },
                                 id: `${pool.name}-status`
+                            },
+                            {
+                                name: "Performance",
+                                renderer: PerformanceStatsTab,
+                                data: { pool },
+                                id: `${pool.name}-performance`
                             },
                             {
                                 name: "Sanoid",

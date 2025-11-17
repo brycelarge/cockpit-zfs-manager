@@ -8,11 +8,20 @@ import { useDialogs } from 'dialogs.jsx';
 import CloneSnapshotDialog from './cloneSnapshotDialog.jsx';
 import RollbackSnapshotDialog from './rollbackSnapshotDialog.jsx';
 import DeleteSnapshotDialog from './deleteSnapshotDialog.jsx';
+import ReplicationDialog from './replicationDialog.jsx';
 
 function SnapshotActions({ snapshot, pool, onRefresh }) {
     const Dialogs = useDialogs();
 
     const dropdownItems = [
+        <DropdownItem
+            key={`${snapshot.name}-replicate`}
+            id={`${snapshot.name}-replicate`}
+            onClick={() => Dialogs.show(<ReplicationDialog snapshot={snapshot} pool={pool} onRefresh={onRefresh} />)}
+        >
+            Replicate
+        </DropdownItem>,
+        <Divider key={`${snapshot.name}-separator-1`} />,
         <DropdownItem
             key={`${snapshot.name}-clone`}
             id={`${snapshot.name}-clone`}
@@ -27,7 +36,7 @@ function SnapshotActions({ snapshot, pool, onRefresh }) {
         >
             Rollback
         </DropdownItem>,
-        <Divider key={`${snapshot.name}-separator`} />,
+        <Divider key={`${snapshot.name}-separator-2`} />,
         <DropdownItem
             key={`${snapshot.name}-delete`}
             id={`${snapshot.name}-delete`}

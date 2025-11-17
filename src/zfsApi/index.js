@@ -674,5 +674,402 @@ export class ZfsApi {
             });
         });
     }
+
+    // Replication (ZFS Send/Receive)
+    static async sendSnapshot(snapshotName, destination, options = {}) {
+        return new Promise((resolve, reject) => {
+            const args = ['zfs', 'send'];
+            
+            if (options.recursive) {
+                args.push('-R');
+            }
+            if (options.incremental && options.fromSnapshot) {
+                args.push('-i', options.fromSnapshot);
+            }
+            if (options.properties) {
+                args.push('-p');
+            }
+            if (options.replication) {
+                args.push('-R');
+            }
+            
+            args.push(snapshotName);
+            
+            // If destination is a file path, redirect output
+            // If it's a remote system, use ssh
+            let proc;
+            if (destination.startsWith('ssh://') || destination.includes('@')) {
+                // Remote destination via SSH
+                const [userHost, remotePath] = destination.replace('ssh://', '').split(':');
+                const [user, host] = userHost.split('@');
+                const sshArgs = ['ssh', user ? `${user}@${host}` : host, `zfs receive ${remotePath}`];
+                proc = cockpit.spawn(['sh', '-c', `${args.join(' ')} | ${sshArgs.join(' ')}`], {
+                    err: 'message'
+                });
+            } else {
+                // Local file destination
+                proc = cockpit.spawn(['sh', '-c', `${args.join(' ')} > ${destination}`], {
+                    err: 'message'
+                });
+            }
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    resolve();
+                } else {
+                    const errorMsg = data || `zfs send exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async receiveSnapshot(poolName, source, options = {}) {
+        return new Promise((resolve, reject) => {
+            const args = ['zfs', 'receive'];
+            
+            if (options.force) {
+                args.push('-F');
+            }
+            if (options.dryRun) {
+                args.push('-n');
+            }
+            if (options.verbose) {
+                args.push('-v');
+            }
+            
+            args.push(poolName);
+            
+            let proc;
+            if (source.startsWith('ssh://') || source.includes('@')) {
+                // Remote source via SSH
+                const [userHost, remoteSnapshot] = source.replace('ssh://', '').split(':');
+                const [user, host] = userHost.split('@');
+                const sshCmd = `ssh ${user ? `${user}@${host}` : host} "zfs send ${remoteSnapshot}"`;
+                proc = cockpit.spawn(['sh', '-c', `${sshCmd} | ${args.join(' ')}`], {
+                    err: 'message'
+                });
+            } else {
+                // Local file source
+                proc = cockpit.spawn(['sh', '-c', `cat ${source} | ${args.join(' ')}`], {
+                    err: 'message'
+                });
+            }
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    resolve();
+                } else {
+                    const errorMsg = data || `zfs receive exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    // Mount Point Management
+    static async mountDataset(datasetName, options = {}) {
+        return new Promise((resolve, reject) => {
+            const args = ['zfs', 'mount'];
+            
+            if (options.overlay) {
+                args.push('-O');
+            }
+            if (options.options) {
+                args.push('-o', options.options);
+            }
+            
+            args.push(datasetName);
+
+            const proc = cockpit.spawn(args, {
+                err: 'message'
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    resolve();
+                } else {
+                    const errorMsg = data || `zfs mount exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async unmountDataset(datasetName, options = {}) {
+        return new Promise((resolve, reject) => {
+            const args = ['zfs', 'unmount'];
+            
+            if (options.force) {
+                args.push('-f');
+            }
+            
+            args.push(datasetName);
+
+            const proc = cockpit.spawn(args, {
+                err: 'message'
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    resolve();
+                } else {
+                    const errorMsg = data || `zfs unmount exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async getMountStatus(datasetName) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zfs', 'get', '-H', '-o', 'value', 'mounted', datasetName], {
+                err: 'message'
+            });
+            let output = '';
+
+            proc.stream((data) => {
+                output += data.trim();
+            });
+
+            proc.done((exitCode) => {
+                if (exitCode === 0) {
+                    resolve(output === 'yes');
+                } else {
+                    reject(new Error(`zfs get mounted exited with code ${exitCode}`));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    // Performance Statistics
+    static async getIOStats(poolName, interval = 1) {
+        return new Promise((resolve, reject) => {
+            const stats = {
+                read: { ops: 0, bytes: 0 },
+                write: { ops: 0, bytes: 0 },
+                total: { ops: 0, bytes: 0 }
+            };
+            
+            const proc = cockpit.spawn(['zpool', 'iostat', '-v', poolName, '1', '2'], {
+                err: 'message'
+            });
+            let output = '';
+            let lineCount = 0;
+
+            proc.stream((data) => {
+                output += data;
+                const lines = output.split('\n');
+                // Parse second set of stats (skip header)
+                if (lines.length > 10) {
+                    // Parse pool stats line
+                    const poolLine = lines.find(line => line.trim().startsWith(poolName));
+                    if (poolLine) {
+                        const parts = poolLine.trim().split(/\s+/);
+                        if (parts.length >= 5) {
+                            stats.read.ops = parseInt(parts[1]) || 0;
+                            stats.read.bytes = parts[2] || '0';
+                            stats.write.ops = parseInt(parts[3]) || 0;
+                            stats.write.bytes = parts[4] || '0';
+                            stats.total.ops = stats.read.ops + stats.write.ops;
+                        }
+                    }
+                }
+            });
+
+            proc.done((exitCode) => {
+                if (exitCode === 0) {
+                    resolve(stats);
+                } else {
+                    reject(new Error(`zpool iostat exited with code ${exitCode}`));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async getPoolStats(poolName) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zpool', 'iostat', '-v', poolName], {
+                err: 'message'
+            });
+            let output = '';
+
+            proc.stream((data) => {
+                output += data;
+            });
+
+            proc.done((exitCode) => {
+                if (exitCode === 0) {
+                    resolve(output);
+                } else {
+                    reject(new Error(`zpool iostat exited with code ${exitCode}`));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    // Share Management
+    static async configureNFSShare(datasetName, options = {}) {
+        return new Promise((resolve, reject) => {
+            // ZFS uses sharenfs property for NFS
+            let sharenfsValue = 'on';
+            if (options.ro) {
+                sharenfsValue = 'ro';
+            }
+            if (options.rw) {
+                sharenfsValue = 'rw';
+            }
+            if (options.network) {
+                sharenfsValue = `${sharenfsValue}=${options.network}`;
+            }
+            if (options.options) {
+                sharenfsValue = options.options;
+            }
+
+            const proc = cockpit.spawn(['zfs', 'set', `sharenfs=${sharenfsValue}`, datasetName], {
+                err: 'message'
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    resolve();
+                } else {
+                    const errorMsg = data || `zfs set sharenfs exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async configureSMBShare(datasetName, options = {}) {
+        return new Promise((resolve, reject) => {
+            // ZFS uses sharesmb property for SMB
+            let sharesmbValue = 'on';
+            if (options.name) {
+                sharesmbValue = `name=${options.name}`;
+            }
+            if (options.options) {
+                sharesmbValue = options.options;
+            }
+
+            const proc = cockpit.spawn(['zfs', 'set', `sharesmb=${sharesmbValue}`, datasetName], {
+                err: 'message'
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    resolve();
+                } else {
+                    const errorMsg = data || `zfs set sharesmb exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async listShares(datasetName) {
+        return new Promise((resolve, reject) => {
+            const shares = {
+                nfs: null,
+                smb: null
+            };
+
+            // Get sharenfs property
+            const nfsProc = cockpit.spawn(['zfs', 'get', '-H', '-o', 'value', 'sharenfs', datasetName], {
+                err: 'message'
+            });
+            let nfsOutput = '';
+
+            nfsProc.stream((data) => {
+                nfsOutput += data.trim();
+            });
+
+            nfsProc.done((exitCode) => {
+                if (exitCode === 0 && nfsOutput && nfsOutput !== 'off') {
+                    shares.nfs = nfsOutput;
+                }
+
+                // Get sharesmb property
+                const smbProc = cockpit.spawn(['zfs', 'get', '-H', '-o', 'value', 'sharesmb', datasetName], {
+                    err: 'message'
+                });
+                let smbOutput = '';
+
+                smbProc.stream((data) => {
+                    smbOutput += data.trim();
+                });
+
+                smbProc.done((smbExitCode) => {
+                    if (smbExitCode === 0 && smbOutput && smbOutput !== 'off') {
+                        shares.smb = smbOutput;
+                    }
+                    resolve(shares);
+                });
+
+                smbProc.fail((error) => {
+                    resolve(shares); // Return what we have
+                });
+            });
+
+            nfsProc.fail((error) => {
+                // Try to get SMB anyway
+                const smbProc = cockpit.spawn(['zfs', 'get', '-H', '-o', 'value', 'sharesmb', datasetName], {
+                    err: 'message'
+                });
+                let smbOutput = '';
+
+                smbProc.stream((data) => {
+                    smbOutput += data.trim();
+                });
+
+                smbProc.done(() => {
+                    if (smbOutput && smbOutput !== 'off') {
+                        shares.smb = smbOutput;
+                    }
+                    resolve(shares);
+                });
+
+                smbProc.fail(() => {
+                    resolve(shares);
+                });
+            });
+        });
+    }
 }
 
