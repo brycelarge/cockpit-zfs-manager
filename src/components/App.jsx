@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
 import { Page, PageSection } from "@patternfly/react-core/dist/esm/components/Page";
+import { Tabs, Tab, TabTitleText } from "@patternfly/react-core/dist/esm/components/Tabs";
 
 import { ZfsApi } from '../zfsApi/index.js';
 import StoragePoolsTable from './storagePools/storagePoolsTable.jsx';
+import Dashboard from './dashboard.jsx';
 
 function App() {
     const [pools, setPools] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState(0);
 
     useEffect(() => {
         refreshPools();
@@ -28,11 +31,20 @@ function App() {
     return (
         <Page className="pf-m-no-sidebar">
             <PageSection hasBodyWrapper={false}>
-                <StoragePoolsTable
-                    pools={pools}
-                    loading={loading}
-                    onRefresh={refreshPools}
-                />
+                <Tabs activeKey={activeTab} onSelect={(_, key) => setActiveTab(key)}>
+                    <Tab eventKey={0} title={<TabTitleText>Dashboard</TabTitleText>}>
+                        <div style={{ marginTop: 'var(--pf-t--global--spacer--lg)' }}>
+                            <Dashboard pools={pools} loading={loading} />
+                        </div>
+                    </Tab>
+                    <Tab eventKey={1} title={<TabTitleText>Storage Pools</TabTitleText>}>
+                        <StoragePoolsTable
+                            pools={pools}
+                            loading={loading}
+                            onRefresh={refreshPools}
+                        />
+                    </Tab>
+                </Tabs>
             </PageSection>
         </Page>
     );

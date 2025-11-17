@@ -253,15 +253,18 @@ export class ZfsApi {
     }
 
     static async listFileSystems(poolName) {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const filesystems = [];
-            const proc = cockpit.spawn(['zfs', 'list', '-H', '-o', 'name,used,available,referenced,mountpoint,encryption,quota,reservation', '-t', 'filesystem', '-r', poolName]);
+            const proc = cockpit.spawn(['zfs', 'list', '-H', '-o', 'name,used,available,referenced,mountpoint,encryption,quota,reservation,compressratio,dedupratio', '-t', 'filesystem', '-r', poolName], {
+                err: 'message'
+            });
 
             proc.stream((data) => {
                 const lines = data.trim().split('\n');
                 lines.forEach(line => {
                     if (line.trim() && !line.startsWith(poolName + '\t')) {
-                        const [name, used, available, referenced, mountpoint, encryption, quota, reservation] = line.split('\t');
+                        const parts = line.split('\t');
+                        const [name, used, available, referenced, mountpoint, encryption, quota, reservation, compressratio, dedupratio] = parts;
                         filesystems.push({
                             name,
                             used,
@@ -270,18 +273,36 @@ export class ZfsApi {
                             mountpoint,
                             encrypted: encryption && encryption !== '-',
                             quota: quota && quota !== '-' ? quota : null,
-                            reservation: reservation && reservation !== '-' ? reservation : null
+                            reservation: reservation && reservation !== '-' ? reservation : null,
+                            compressratio: compressratio && compressratio !== '-' ? compressratio : null,
+                            dedupratio: dedupratio && dedupratio !== '-' ? dedupratio : null
                         });
                     }
                 });
             });
 
-            proc.done((exitCode) => {
+            proc.done(async (exitCode) => {
                 // Exit code 0 means success
                 // Exit code 1 typically means no filesystems found, which is fine - return empty array
                 // null/undefined/empty exit code means process completed (treat as success)
                 // If we have filesystem data, always resolve successfully regardless of exit code
                 if (filesystems.length > 0 || exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    // Get compression and dedup stats for filesystems that don't have them
+                    for (const fs of filesystems) {
+                        if (!fs.compressratio || !fs.dedupratio) {
+                            try {
+                                const props = await this.getDatasetProperties(fs.name);
+                                if (!fs.compressratio && props.compressratio) {
+                                    fs.compressratio = props.compressratio.value;
+                                }
+                                if (!fs.dedupratio && props.dedupratio) {
+                                    fs.dedupratio = props.dedupratio.value;
+                                }
+                            } catch {
+                                // Ignore errors getting properties
+                            }
+                        }
+                    }
                     resolve(filesystems);
                 } else {
                     reject(new Error(`zfs list exited with code ${exitCode}`));
