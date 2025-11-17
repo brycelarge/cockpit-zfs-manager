@@ -5,17 +5,38 @@ import { Card, CardHeader, CardTitle } from '@patternfly/react-core/dist/esm/com
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
 
 import { ListingTable } from 'cockpit-components-table.jsx';
-import { WithDialogs } from 'dialogs.jsx';
+import { ListingPanel } from 'cockpit-components-listing-panel.jsx';
+import { WithDialogs, useDialogs } from 'dialogs.jsx';
 import CreatePoolDialog from './createPoolDialog.jsx';
+import ImportPoolDialog from './importPoolDialog.jsx';
 import PoolActions from './poolActions.jsx';
+import PoolFileSystemsTab from './poolFileSystemsTab.jsx';
+import PoolSnapshotsTab from './poolSnapshotsTab.jsx';
+import PoolStatusTab from './poolStatusTab.jsx';
+import UnlockFileSystemsDialog from './unlockFileSystemsDialog.jsx';
+import { ZfsApi } from '../../zfsApi/index.js';
 
 function StoragePoolsTable({ pools, loading, onRefresh }) {
+    const Dialogs = useDialogs();
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
     const handleCreatePool = async (poolData) => {
-        // TODO: Implement pool creation
-        console.log('Creating pool:', poolData);
-        onRefresh();
+        try {
+            await ZfsApi.createPool(poolData.name, poolData.devices, poolData.vdevType);
+            setCreateDialogOpen(false);
+            onRefresh();
+        } catch (error) {
+            console.error('Failed to create pool:', error);
+            // Error handling will be done in the dialog
+        }
+    };
+
+    const handleImportPool = () => {
+        Dialogs.show(<ImportPoolDialog pools={pools} onRefresh={onRefresh} />);
+    };
+
+    const handleUnlockFileSystems = () => {
+        Dialogs.show(<UnlockFileSystemsDialog pools={pools} onRefresh={onRefresh} />);
     };
 
     const actions = (
@@ -23,8 +44,11 @@ function StoragePoolsTable({ pools, loading, onRefresh }) {
             <Button variant="secondary" onClick={() => setCreateDialogOpen(true)}>
                 Create Storage Pool
             </Button>
-            <Button variant="secondary" onClick={() => {}}>
+            <Button variant="secondary" onClick={handleImportPool}>
                 Import Storage Pool
+            </Button>
+            <Button variant="secondary" onClick={handleUnlockFileSystems}>
+                Unlock File Systems
             </Button>
             <Button variant="secondary" onClick={onRefresh}>
                 Refresh
@@ -63,19 +87,43 @@ function StoragePoolsTable({ pools, loading, onRefresh }) {
                         { title: "", props: { width: 15, "aria-label": "Actions" } },
                     ]}
                     emptyCaption="No storage pool is defined on this host"
-                    rows={pools.map(pool => ({
-                        columns: [
-                            { title: pool.name, header: true },
-                            { title: pool.health },
-                            { title: pool.size },
-                            { title: pool.allocated },
-                            { title: pool.free },
-                            { title: pool.fragmentation },
-                            { title: "Usage" },
-                            { title: <PoolActions pool={pool} onRefresh={onRefresh} /> },
-                        ],
-                        props: { key: pool.name },
-                    }))}
+                    rows={pools.map(pool => {
+                        const tabRenderers = [
+                            {
+                                name: "File Systems",
+                                renderer: PoolFileSystemsTab,
+                                data: { pool, onRefresh },
+                                id: `${pool.name}-filesystems`
+                            },
+                            {
+                                name: "Snapshots",
+                                renderer: PoolSnapshotsTab,
+                                data: { pool, onRefresh },
+                                id: `${pool.name}-snapshots`
+                            },
+                            {
+                                name: "Status",
+                                renderer: PoolStatusTab,
+                                data: { pool },
+                                id: `${pool.name}-status`
+                            }
+                        ];
+
+                        return {
+                            columns: [
+                                { title: pool.name, header: true },
+                                { title: pool.health },
+                                { title: pool.size },
+                                { title: pool.allocated },
+                                { title: pool.free },
+                                { title: pool.fragmentation },
+                                { title: "Usage" },
+                                { title: <PoolActions pool={pool} onRefresh={onRefresh} /> },
+                            ],
+                            props: { key: pool.name },
+                            expandedContent: <ListingPanel tabRenderers={tabRenderers} />
+                        };
+                    })}
                 />
             </Card>
             <CreatePoolDialog

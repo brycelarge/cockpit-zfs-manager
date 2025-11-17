@@ -6,6 +6,7 @@ import { KebabDropdown } from 'cockpit-components-dropdown.jsx';
 
 import { useDialogs } from 'dialogs.jsx';
 import RenamePoolDialog from './renamePoolDialog.jsx';
+import ExportPoolDialog from './exportPoolDialog.jsx';
 import DeletePoolDialog from './deletePoolDialog.jsx';
 
 function PoolActions({ pool, onRefresh }) {
@@ -18,6 +19,13 @@ function PoolActions({ pool, onRefresh }) {
             onClick={() => Dialogs.show(<RenamePoolDialog pool={pool} onRefresh={onRefresh} />)}
         >
             Rename Pool
+        </DropdownItem>,
+        <DropdownItem
+            key={`${pool.name}-export`}
+            id={`${pool.name}-export`}
+            onClick={() => Dialogs.show(<ExportPoolDialog pool={pool} onRefresh={onRefresh} />)}
+        >
+            Export Pool
         </DropdownItem>,
         <Divider key={`${pool.name}-separator`} />,
         <DropdownItem
