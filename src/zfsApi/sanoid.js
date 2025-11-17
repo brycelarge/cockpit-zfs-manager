@@ -5,7 +5,8 @@ export class SanoidApi {
         return new Promise((resolve) => {
             const proc = cockpit.spawn(['which', 'sanoid']);
             proc.done((exitCode) => {
-                resolve(exitCode === 0);
+                // Exit code 0 means found, null/undefined means process completed (treat as found)
+                resolve(exitCode === 0 || exitCode == null || exitCode === undefined);
             });
             proc.fail(() => {
                 resolve(false);
@@ -17,7 +18,10 @@ export class SanoidApi {
         const checkCommand = (cmd) => {
             return new Promise((resolve) => {
                 const proc = cockpit.spawn(['which', cmd]);
-                proc.done((exitCode) => resolve(exitCode === 0));
+                proc.done((exitCode) => {
+                    // Exit code 0 means found, null/undefined means process completed (treat as found)
+                    resolve(exitCode === 0 || exitCode == null || exitCode === undefined);
+                });
                 proc.fail(() => resolve(false));
             });
         };
