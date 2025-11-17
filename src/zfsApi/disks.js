@@ -16,12 +16,10 @@ export class DisksApi {
             checkProc.done((exitCode) => {
                 const path = checkOutput.trim().split('\n')[0]; // Take first line only
                 const found = path.length > 0 && path !== 'exit';
-                console.log(`smartctl check: exitCode=${exitCode}, output="${path}", found=${found}`);
                 resolve(found ? path : null);
             });
             
-            checkProc.fail((error) => {
-                console.error(`smartctl check failed:`, error);
+            checkProc.fail(() => {
                 resolve(null);
             });
         });
@@ -32,27 +30,22 @@ export class DisksApi {
             try {
                 // Get devices used by the pool
                 const devices = await DisksApi.getPoolDevices(poolName);
-                console.log(`Got ${devices.length} devices, fetching SMART info...`);
                 
                 // Check if smartctl is available once and get its path
                 const smartctlPath = await DisksApi.getSmartctlPath();
                 const smartctlAvailable = smartctlPath !== null;
-                console.log(`smartctl available: ${smartctlAvailable}, path: ${smartctlPath}`);
                 
                 // Get SMART info for each device sequentially to avoid overwhelming the system
                 const disksWithSmart = [];
                 for (const device of devices) {
                     try {
-                        console.log(`Fetching SMART for ${device.path}...`);
                         const smartInfo = smartctlAvailable ? await DisksApi.getSmartInfo(device.path, smartctlPath) : null;
-                        console.log(`SMART info for ${device.path}:`, smartInfo);
                         disksWithSmart.push({
                             ...device,
                             smart: smartInfo,
                             smartctlAvailable
                         });
                     } catch (error) {
-                        console.error(`Error getting SMART for ${device.path}:`, error);
                         disksWithSmart.push({
                             ...device,
                             smart: null,
@@ -61,7 +54,6 @@ export class DisksApi {
                     }
                 }
                 
-                console.log(`Final disks with SMART:`, disksWithSmart);
                 resolve(disksWithSmart);
             } catch (exc) {
                 reject(exc);
@@ -79,51 +71,44 @@ export class DisksApi {
                 output += data;
             });
 
-            proc.done((exitCode) => {
-                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined || output.trim().length > 0) {
-                    console.log(`zpool status output for ${poolName}:`, output);
-                    const lines = output.split('\n');
+                    proc.done((exitCode) => {
+                        if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined || output.trim().length > 0) {
+                            const lines = output.split('\n');
                     const deviceSet = new Set();
                     let inDeviceTable = false;
                     
                     for (const line of lines) {
                         const trimmed = line.trim();
                         
-                        // Device table starts with "NAME" header (can be indented)
-                        if (trimmed.startsWith('NAME') || trimmed.match(/^\s*NAME\s+STATE\s+READ\s+WRITE\s+CHECKSUM/)) {
-                            inDeviceTable = true;
-                            console.log('Found NAME header, entering device table');
-                            continue;
-                        }
-                        
-                        // Stop parsing if we hit a new section (pool:, state:, etc.)
-                        if (trimmed.startsWith('pool:') || trimmed.startsWith('state:') || trimmed.startsWith('status:') || trimmed.startsWith('action:') || trimmed.startsWith('scan:') || trimmed.startsWith('errors:')) {
-                            if (inDeviceTable) {
-                                console.log('Leaving device table, found section:', trimmed);
-                            }
-                            inDeviceTable = false;
-                            continue;
-                        }
-                        
-                        // Parse device rows (can be indented)
-                        if (inDeviceTable && trimmed) {
-                            // Skip separator lines
-                            if (trimmed.match(/^-+$/)) continue;
-                            
-                            // Skip empty lines
-                            if (!trimmed) continue;
-                            
-                            // Skip the pool name row itself (exact match or starts with pool name)
-                            if (trimmed === poolName || trimmed.startsWith(poolName + ' ') || trimmed.startsWith(poolName + '\t')) {
-                                console.log('Skipping pool name row:', trimmed);
-                                continue;
-                            }
-                            
-                            // Split by whitespace (handles both spaces and tabs)
-                            const parts = trimmed.split(/\s+/);
-                            if (parts.length >= 1) {
-                                const deviceName = parts[0];
-                                console.log('Checking device row:', trimmed, 'First part:', deviceName);
+                                // Device table starts with "NAME" header (can be indented)
+                                if (trimmed.startsWith('NAME') || trimmed.match(/^\s*NAME\s+STATE\s+READ\s+WRITE\s+CHECKSUM/)) {
+                                    inDeviceTable = true;
+                                    continue;
+                                }
+                                
+                                // Stop parsing if we hit a new section (pool:, state:, etc.)
+                                if (trimmed.startsWith('pool:') || trimmed.startsWith('state:') || trimmed.startsWith('status:') || trimmed.startsWith('action:') || trimmed.startsWith('scan:') || trimmed.startsWith('errors:')) {
+                                    inDeviceTable = false;
+                                    continue;
+                                }
+                                
+                                // Parse device rows (can be indented)
+                                if (inDeviceTable && trimmed) {
+                                    // Skip separator lines
+                                    if (trimmed.match(/^-+$/)) continue;
+                                    
+                                    // Skip empty lines
+                                    if (!trimmed) continue;
+                                    
+                                    // Skip the pool name row itself (exact match or starts with pool name)
+                                    if (trimmed === poolName || trimmed.startsWith(poolName + ' ') || trimmed.startsWith(poolName + '\t')) {
+                                        continue;
+                                    }
+                                    
+                                    // Split by whitespace (handles both spaces and tabs)
+                                    const parts = trimmed.split(/\s+/);
+                                    if (parts.length >= 1) {
+                                        const deviceName = parts[0];
                                 
                                 // Check if it's a physical device name (with or without /dev/ prefix)
                                 let devicePath = deviceName;
@@ -145,17 +130,16 @@ export class DisksApi {
                                     deviceShortName = deviceName.replace('/dev/', '');
                                 }
                                 
-                                // Only process if it looks like a physical device
-                                if (devicePath.startsWith('/dev/') && !deviceSet.has(devicePath)) {
-                                    deviceSet.add(devicePath);
-                                    
-                                    devices.push({
-                                        path: devicePath,
-                                        name: deviceShortName,
-                                        type: DisksApi.getDeviceType(devicePath)
-                                    });
-                                    console.log('Added device:', devicePath, '(from:', deviceName, ')');
-                                }
+                                        // Only process if it looks like a physical device
+                                        if (devicePath.startsWith('/dev/') && !deviceSet.has(devicePath)) {
+                                            deviceSet.add(devicePath);
+                                            
+                                            devices.push({
+                                                path: devicePath,
+                                                name: deviceShortName,
+                                                type: DisksApi.getDeviceType(devicePath)
+                                            });
+                                        }
                             }
                         }
                         
@@ -167,23 +151,21 @@ export class DisksApi {
                                 for (const devPath of devMatch) {
                                     // Clean up any trailing punctuation
                                     const cleanPath = devPath.replace(/[,\)]+$/, '');
-                                    if (!deviceSet.has(cleanPath) && cleanPath.startsWith('/dev/')) {
-                                        deviceSet.add(cleanPath);
-                                        const deviceShortName = cleanPath.replace('/dev/', '');
-                                        devices.push({
-                                            path: cleanPath,
-                                            name: deviceShortName,
-                                            type: DisksApi.getDeviceType(cleanPath)
-                                        });
-                                        console.log('Added device from fallback search:', cleanPath);
-                                    }
+                                            if (!deviceSet.has(cleanPath) && cleanPath.startsWith('/dev/')) {
+                                                deviceSet.add(cleanPath);
+                                                const deviceShortName = cleanPath.replace('/dev/', '');
+                                                devices.push({
+                                                    path: cleanPath,
+                                                    name: deviceShortName,
+                                                    type: DisksApi.getDeviceType(cleanPath)
+                                                });
+                                            }
                                 }
                             }
                         }
-                    }
-                    
-                    console.log(`Found ${devices.length} devices for pool ${poolName}:`, devices);
-                    resolve(devices);
+                            }
+                            
+                            resolve(devices);
                 } else {
                     reject(new Error(`Failed to get pool devices: exit code ${exitCode}`));
                 }
@@ -210,8 +192,6 @@ export class DisksApi {
 
     static async getSmartInfo(devicePath, smartctlPath = null) {
         return new Promise((resolve, reject) => {
-            console.log(`Getting SMART info for ${devicePath}, using smartctl: ${smartctlPath || 'smartctl'}`);
-            
             // If no path provided, try to find it
             if (!smartctlPath) {
                 // Fallback: try common locations (prioritize direct path checks)
@@ -225,12 +205,10 @@ export class DisksApi {
                 checkProc.done((checkExitCode) => {
                     const path = checkOutput.trim().split('\n')[0]; // Take first line only
                     if (!path || path === 'exit') {
-                        console.log(`smartctl not found (exit code: ${checkExitCode})`);
                         resolve(null);
                         return;
                     }
                     smartctlPath = path;
-                    console.log(`smartctl found at: ${smartctlPath}`);
                     proceedWithSmartInfo();
                 });
                 
@@ -272,11 +250,9 @@ export class DisksApi {
                 
                 // For NVMe devices, use different approach
                 if (isNVMe) {
-                    console.log(`Getting NVMe SMART info for ${devicePath}`);
                     // Get NVMe SMART info directly - use full path if we found it, otherwise try smartctl
                     // Ensure we only use the first path if multiple were returned
                     const smartctlCmd = (smartctlPath || 'smartctl').split('\n')[0].trim();
-                    console.log(`Using smartctl command: "${smartctlCmd}"`);
                     // For NVMe, smartctl might output to stderr, so merge stderr into stdout
                     const nvmeProc = cockpit.spawn([smartctlCmd, '-a', devicePath], { err: 'out' });
                     let nvmeOutput = '';
@@ -286,9 +262,6 @@ export class DisksApi {
                     });
                     
                     nvmeProc.done((nvmeExitCode) => {
-                        console.log(`smartctl -a ${devicePath} exit code: ${nvmeExitCode}`);
-                        console.log(`smartctl output length: ${nvmeOutput.length}`);
-                        console.log(`smartctl output (first 1000 chars): ${nvmeOutput.substring(0, 1000)}`);
                         // For NVMe devices, smartctl may return non-zero exit codes but still produce useful output
                         // Exit code 4 is common for NVMe devices but output is still valid
                         // Check if we have output first, regardless of exit code
@@ -583,23 +556,16 @@ export class DisksApi {
                             }
                         }
                         
-                        console.log(`Parsed ${smartInfo.attributes.length} NVMe attributes for ${devicePath}`);
-                        console.log(`Parsed SMART info for ${devicePath}:`, smartInfo);
                         resolve(smartInfo);
                         } else {
-                            console.log(`smartctl failed for ${devicePath} with exit code: ${nvmeExitCode}, no output`);
-                            console.log(`Output length: ${nvmeOutput.length}`);
                             resolve(null);
                         }
                 });
                 
                 nvmeProc.fail((error) => {
-                    console.error(`smartctl failed for ${devicePath}:`, error);
-                    console.log(`Output captured before fail: length=${nvmeOutput.length}, content="${nvmeOutput.substring(0, 500)}"`);
                     // Even if smartctl returns a non-zero exit code, check if we got any output
                     // Exit code 4 is common for NVMe devices but output may still be valid
                     if (nvmeOutput && nvmeOutput.trim().length > 0) {
-                        console.log(`smartctl returned error but has output, attempting to parse...`);
                         // Try to parse the output we got
                         const modelMatch = nvmeOutput.match(/Model Number:\s*(.+)/i) ||
                                          nvmeOutput.match(/Device Model:\s*(.+)/i);
@@ -756,11 +722,8 @@ export class DisksApi {
                             }
                         }
                         
-                        console.log(`Parsed ${smartInfo.attributes.length} NVMe attributes from error output for ${devicePath}`);
-                        
                         // If we parsed at least the model, consider it successful
                         if (smartInfo.model || smartInfo.serial || smartInfo.capacity) {
-                            console.log(`Parsed SMART info from error output for ${devicePath}:`, smartInfo);
                             resolve(smartInfo);
                             return;
                         }
@@ -772,7 +735,6 @@ export class DisksApi {
                 // Get SMART health status - use full path if we found it
                 // Ensure we only use the first path if multiple were returned
                 const smartctlCmd = (smartctlPath || 'smartctl').split('\n')[0].trim();
-                console.log(`Using smartctl command: "${smartctlCmd}"`);
                 const healthProc = cockpit.spawn([smartctlCmd, '-H', devicePath], { err: 'message' });
                 let healthOutput = '';
                 
@@ -797,7 +759,6 @@ export class DisksApi {
                     });
                     
                     attrsProc.done(async (attrsExitCode) => {
-                        console.log(`smartctl -A ${devicePath} exit code: ${attrsExitCode}, output length: ${attrsOutput.length}`);
                         // Parse model and serial from info section
                         const infoProc = cockpit.spawn([smartctlCmd, '-i', devicePath], { err: 'message' });
                         let infoOutput = '';
@@ -886,9 +847,7 @@ export class DisksApi {
                             }
                             
                             // Parse SMART attributes
-                            console.log(`Parsing SMART attributes for ${devicePath}, output length: ${attrsOutput.length}`);
                             const lines = attrsOutput.split('\n');
-                            console.log(`Split into ${lines.length} lines`);
                             for (const line of lines) {
                                 // Parse attribute lines (ID# ATTRIBUTE_NAME FLAG VALUE WORST THRESH TYPE UPDATED WHEN_FAILED RAW_VALUE)
                                 // Format: ID# ATTRIBUTE_NAME FLAG VALUE WORST THRESH TYPE UPDATED WHEN_FAILED RAW_VALUE
@@ -897,7 +856,6 @@ export class DisksApi {
                                 const attrMatch = line.match(/^\s*(\d+)\s+([A-Za-z0-9_][A-Za-z0-9_\s]+?)\s+\w+\s+(\d+)\s+(\d+)\s+(\d+)/) ||
                                                 line.match(/^\s*(\d+)\s+([A-Za-z0-9_][A-Za-z0-9_\s]+?)\s+0x[\da-fA-F]+\s+(\d+)\s+(\d+)\s+(\d+)/);
                                 if (attrMatch) {
-                                    console.log(`Matched attribute line: ${line.trim()}`);
                                     const id = parseInt(attrMatch[1]);
                                     const name = attrMatch[2].trim();
                                     const value = parseInt(attrMatch[3]);
@@ -959,7 +917,6 @@ export class DisksApi {
                                 }
                             }
                             
-                            console.log(`Parsed ${smartInfo.attributes.length} SMART attributes for ${devicePath}`);
                             resolve(smartInfo);
                         });
                         
@@ -968,8 +925,7 @@ export class DisksApi {
                         });
                     });
                     
-                    attrsProc.fail((error) => {
-                        console.error(`smartctl -A failed for ${devicePath}:`, error);
+                    attrsProc.fail(() => {
                         resolve(smartInfo); // Return what we have
                     });
                 });

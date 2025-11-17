@@ -22,7 +22,6 @@ function DisksTab({ pool }) {
         setError(null);
         try {
             const diskList = await DisksApi.getPoolDisks(pool.name);
-            console.log('Loaded disks for pool', pool.name, ':', diskList);
             setDisks(diskList);
         } catch (exc) {
             console.error('Failed to load disks:', exc);
@@ -249,14 +248,7 @@ function DisksTab({ pool }) {
                             </div>
 
                             {/* S.M.A.R.T. Attributes Table */}
-                            {(() => {
-                                console.log(`Checking SMART attributes for ${disk.path}:`, {
-                                    hasSmart: !!disk.smart,
-                                    hasAttributes: !!(disk.smart && disk.smart.attributes),
-                                    attributesLength: disk.smart?.attributes?.length || 0,
-                                    attributes: disk.smart?.attributes
-                                });
-                                return disk.smart && disk.smart.attributes && disk.smart.attributes.length > 0 ? (
+                            {disk.smart && disk.smart.attributes && disk.smart.attributes.length > 0 && (
                                     <Card style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
                                         <CardTitle>S.M.A.R.T.</CardTitle>
                                         <CardBody>
@@ -286,11 +278,10 @@ function DisksTab({ pool }) {
                                                     ],
                                                     key: `attr-${attr.id}`,
                                                 }))}
-                                            />
-                                        </CardBody>
-                                    </Card>
-                                ) : null;
-                            })()}
+                                        />
+                                    </CardBody>
+                                </Card>
+                            )}
                         </div>
                     ),
                 }))}
