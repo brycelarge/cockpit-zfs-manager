@@ -39,10 +39,16 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
 
     const parseSize = (sizeStr) => {
         if (!sizeStr || sizeStr === '-') return 0;
-        const match = sizeStr.match(/^([\d.]+)([KMGT]?)$/);
-        if (!match) return 0;
+        // Handle formats like "4.8T", "218.6G", "4.8 TiB", "218.6 GiB", etc.
+        const match = sizeStr.match(/^([\d.]+)\s*([KMGT]i?B?)$/i);
+        if (!match) {
+            // Try without unit (just number)
+            const numMatch = sizeStr.match(/^([\d.]+)$/);
+            if (numMatch) return parseFloat(numMatch[1]);
+            return 0;
+        }
         const value = parseFloat(match[1]);
-        const unit = match[2];
+        const unit = match[2].toUpperCase().replace(/I?B?$/, ''); // Remove 'iB' or 'B', keep just K/M/G/T
         const multipliers = { '': 1, 'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3, 'T': 1024 ** 4 };
         return value * (multipliers[unit] || 1);
     };
@@ -182,15 +188,16 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
                     { title: node.available },
                     { title: node.quota || '-' },
                     {
-                        title: usagePercent ? (
+                        title: usagePercent !== null ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--xs)' }}>
-                                <div style={{ width: '60px', height: '16px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ width: '60px', height: '16px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
                                     <div
                                         style={{
                                             height: '100%',
-                                            width: `${Math.min(usagePercent, 100)}%`,
+                                            width: `${Math.min(parseFloat(usagePercent) || 0, 100)}%`,
                                             backgroundColor: parseFloat(usagePercent) > 90 ? '#c9190b' : parseFloat(usagePercent) > 75 ? '#f0ab00' : '#3e8635',
-                                            transition: 'width 0.3s ease'
+                                            transition: 'width 0.3s ease',
+                                            minWidth: parseFloat(usagePercent) > 0 ? '2px' : '0'
                                         }}
                                     />
                                 </div>
