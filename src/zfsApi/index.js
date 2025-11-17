@@ -94,7 +94,9 @@ export class ZfsApi {
             const proc = cockpit.spawn(['zpool', 'rename', oldName, newName]);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zpool rename exited with code ${exitCode}`));
@@ -118,7 +120,9 @@ export class ZfsApi {
             const proc = cockpit.spawn(args);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zpool destroy exited with code ${exitCode}`));
@@ -144,7 +148,9 @@ export class ZfsApi {
             const proc = cockpit.spawn(args);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zpool import exited with code ${exitCode}`));
@@ -167,7 +173,9 @@ export class ZfsApi {
             const proc = cockpit.spawn(args);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zpool export exited with code ${exitCode}`));
@@ -209,7 +217,9 @@ export class ZfsApi {
             });
 
             proc.done((exitCode, data) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     // Prefer errorOutput (stderr) over data (stdout)
@@ -292,7 +302,9 @@ export class ZfsApi {
             }
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zfs create exited with code ${exitCode}`));
@@ -316,7 +328,9 @@ export class ZfsApi {
             const proc = cockpit.spawn(args);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zfs destroy exited with code ${exitCode}`));
@@ -334,7 +348,9 @@ export class ZfsApi {
             const proc = cockpit.spawn(['zfs', 'clone', source, target]);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zfs clone exited with code ${exitCode}`));
@@ -390,7 +406,9 @@ export class ZfsApi {
             const proc = cockpit.spawn(['zfs', 'snapshot', name]);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zfs snapshot exited with code ${exitCode}`));
@@ -413,7 +431,9 @@ export class ZfsApi {
             const proc = cockpit.spawn(args);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zfs destroy snapshot exited with code ${exitCode}`));
@@ -431,7 +451,9 @@ export class ZfsApi {
             const proc = cockpit.spawn(['zfs', 'clone', source, target]);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zfs clone snapshot exited with code ${exitCode}`));
@@ -458,7 +480,9 @@ export class ZfsApi {
             const proc = cockpit.spawn(args);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zfs rollback exited with code ${exitCode}`));
@@ -480,7 +504,9 @@ export class ZfsApi {
             proc.input(passphrase + '\n');
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zfs load-key exited with code ${exitCode}`));
@@ -517,7 +543,9 @@ export class ZfsApi {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve(properties);
                 } else {
                     reject(new Error(`zfs get exited with code ${exitCode}`));
@@ -537,7 +565,9 @@ export class ZfsApi {
             });
 
             proc.done((exitCode, data) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     const errorMsg = data || `zfs set exited with code ${exitCode}`;
@@ -575,7 +605,9 @@ export class ZfsApi {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve(properties);
                 } else {
                     reject(new Error(`zpool get exited with code ${exitCode}`));
@@ -595,7 +627,9 @@ export class ZfsApi {
             });
 
             proc.done((exitCode, data) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     const errorMsg = data || `zpool set exited with code ${exitCode}`;
@@ -634,7 +668,9 @@ export class ZfsApi {
             });
 
             proc.done((exitCode, data) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     const errorMsg = data || `zpool add exited with code ${exitCode}`;
@@ -728,7 +764,9 @@ export class ZfsApi {
             });
 
             proc.done((exitCode, data) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     const errorMsg = data || `zpool replace exited with code ${exitCode}`;
@@ -781,7 +819,9 @@ export class ZfsApi {
             }
 
             proc.done((exitCode, data) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     const errorMsg = data || `zfs send exited with code ${exitCode}`;
@@ -828,7 +868,9 @@ export class ZfsApi {
             }
 
             proc.done((exitCode, data) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     const errorMsg = data || `zfs receive exited with code ${exitCode}`;
@@ -861,7 +903,9 @@ export class ZfsApi {
             });
 
             proc.done((exitCode, data) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     const errorMsg = data || `zfs mount exited with code ${exitCode}`;
@@ -890,7 +934,9 @@ export class ZfsApi {
             });
 
             proc.done((exitCode, data) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     const errorMsg = data || `zfs unmount exited with code ${exitCode}`;
@@ -916,7 +962,9 @@ export class ZfsApi {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve(output === 'yes');
                 } else {
                     reject(new Error(`zfs get mounted exited with code ${exitCode}`));
