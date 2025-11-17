@@ -142,30 +142,4 @@
     overflow-y: auto;
 }
 
-/* Style the list cards as ct-cards (like cockpit-machines) */
-/* Note: ct-card is provided by Cockpit's static files, so we can't @extend it here */
-/* But we ensure the card takes full width like ct-card does */
-.pf-v6-c-page__main-section > .pf-v6-c-card {
-    width: 100%;
-    max-width: none;
-}
-
-/* Ensure page structure takes full width */
-.pf-v6-c-page.no-masthead-sidebar {
-    width: 100%;
-}
-
-.pf-v6-c-page__main-container {
-    width: 100%;
-    max-width: none;
-}
-
-.pf-v6-c-page__main {
-    width: 100%;
-}
-
-.pf-v6-c-page__main-section {
-    width: 100%;
-}
-
 
