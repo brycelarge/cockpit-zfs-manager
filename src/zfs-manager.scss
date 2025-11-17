@@ -1,18 +1,33 @@
-@use "page.scss";
-@use "ct-card.scss";
-/* Imports 'pf-u-pt-md' class used for Expander in Add Disk dialog */
-@use "../node_modules/@patternfly/patternfly/utilities/Spacing/spacing.css";
+// Import PatternFly base (Font Awesome will be skipped due to variable above)
+@use "@patternfly/patternfly/base" as *;
 
- // for $alert
+// Import PatternFly components (only what we actually use)
+@use "@patternfly/patternfly/components/Page/page.scss";
+@use "@patternfly/patternfly/components/Card/card.scss";
+@use "@patternfly/patternfly/components/Table/table.scss";
+@use "@patternfly/patternfly/components/Button/button.scss";
+@use "@patternfly/patternfly/components/Menu/menu.scss";
+@use "@patternfly/patternfly/components/MenuToggle/menu-toggle.scss";
+@use "@patternfly/patternfly/components/ModalBox/modal-box.scss";
+@use "@patternfly/patternfly/components/Form/form.scss";
+@use "@patternfly/patternfly/components/Check/check.scss";
+@use "@patternfly/patternfly/components/Label/label.scss";
+@use "@patternfly/patternfly/components/Progress/progress.scss";
+@use "@patternfly/patternfly/components/Spinner/spinner.scss";
+@use "@patternfly/patternfly/components/Tabs/tabs.scss";
+@use "@patternfly/patternfly/components/EmptyState/empty-state.scss";
+@use "@patternfly/patternfly/components/Toolbar/toolbar.scss";
+@use "@patternfly/patternfly/components/CodeBlock/code-block.scss";
+@use "@patternfly/patternfly/components/Divider/divider.scss";
+
+// Import utilities (using .css like cockpit-machines)
+@use "@patternfly/patternfly/utilities/Spacing/spacing.css";
+
+// Import Alert component (for notifications)
 @use "@patternfly/patternfly/components/Alert/alert.scss";
 
-/* for pf-v6-u-text-color-subtle */
+// Import Text utility (using .css like cockpit-machines)
 @use "@patternfly/patternfly/utilities/Text/text.css";
-
-/* Style the list cards as ct-cards */
-.pf-v6-c-page__main-section > .pf-v6-c-card {
-    @extend .ct-card;
-}
 
 .listing-ct-item {
     cursor: pointer;
