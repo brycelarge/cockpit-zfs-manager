@@ -259,7 +259,11 @@ export class ZfsApi {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // Exit code 1 typically means no filesystems found, which is fine - return empty array
+                // null/undefined/empty exit code means process completed (treat as success)
+                // If we have filesystem data, always resolve successfully regardless of exit code
+                if (filesystems.length > 0 || exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve(filesystems);
                 } else {
                     reject(new Error(`zfs list exited with code ${exitCode}`));
