@@ -75,9 +75,223 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
         return ratio;
     };
 
+    // Build tree structure from flat list
+    const buildTree = (flatList) => {
+        const tree = [];
+        const nodeMap = new Map();
+
+        // First pass: create all nodes
+        flatList.forEach(fs => {
+            const parts = fs.name.split('/');
+            const node = {
+                ...fs,
+                children: [],
+                level: parts.length - 1,
+                parent: parts.length > 1 ? parts.slice(0, -1).join('/') : null,
+                shortName: parts[parts.length - 1]
+            };
+            nodeMap.set(fs.name, node);
+        });
+
+        // Second pass: build tree structure
+        nodeMap.forEach(node => {
+            if (node.parent && nodeMap.has(node.parent)) {
+                nodeMap.get(node.parent).children.push(node);
+            } else {
+                tree.push(node);
+            }
+        });
+
+        // Sort children at each level
+        const sortTree = (nodes) => {
+            nodes.sort((a, b) => a.shortName.localeCompare(b.shortName));
+            nodes.forEach(node => {
+                if (node.children.length > 0) {
+                    sortTree(node.children);
+                }
+            });
+        };
+        sortTree(tree);
+
+        return tree;
+    };
+
+    // Render tree nodes recursively
+    const renderTreeNodes = (nodes, level = 0) => {
+        const rows = [];
+        
+        nodes.forEach(node => {
+            const isExpanded = expandedNodes.has(node.name);
+            const hasChildren = node.children.length > 0;
+            const usagePercent = calculateUsagePercent(node.used, node.quota, node.available);
+            const compressionRatio = formatCompressionRatio(node.compressratio);
+            const dedupRatio = formatDedupRatio(node.dedupratio);
+
+            rows.push({
+                columns: [
+                    {
+                        title: (
+                            <div style={{ display: 'flex', alignItems: 'center', paddingLeft: `${level * 24}px` }}>
+                                {hasChildren ? (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const newExpanded = new Set(expandedNodes);
+                                            if (isExpanded) {
+                                                newExpanded.delete(node.name);
+                                            } else {
+                                                newExpanded.add(node.name);
+                                            }
+                                            setExpandedNodes(newExpanded);
+                                        }}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            padding: '4px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            marginRight: '8px',
+                                            color: 'var(--pf-t--global--text--color--default)'
+                                        }}
+                                        aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                                    >
+                                        <svg
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 320 512"
+                                            fill="currentColor"
+                                            style={{
+                                                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                                                transition: 'transform 0.2s'
+                                            }}
+                                        >
+                                            <path d="M31.3 192h257.3c17.8 0 26.7 21.5 14.1 34.1L174.1 354.8c-7.8 7.8-20.5 7.8-28.3 0L17.2 226.1C4.6 213.5 13.5 192 31.3 192z" />
+                                        </svg>
+                                    </button>
+                                ) : (
+                                    <span style={{ width: '20px', display: 'inline-block' }} />
+                                )}
+                                <span style={{ fontWeight: hasChildren ? 'bold' : 'normal' }}>{node.shortName}</span>
+                            </div>
+                        ),
+                        header: true
+                    },
+                    { title: node.used },
+                    { title: node.available },
+                    { title: node.quota || '-' },
+                    {
+                        title: usagePercent ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--xs)' }}>
+                                <div style={{ width: '60px', height: '16px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden' }}>
+                                    <div
+                                        style={{
+                                            height: '100%',
+                                            width: `${Math.min(usagePercent, 100)}%`,
+                                            backgroundColor: parseFloat(usagePercent) > 90 ? '#c9190b' : parseFloat(usagePercent) > 75 ? '#f0ab00' : '#3e8635',
+                                            transition: 'width 0.3s ease'
+                                        }}
+                                    />
+                                </div>
+                                <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>{usagePercent}%</span>
+                            </div>
+                        ) : '-',
+                    },
+                    {
+                        title: compressionRatio ? (
+                            <span style={{ color: '#3e8635' }}>{compressionRatio}</span>
+                        ) : '-'
+                    },
+                    {
+                        title: dedupRatio ? (
+                            <span style={{ color: '#3e8635' }}>{dedupRatio}</span>
+                        ) : '-'
+                    },
+                    { title: node.mountpoint || '-' },
+                    { title: <FileSystemActions filesystem={node} pool={pool} onRefresh={handleRefresh} /> },
+                ],
+                key: node.name,
+                expandedContent: (
+                    <div style={{ padding: 'var(--pf-t--global--spacer--md)' }}>
+                        <DescriptionList isHorizontal>
+                            <DescriptionListGroup>
+                                <DescriptionListTerm>Name</DescriptionListTerm>
+                                <DescriptionListDescription>{node.name}</DescriptionListDescription>
+                            </DescriptionListGroup>
+                            <DescriptionListGroup>
+                                <DescriptionListTerm>Used</DescriptionListTerm>
+                                <DescriptionListDescription>{node.used}</DescriptionListDescription>
+                            </DescriptionListGroup>
+                            <DescriptionListGroup>
+                                <DescriptionListTerm>Available</DescriptionListTerm>
+                                <DescriptionListDescription>{node.available}</DescriptionListDescription>
+                            </DescriptionListGroup>
+                            <DescriptionListGroup>
+                                <DescriptionListTerm>Referenced</DescriptionListTerm>
+                                <DescriptionListDescription>{node.referenced}</DescriptionListDescription>
+                            </DescriptionListGroup>
+                            {node.quota && (
+                                <DescriptionListGroup>
+                                    <DescriptionListTerm>Quota</DescriptionListTerm>
+                                    <DescriptionListDescription>{node.quota}</DescriptionListDescription>
+                                </DescriptionListGroup>
+                            )}
+                            {node.reservation && (
+                                <DescriptionListGroup>
+                                    <DescriptionListTerm>Reservation</DescriptionListTerm>
+                                    <DescriptionListDescription>{node.reservation}</DescriptionListDescription>
+                                </DescriptionListGroup>
+                            )}
+                            {compressionRatio && (
+                                <DescriptionListGroup>
+                                    <DescriptionListTerm>Compression Ratio</DescriptionListTerm>
+                                    <DescriptionListDescription>
+                                        <span style={{ color: '#3e8635', fontWeight: 'bold' }}>{compressionRatio}</span>
+                                        {' '}
+                                        <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                                            ({(parseFloat(compressionRatio.replace('x', '')) - 1) * 100 > 0 ? `saves ${((parseFloat(compressionRatio.replace('x', '')) - 1) * 100).toFixed(1)}%` : 'no savings'})
+                                        </span>
+                                    </DescriptionListDescription>
+                                </DescriptionListGroup>
+                            )}
+                            {dedupRatio && (
+                                <DescriptionListGroup>
+                                    <DescriptionListTerm>Deduplication Ratio</DescriptionListTerm>
+                                    <DescriptionListDescription>
+                                        <span style={{ color: '#3e8635', fontWeight: 'bold' }}>{dedupRatio}</span>
+                                        {' '}
+                                        <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                                            (saves {((parseFloat(dedupRatio.replace('x', '')) - 1) * 100).toFixed(1)}%)
+                                        </span>
+                                    </DescriptionListDescription>
+                                </DescriptionListGroup>
+                            )}
+                            {node.mountpoint && (
+                                <DescriptionListGroup>
+                                    <DescriptionListTerm>Mountpoint</DescriptionListTerm>
+                                    <DescriptionListDescription>{node.mountpoint}</DescriptionListDescription>
+                                </DescriptionListGroup>
+                            )}
+                        </DescriptionList>
+                    </div>
+                ),
+            });
+
+            // Add children if expanded
+            if (hasChildren && isExpanded) {
+                rows.push(...renderTreeNodes(node.children, level + 1));
+            }
+        });
+
+        return rows;
+    };
+
     if (loading) {
         return <Spinner size="lg" aria-label="Loading file systems" />;
     }
+
+    const tree = buildTree(filesystems);
+    const tableRows = renderTreeNodes(tree);
 
     return (
         <>
@@ -104,114 +318,7 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
                     { title: "", props: { width: 8, "aria-label": "Actions" } },
                 ]}
                 emptyCaption="No file systems found"
-                rows={filesystems.map(fs => {
-                    const usagePercent = calculateUsagePercent(fs.used, fs.quota, fs.available);
-                    const compressionRatio = formatCompressionRatio(fs.compressratio);
-                    const dedupRatio = formatDedupRatio(fs.dedupratio);
-
-                    return {
-                        columns: [
-                            { title: fs.name, header: true },
-                            { title: fs.used },
-                            { title: fs.available },
-                            { title: fs.quota || '-' },
-                            {
-                                title: usagePercent ? (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--xs)' }}>
-                                        <div style={{ width: '60px', height: '16px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden' }}>
-                                            <div
-                                                style={{
-                                                    height: '100%',
-                                                    width: `${Math.min(usagePercent, 100)}%`,
-                                                    backgroundColor: parseFloat(usagePercent) > 90 ? '#c9190b' : parseFloat(usagePercent) > 75 ? '#f0ab00' : '#3e8635',
-                                                    transition: 'width 0.3s ease'
-                                                }}
-                                            />
-                                        </div>
-                                        <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>{usagePercent}%</span>
-                                    </div>
-                                ) : '-',
-                            },
-                            {
-                                title: compressionRatio ? (
-                                    <span style={{ color: '#3e8635' }}>{compressionRatio}</span>
-                                ) : '-'
-                            },
-                            {
-                                title: dedupRatio ? (
-                                    <span style={{ color: '#3e8635' }}>{dedupRatio}</span>
-                                ) : '-'
-                            },
-                            { title: fs.mountpoint || '-' },
-                            { title: <FileSystemActions filesystem={fs} pool={pool} onRefresh={handleRefresh} /> },
-                        ],
-                        key: fs.name,
-                        expandedContent: (
-                            <div style={{ padding: 'var(--pf-t--global--spacer--md)' }}>
-                                <DescriptionList isHorizontal>
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Name</DescriptionListTerm>
-                                        <DescriptionListDescription>{fs.name}</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Used</DescriptionListTerm>
-                                        <DescriptionListDescription>{fs.used}</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Available</DescriptionListTerm>
-                                        <DescriptionListDescription>{fs.available}</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Referenced</DescriptionListTerm>
-                                        <DescriptionListDescription>{fs.referenced}</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                    {fs.quota && (
-                                        <DescriptionListGroup>
-                                            <DescriptionListTerm>Quota</DescriptionListTerm>
-                                            <DescriptionListDescription>{fs.quota}</DescriptionListDescription>
-                                        </DescriptionListGroup>
-                                    )}
-                                    {fs.reservation && (
-                                        <DescriptionListGroup>
-                                            <DescriptionListTerm>Reservation</DescriptionListTerm>
-                                            <DescriptionListDescription>{fs.reservation}</DescriptionListDescription>
-                                        </DescriptionListGroup>
-                                    )}
-                                    {compressionRatio && (
-                                        <DescriptionListGroup>
-                                            <DescriptionListTerm>Compression Ratio</DescriptionListTerm>
-                                            <DescriptionListDescription>
-                                                <span style={{ color: '#3e8635', fontWeight: 'bold' }}>{compressionRatio}</span>
-                                                {' '}
-                                                <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
-                                                    ({(parseFloat(compressionRatio.replace('x', '')) - 1) * 100 > 0 ? `saves ${((parseFloat(compressionRatio.replace('x', '')) - 1) * 100).toFixed(1)}%` : 'no savings'})
-                                                </span>
-                                            </DescriptionListDescription>
-                                        </DescriptionListGroup>
-                                    )}
-                                    {dedupRatio && (
-                                        <DescriptionListGroup>
-                                            <DescriptionListTerm>Deduplication Ratio</DescriptionListTerm>
-                                            <DescriptionListDescription>
-                                                <span style={{ color: '#3e8635', fontWeight: 'bold' }}>{dedupRatio}</span>
-                                                {' '}
-                                                <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
-                                                    (saves {((parseFloat(dedupRatio.replace('x', '')) - 1) * 100).toFixed(1)}%)
-                                                </span>
-                                            </DescriptionListDescription>
-                                        </DescriptionListGroup>
-                                    )}
-                                    {fs.mountpoint && (
-                                        <DescriptionListGroup>
-                                            <DescriptionListTerm>Mountpoint</DescriptionListTerm>
-                                            <DescriptionListDescription>{fs.mountpoint}</DescriptionListDescription>
-                                        </DescriptionListGroup>
-                                    )}
-                                </DescriptionList>
-                            </div>
-                        ),
-                    };
-                })}
+                rows={tableRows}
             />
         </>
     );
