@@ -13,6 +13,118 @@ export class SanoidApi {
         });
     }
 
+    static async detectPackageManager() {
+        const checkCommand = (cmd) => {
+            return new Promise((resolve) => {
+                const proc = cockpit.spawn(['which', cmd]);
+                proc.done((exitCode) => resolve(exitCode === 0));
+                proc.fail(() => resolve(false));
+            });
+        };
+
+        // Check in order of preference
+        if (await checkCommand('apt')) {
+            return 'apt';
+        }
+        if (await checkCommand('dnf')) {
+            return 'dnf';
+        }
+        if (await checkCommand('pkg')) {
+            return 'pkg';
+        }
+        return null;
+    }
+
+    static async installSanoid() {
+        return new Promise(async (resolve, reject) => {
+            const pkgManager = await this.detectPackageManager();
+            
+            if (!pkgManager) {
+                reject(new Error('No supported package manager found (apt, dnf, or pkg)'));
+                return;
+            }
+
+            let installCmd;
+            let packageName;
+            
+            if (pkgManager === 'apt') {
+                installCmd = ['apt', 'install', '-y', 'sanoid'];
+                packageName = 'sanoid';
+            } else if (pkgManager === 'dnf') {
+                installCmd = ['dnf', 'install', '-y', 'sanoid'];
+                packageName = 'sanoid';
+            } else if (pkgManager === 'pkg') {
+                installCmd = ['pkg', 'install', '-y', 'py38-sanoid'];
+                packageName = 'py38-sanoid';
+            }
+
+            const proc = cockpit.spawn(installCmd, {
+                err: 'message',
+                superuser: 'require'
+            });
+            
+            let output = '';
+            proc.stream((data) => {
+                output += data;
+            });
+
+            proc.done((exitCode) => {
+                if (exitCode === 0) {
+                    resolve({ success: true, output });
+                } else {
+                    reject(new Error(`Installation failed: ${output || `exit code ${exitCode}`}`));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async createInitialConfig(poolName, configPath = '/etc/sanoid/sanoid.conf') {
+        const defaultConfig = `[${poolName}]
+use_template = production
+recursive = yes
+
+[template_production]
+hourly = 24
+daily = 7
+monthly = 3
+yearly = 1
+autosnap = yes
+autoprune = yes
+`;
+
+        return new Promise(async (resolve, reject) => {
+            // Create directory if it doesn't exist
+            const dirPath = configPath.substring(0, configPath.lastIndexOf('/'));
+            const mkdirProc = cockpit.spawn(['mkdir', '-p', dirPath], {
+                err: 'message',
+                superuser: 'require'
+            });
+
+            mkdirProc.done(async (exitCode) => {
+                if (exitCode !== 0 && exitCode !== null) {
+                    reject(new Error(`Failed to create directory ${dirPath}`));
+                    return;
+                }
+
+                // Write config file
+                try {
+                    await this.writeConfig(configPath, defaultConfig);
+                    resolve({ success: true, configPath });
+                } catch (error) {
+                    reject(error);
+                }
+            });
+
+            mkdirProc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
     static async getConfigPath() {
         // Common sanoid config paths
         const paths = [

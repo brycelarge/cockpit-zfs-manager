@@ -16,12 +16,27 @@ function SanoidTab({ pool }) {
     const [originalConfig, setOriginalConfig] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [installing, setInstalling] = useState(false);
+    const [packageManager, setPackageManager] = useState(null);
     const [error, setError] = useState({});
     const [sanoidSnapshots, setSanoidSnapshots] = useState([]);
 
     useEffect(() => {
         checkSanoid();
     }, [pool.name]);
+
+    useEffect(() => {
+        detectPackageManager();
+    }, []);
+
+    const detectPackageManager = async () => {
+        try {
+            const pm = await SanoidApi.detectPackageManager();
+            setPackageManager(pm);
+        } catch (exc) {
+            console.error('Failed to detect package manager:', exc);
+        }
+    };
 
     const checkSanoid = async () => {
         setLoading(true);
@@ -50,6 +65,46 @@ function SanoidTab({ pool }) {
             });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleInstall = async () => {
+        setInstalling(true);
+        setError({});
+        
+        try {
+            // Install sanoid
+            await SanoidApi.installSanoid();
+            
+            // Create initial config
+            const configPath = '/etc/sanoid/sanoid.conf';
+            await SanoidApi.createInitialConfig(pool.name, configPath);
+            
+            // Refresh status
+            await checkSanoid();
+        } catch (exc) {
+            setError({
+                dialogError: 'Failed to install sanoid',
+                dialogErrorDetail: exc.message || String(exc)
+            });
+            setInstalling(false);
+        }
+    };
+
+    const handleCreateConfig = async () => {
+        setSaving(true);
+        setError({});
+        
+        try {
+            const configPath = '/etc/sanoid/sanoid.conf';
+            await SanoidApi.createInitialConfig(pool.name, configPath);
+            await checkSanoid();
+        } catch (exc) {
+            setError({
+                dialogError: 'Failed to create configuration',
+                dialogErrorDetail: exc.message || String(exc)
+            });
+            setSaving(false);
         }
     };
 
@@ -104,31 +159,91 @@ function SanoidTab({ pool }) {
 
     if (!installed) {
         return (
-            <Alert variant="info" title="Sanoid is not installed">
-                <p>Sanoid is a tool for automatic ZFS snapshot management.</p>
-                <p>To install sanoid:</p>
-                <ul>
-                    <li><strong>Debian/Ubuntu:</strong> <code>sudo apt install sanoid</code></li>
-                    <li><strong>Fedora/RHEL:</strong> <code>sudo dnf install sanoid</code></li>
-                    <li><strong>FreeBSD:</strong> <code>sudo pkg install py38-sanoid</code></li>
-                </ul>
-                <p>After installation, create a configuration file at <code>/etc/sanoid/sanoid.conf</code></p>
-            </Alert>
+            <div>
+                <Alert variant="info" title="Sanoid is not installed" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
+                    <p>Sanoid is a tool for automatic ZFS snapshot management.</p>
+                    {packageManager ? (
+                        <p>Detected package manager: <strong>{packageManager}</strong></p>
+                    ) : (
+                        <p>No supported package manager detected. Manual installation required.</p>
+                    )}
+                </Alert>
+
+                {error.dialogError && (
+                    <ModalError
+                        dialogError={error.dialogError}
+                        {...(error.dialogErrorDetail && { dialogErrorDetail: error.dialogErrorDetail })}
+                    />
+                )}
+
+                {packageManager && (
+                    <div style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
+                        <Button
+                            variant="primary"
+                            onClick={handleInstall}
+                            isDisabled={installing}
+                            isLoading={installing}
+                        >
+                            Install Sanoid and Create Configuration
+                        </Button>
+                        <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                            This will install sanoid using {packageManager} and create an initial configuration file for pool "{pool.name}".
+                        </p>
+                    </div>
+                )}
+
+                {!packageManager && (
+                    <Alert variant="warning" title="Manual installation required" style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
+                        <p>Please install sanoid manually:</p>
+                        <ul>
+                            <li><strong>Debian/Ubuntu:</strong> <code>sudo apt install sanoid</code></li>
+                            <li><strong>Fedora/RHEL:</strong> <code>sudo dnf install sanoid</code></li>
+                            <li><strong>FreeBSD:</strong> <code>sudo pkg install py38-sanoid</code></li>
+                        </ul>
+                        <p>After installation, refresh this page to configure sanoid.</p>
+                    </Alert>
+                )}
+            </div>
         );
     }
 
     if (!configPath) {
         return (
-            <Alert variant="warning" title="Sanoid configuration not found">
-                <p>Sanoid is installed but no configuration file was found.</p>
-                <p>Create a configuration file at <code>/etc/sanoid/sanoid.conf</code></p>
-                <p>Example configuration:</p>
-                <pre style={{
-                    background: 'var(--pf-t--global--background--color--200)',
-                    padding: 'var(--pf-t--global--spacer--md)',
-                    borderRadius: 'var(--pf-t--global--border--radius--small)',
-                    overflow: 'auto'
-                }}>
+            <div>
+                <Alert variant="warning" title="Sanoid configuration not found" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
+                    <p>Sanoid is installed but no configuration file was found.</p>
+                    <p>Create a configuration file at <code>/etc/sanoid/sanoid.conf</code></p>
+                </Alert>
+
+                {error.dialogError && (
+                    <ModalError
+                        dialogError={error.dialogError}
+                        {...(error.dialogErrorDetail && { dialogErrorDetail: error.dialogErrorDetail })}
+                    />
+                )}
+
+                <div style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
+                    <Button
+                        variant="primary"
+                        onClick={handleCreateConfig}
+                        isDisabled={saving}
+                        isLoading={saving}
+                    >
+                        Create Initial Configuration
+                    </Button>
+                    <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                        This will create a default configuration file for pool "{pool.name}".
+                    </p>
+                </div>
+
+                <Alert variant="info" title="Example configuration" style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
+                    <pre style={{
+                        background: 'var(--pf-t--global--background--color--200)',
+                        padding: 'var(--pf-t--global--spacer--md)',
+                        borderRadius: 'var(--pf-t--global--border--radius--small)',
+                        overflow: 'auto',
+                        marginTop: 'var(--pf-t--global--spacer--sm)'
+                    }}>
 {`[${pool.name}]
 use_template = production
 recursive = yes
@@ -137,10 +252,12 @@ recursive = yes
 hourly = 24
 daily = 7
 monthly = 3
+yearly = 1
 autosnap = yes
 autoprune = yes`}
-                </pre>
-            </Alert>
+                    </pre>
+                </Alert>
+            </div>
         );
     }
 
