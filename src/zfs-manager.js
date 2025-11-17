@@ -989,14 +989,23 @@
                             <span class="pf-v6-c-form__label-text">Select Devices</span>
                         </label>
                         <div id="pool-devices-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--pf-t--global--border--color--default); border-radius: var(--pf-t--global--border--radius--small); padding: var(--pf-t--global--spacer--sm);">
-                            ${disks.length > 0 ? disks.map(disk => `
-                                <div class="pf-v6-c-check" style="margin-bottom: var(--pf-t--global--spacer--xs);">
-                                    <input class="pf-v6-c-check__input" type="checkbox" id="disk-${disk.replace(/\//g, '-')}" name="devices" value="${disk}">
-                                    <label class="pf-v6-c-check__label" for="disk-${disk.replace(/\//g, '-')}">
-                                        <span class="pf-v6-c-check__label-text">${Utils.escapeHtml(disk)}</span>
-                                    </label>
-                                </div>
-                            `).join('') : '<div class="pf-v6-c-empty-state"><div class="pf-v6-c-empty-state__content">No available disks found</div></div>'}
+                            ${disks.length > 0 ? disks.map(disk => {
+                                const diskId = disk.path.replace(/\//g, '-');
+                                return `
+                                    <div class="pf-v6-c-check" style="margin-bottom: var(--pf-t--global--spacer--xs);">
+                                        <input class="pf-v6-c-check__input" type="checkbox" id="disk-${diskId}" name="devices" value="${disk.path}">
+                                        <label class="pf-v6-c-check__label" for="disk-${diskId}" style="width: 100%;">
+                                            <span class="pf-v6-c-check__label-text" style="display: flex; justify-content: space-between; width: 100%;">
+                                                <span>
+                                                    <strong>${Utils.escapeHtml(disk.path)}</strong>
+                                                    ${disk.name && disk.name !== disk.path.replace('/dev/', '') ? `<br><small>${Utils.escapeHtml(disk.name)}</small>` : ''}
+                                                </span>
+                                                <span style="margin-left: auto; color: var(--pf-t--global--text--color--muted);">${Utils.escapeHtml(disk.size)}</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                `;
+                            }).join('') : '<div class="pf-v6-c-empty-state"><div class="pf-v6-c-empty-state__content">No available disks found</div></div>'}
                         </div>
                         <div class="pf-v6-c-form__helper-text">Select one or more devices to use for the storage pool</div>
                     </div>
@@ -1033,9 +1042,10 @@
             return new Promise((resolve, reject) => {
                 const disks = [];
                 
-                // Use lsblk to get block devices, filtering out partitions and loop devices
+                // Use lsblk to get block devices with name, size, and model info
                 // -e 7,11 excludes loop devices (7) and ROM devices (11)
-                const proc = cockpit.spawn(['lsblk', '-nd', '-o', 'NAME,TYPE', '-e', '7,11'], { err: 'message' });
+                // -o NAME,TYPE,SIZE,MODEL gets device name, type, size, and model
+                const proc = cockpit.spawn(['lsblk', '-nd', '-o', 'NAME,TYPE,SIZE,MODEL', '-e', '7,11'], { err: 'message' });
                 
                 proc.stream((data) => {
                     const lines = data.split('\n');
@@ -1045,10 +1055,14 @@
                             const name = parts[0];
                             const type = parts[1];
                             // Only include disks (not partitions, loop, etc.)
-                            // lsblk already filters loop devices via -e flag, but double-check
                             if (type === 'disk' && !name.startsWith('loop') && !name.startsWith('ram')) {
-                                // Use the device name directly from lsblk
-                                disks.push(`/dev/${name}`);
+                                const size = parts[2] || 'Unknown';
+                                const model = parts.slice(3).join(' ') || name;
+                                disks.push({
+                                    path: `/dev/${name}`,
+                                    name: model,
+                                    size: size
+                                });
                             }
                         }
                     });
@@ -1056,8 +1070,8 @@
                 
                 proc.done((exitCode) => {
                     if (exitCode === 0) {
-                        // Sort disks alphabetically
-                        disks.sort();
+                        // Sort disks alphabetically by path
+                        disks.sort((a, b) => a.path.localeCompare(b.path));
                         resolve(disks);
                     } else {
                         // Fallback: try listing /dev directly using lsblk with different options
@@ -1078,21 +1092,25 @@
             return new Promise((resolve, reject) => {
                 const disks = [];
                 
-                // Fallback: use lsblk without filters, or list /dev/disk/by-id
-                const proc = cockpit.spawn(['sh', '-c', 'lsblk -nd -o NAME,TYPE 2>/dev/null | awk \'$2=="disk" && $1!~/^loop/ && $1!~/^ram/ {print "/dev/"$1}\''], { err: 'message' });
+                // Fallback: use lsblk without filters
+                const proc = cockpit.spawn(['sh', '-c', 'lsblk -nd -o NAME,TYPE,SIZE,MODEL 2>/dev/null | awk \'$2=="disk" && $1!~/^loop/ && $1!~/^ram/ {path="/dev/"$1; size=$3; model=""; for(i=4;i<=NF;i++) model=model" "$i; gsub(/^ /,"",model); if(model=="") model=$1; print path"|"model"|"size}\''], { err: 'message' });
                 
                 proc.stream((data) => {
                     const lines = data.split('\n');
                     lines.forEach(line => {
-                        const device = line.trim();
-                        if (device && device.startsWith('/dev/')) {
-                            disks.push(device);
+                        const parts = line.trim().split('|');
+                        if (parts.length >= 3 && parts[0].startsWith('/dev/')) {
+                            disks.push({
+                                path: parts[0],
+                                name: parts[1] || parts[0].replace('/dev/', ''),
+                                size: parts[2] || 'Unknown'
+                            });
                         }
                     });
                 });
                 
                 proc.done((exitCode) => {
-                    disks.sort();
+                    disks.sort((a, b) => a.path.localeCompare(b.path));
                     resolve(disks);
                 });
                 
