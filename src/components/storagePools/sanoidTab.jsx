@@ -7,11 +7,9 @@ import { TextArea } from "@patternfly/react-core/dist/esm/components/TextArea";
 import { Form, FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
-import { useDialogs } from 'dialogs.jsx';
 import { SanoidApi } from '../../zfsApi/sanoid.js';
 
 function SanoidTab({ pool }) {
-    const Dialogs = useDialogs();
     const [installed, setInstalled] = useState(null);
     const [configPath, setConfigPath] = useState(null);
     const [configContent, setConfigContent] = useState('');
