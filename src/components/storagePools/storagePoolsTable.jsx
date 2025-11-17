@@ -13,6 +13,8 @@ import PoolActions from './poolActions.jsx';
 import PoolFileSystemsTab from './poolFileSystemsTab.jsx';
 import PoolSnapshotsTab from './poolSnapshotsTab.jsx';
 import PoolStatusTab from './poolStatusTab.jsx';
+import SanoidTab from './sanoidTab.jsx';
+import ScrubTab from './scrubTab.jsx';
 import UnlockFileSystemsDialog from './unlockFileSystemsDialog.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
 
@@ -106,6 +108,18 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                                 renderer: PoolStatusTab,
                                 data: { pool },
                                 id: `${pool.name}-status`
+                            },
+                            {
+                                name: "Sanoid",
+                                renderer: SanoidTab,
+                                data: { pool },
+                                id: `${pool.name}-sanoid`
+                            },
+                            {
+                                name: "Scrub",
+                                renderer: ScrubTab,
+                                data: { pool },
+                                id: `${pool.name}-scrub`
                             }
                         ];
 
