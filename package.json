@@ -1,5 +1,5 @@
 {
-  "name": "cockpit-zfs-manager",
+  "name": "zfs-manager",
   "version": "0.1.0",
   "description": "Cockpit plugin for managing ZFS",
   "scripts": {
