@@ -133,6 +133,21 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                             }
                         ];
 
+                        // Calculate usage percentage for pool
+                        const parseSize = (sizeStr) => {
+                            if (!sizeStr || sizeStr === '-') return 0;
+                            const match = sizeStr.match(/^([\d.]+)([KMGT]?)$/);
+                            if (!match) return 0;
+                            const value = parseFloat(match[1]);
+                            const unit = match[2];
+                            const multipliers = { '': 1, 'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3, 'T': 1024 ** 4 };
+                            return value * (multipliers[unit] || 1);
+                        };
+
+                        const poolSizeBytes = parseSize(pool.size);
+                        const poolAllocatedBytes = parseSize(pool.allocated);
+                        const poolUsagePercent = poolSizeBytes > 0 ? ((poolAllocatedBytes / poolSizeBytes) * 100).toFixed(1) : 0;
+
                         // Format vdev type for display
                         const formatVdevType = (type) => {
                             const types = {
@@ -186,7 +201,23 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                                 { title: pool.allocated },
                                 { title: pool.free },
                                 { title: pool.fragmentation },
-                                { title: "Usage" },
+                                {
+                                    title: (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--xs)' }}>
+                                            <div style={{ width: '80px', height: '16px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                <div
+                                                    style={{
+                                                        height: '100%',
+                                                        width: `${Math.min(poolUsagePercent, 100)}%`,
+                                                        backgroundColor: parseFloat(poolUsagePercent) > 90 ? '#c9190b' : parseFloat(poolUsagePercent) > 75 ? '#f0ab00' : '#3e8635',
+                                                        transition: 'width 0.3s ease'
+                                                    }}
+                                                />
+                                            </div>
+                                            <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>{poolUsagePercent}%</span>
+                                        </div>
+                                    )
+                                },
                                 { title: <PoolActions pool={pool} onRefresh={onRefresh} /> },
                             ],
                             key: pool.name,

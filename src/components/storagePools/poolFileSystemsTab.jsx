@@ -46,12 +46,23 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
         return value * (multipliers[unit] || 1);
     };
 
-    const calculateUsagePercent = (used, quota) => {
-        if (!quota || quota === '-') return null;
-        const usedBytes = parseSize(used);
-        const quotaBytes = parseSize(quota);
-        if (quotaBytes === 0) return null;
-        return ((usedBytes / quotaBytes) * 100).toFixed(1);
+    const calculateUsagePercent = (used, quota, available) => {
+        // If quota is set, calculate usage based on quota
+        if (quota && quota !== '-') {
+            const usedBytes = parseSize(used);
+            const quotaBytes = parseSize(quota);
+            if (quotaBytes === 0) return null;
+            return ((usedBytes / quotaBytes) * 100).toFixed(1);
+        }
+        // Otherwise, calculate usage based on used / (used + available)
+        if (available && available !== '-') {
+            const usedBytes = parseSize(used);
+            const availableBytes = parseSize(available);
+            const totalBytes = usedBytes + availableBytes;
+            if (totalBytes === 0) return null;
+            return ((usedBytes / totalBytes) * 100).toFixed(1);
+        }
+        return null;
     };
 
     const formatCompressionRatio = (ratio) => {
@@ -94,7 +105,7 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
                 ]}
                 emptyCaption="No file systems found"
                 rows={filesystems.map(fs => {
-                    const usagePercent = calculateUsagePercent(fs.used, fs.quota);
+                    const usagePercent = calculateUsagePercent(fs.used, fs.quota, fs.available);
                     const compressionRatio = formatCompressionRatio(fs.compressratio);
                     const dedupRatio = formatDedupRatio(fs.dedupratio);
 
