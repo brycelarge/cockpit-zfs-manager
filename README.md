@@ -8,6 +8,14 @@ A modern Cockpit plugin for managing ZFS pools, datasets, and snapshots. Built w
 - **ZFS**: 0.8+ with zpool and zfs commands available
 - **Permissions**: Root or sudo access for ZFS operations
 
+### Optional Dependencies
+
+- **smartmontools**: For SMART disk health information
+  - Debian/Ubuntu: `sudo apt install smartmontools`
+  - Fedora/RHEL: `sudo dnf install smartmontools`
+- **Sanoid**: For automated snapshot management (can be installed via the plugin)
+- **lsblk**: Usually pre-installed, required for disk detection
+
 ## Installation
 
 ### Simple Install
@@ -63,11 +71,13 @@ ssh user@server "sudo cp -r /tmp/dist /usr/share/cockpit/zfs-manager"
 3. **Open ZFS Manager**: Click on "ZFS Manager" in the Cockpit sidebar
 
 4. **Manage ZFS**:
+   - **Dashboard**: View overview of all pools, capacity, resources, and ZFS ARC memory usage
    - View all storage pools with health status and usage statistics
-   - Expand pools to see file systems, snapshots, performance stats, and detailed status
+   - Expand pools to see file systems, snapshots, performance stats, disk information, and detailed status
    - Create new pools with various VDEV configurations (stripe, mirror, RAID-Z variants)
    - Expand pools by adding VDEVs
    - Replace failed disks
+   - View SMART disk health information (requires smartmontools)
    - Configure pool and dataset properties
    - Create file systems and snapshots
    - Manage encryption and unlock encrypted datasets
@@ -82,9 +92,17 @@ ssh user@server "sudo cp -r /tmp/dist /usr/share/cockpit/zfs-manager"
 
 ## Features
 
+### Dashboard Overview
+- Summary cards for storage pools (total, healthy, degraded, faulted)
+- Storage capacity overview with usage visualization
+- Resource counts (file systems, snapshots)
+- ZFS ARC (Adaptive Replacement Cache) memory usage and statistics
+- Real-time usage progress bars for capacity and ARC memory
+
 ### Storage Pool Management
 - List all ZFS pools with health status
 - View pool statistics (size, allocated, free, fragmentation, usage)
+- Visual usage progress bars with color coding
 - Create new storage pools with VDEV types:
   - Stripe (no redundancy)
   - Mirror (2+ devices)
@@ -93,17 +111,31 @@ ssh user@server "sudo cp -r /tmp/dist /usr/share/cockpit/zfs-manager"
   - RAID-Z3 (triple parity)
 - Import existing pools
 - Export pools
+- Rename pools
 - Destroy pools (with name confirmation)
 - Expand pools by adding VDEVs
 - Replace failed disks in pools
 - Configure pool properties (comment, auto-replace, auto-trim, bootfs, cachefile, fail mode, readonly, delegation, listsnapshots)
 - View detailed pool status with device information
 - Performance statistics (I/O operations, throughput)
+- **Disks Tab**: View physical devices in pool with SMART health information
+  - Disk model, serial number, capacity
+  - SMART health status and temperature
+  - Power-on hours and power cycles
+  - Host reads/writes statistics
+  - Raw S.M.A.R.T. attributes table
+  - Requires smartmontools for full functionality
 
 ### File System Management
 - List all file systems within pools
-- Create new file systems
-- Support for encrypted file systems with passphrase
+- Hierarchical tree view with expand/collapse functionality
+- Visual usage progress bars for datasets with quotas
+- Compression and deduplication ratio display
+- Create new file systems with:
+  - Encryption support (passphrase-based)
+  - Compression options (lz4, gzip, zstd, etc.)
+  - Deduplication toggle
+  - Quota and reservation settings
 - Clone file systems
 - Destroy file systems (with name confirmation)
 - Configure dataset properties:
@@ -173,11 +205,14 @@ ssh user@server "sudo cp -r /tmp/dist /usr/share/cockpit/zfs-manager"
 
 ### User Interface
 - Modern PatternFly 6 design
+- Dashboard overview with summary cards and statistics
 - Expandable table rows for detailed views
-- Tabbed interface (File Systems, Snapshots, Status, Performance, Sanoid, Scrub)
+- Tabbed interface (Dashboard, Storage Pools with sub-tabs: File Systems, Snapshots, Status, Performance, Disks, Sanoid, Scrub)
+- Visual usage progress bars with color coding (green/orange/red)
 - Toast notifications for actions
 - Responsive design
 - Consistent with Cockpit's design language
+- Dark theme support
 
 ## Uninstallation
 
@@ -213,10 +248,22 @@ make devel-uninstall
   - Fedora/RHEL: `sudo dnf install zfs`
 - Verify installation: `which zpool && which zfs`
 
+### SMART data not available
+- Install smartmontools:
+  - Debian/Ubuntu: `sudo apt install smartmontools`
+  - Fedora/RHEL: `sudo dnf install smartmontools`
+- Verify installation: `which smartctl`
+- Note: SMART data is optional and the plugin works without it
+
 ### Permission errors
 - Ensure your user has sudo access for ZFS commands
 - Check polkit rules if using policy-based access control
 - Some operations require root privileges
+
+### No disks found when creating pool
+- Ensure `lsblk` is installed (usually pre-installed)
+- Verify you have permissions to list block devices
+- Check that disks are not already in use by another filesystem
 
 ## Development
 
