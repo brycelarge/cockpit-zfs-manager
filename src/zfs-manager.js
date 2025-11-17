@@ -299,35 +299,30 @@
                 this.showAboutModal();
             });
 
-            // Dropdown menu toggle
-            const dropdownToggles = document.querySelectorAll('.pf-v6-c-menu-toggle__button');
-            dropdownToggles.forEach(toggle => {
-                toggle.addEventListener('click', (e) => {
+            // Dropdown menu toggle - handle split button dropdown
+            const actionsMenuToggleDropdown = document.getElementById('actions-menu-toggle-dropdown');
+            if (actionsMenuToggleDropdown && actionsMenu) {
+                actionsMenuToggleDropdown.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const menuContainer = toggle.closest('.menu-dropdown-wrapper');
-                    const menuToggle = toggle.closest('.pf-v6-c-menu-toggle');
-                    const menu = menuContainer?.querySelector('.pf-v6-c-menu');
-                    if (menu) {
-                        const isHidden = menu.hidden;
-                        // Close all menus first
-                        document.querySelectorAll('.pf-v6-c-menu').forEach(m => m.hidden = true);
-                        document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => {
-                            t.setAttribute('aria-expanded', 'false');
-                            t.closest('.pf-v6-c-menu-toggle')?.classList.remove('pf-m-expanded');
-                        });
-                        // Toggle this menu
-                        if (isHidden) {
-                            menu.hidden = false;
-                            toggle.setAttribute('aria-expanded', 'true');
-                            menuToggle?.classList.add('pf-m-expanded');
-                        }
+                    const isHidden = actionsMenu.hidden;
+                    // Close all menus first
+                    document.querySelectorAll('.pf-v6-c-menu').forEach(m => m.hidden = true);
+                    document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => {
+                        t.setAttribute('aria-expanded', 'false');
+                        t.closest('.pf-v6-c-menu-toggle')?.classList.remove('pf-m-expanded');
+                    });
+                    // Toggle this menu
+                    if (isHidden) {
+                        actionsMenu.hidden = false;
+                        actionsMenuToggleDropdown.setAttribute('aria-expanded', 'true');
+                        actionsMenuToggleDropdown.closest('.pf-v6-c-menu-toggle')?.classList.add('pf-m-expanded');
                     }
                 });
-            });
+            }
 
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
-                if (!e.target.closest('.menu-dropdown-wrapper')) {
+                if (!e.target.closest('.pf-v6-c-menu-toggle') && !e.target.closest('.pf-v6-c-menu')) {
                     document.querySelectorAll('.pf-v6-c-menu').forEach(menu => {
                         menu.hidden = true;
                     });
