@@ -291,10 +291,18 @@ WantedBy=timers.target
             });
 
             proc.done((exitCode) => {
-                const newCrontab = (currentCrontab || '') + '\n' + cronLine + '\n';
-                // Write crontab via stdin
+                const newCrontab = (currentCrontab.trim() || '') + '\n' + cronLine + '\n';
+                // Write crontab via stdin - ensure we have valid content
+                if (!cronLine.trim()) {
+                    reject(new Error('Invalid cron schedule format'));
+                    return;
+                }
+                
                 const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
+                // Send input immediately
                 writeProc.input(newCrontab);
+                // Close stdin to signal end of input
+                writeProc.close('stdin');
 
                 writeProc.done((writeExitCode) => {
                     if (writeExitCode === 0) {
@@ -311,9 +319,15 @@ WantedBy=timers.target
 
             proc.fail(() => {
                 // No existing crontab, create new one
+                if (!cronLine.trim()) {
+                    reject(new Error('Invalid cron schedule format'));
+                    return;
+                }
+                
                 const cronContent = cronLine + '\n';
                 const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
                 writeProc.input(cronContent);
+                writeProc.close('stdin');
 
                 writeProc.done((writeExitCode) => {
                     if (writeExitCode === 0) {
@@ -377,6 +391,7 @@ WantedBy=timers.target
 
                     const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
                     writeProc.input(filtered);
+                    writeProc.close('stdin');
 
                     writeProc.done((writeExitCode) => {
                         if (writeExitCode === 0) {

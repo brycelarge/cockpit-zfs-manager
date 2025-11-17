@@ -91,6 +91,10 @@ function ScrubTab({ pool }) {
             let schedule = scheduleType;
             if (scheduleType === 'custom') {
                 schedule = customSchedule;
+            } else if (scheduleType === 'weekly') {
+                schedule = '0 2 * * 0'; // Sunday 2 AM
+            } else if (scheduleType === 'monthly') {
+                schedule = '0 2 1 * *'; // 1st of month, 2 AM
             }
 
             // Try systemd first, fallback to cron
