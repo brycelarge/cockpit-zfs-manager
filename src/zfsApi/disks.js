@@ -361,6 +361,229 @@ export class DisksApi {
                         // Set type for NVMe
                         smartInfo.type = 'NVMe';
                         
+                        // Parse NVMe SMART attributes/log pages from the entire output
+                        // NVMe devices don't have traditional SMART attributes, but we can parse log pages
+                        const logLines = nvmeOutput.split('\n');
+                        let attrId = 200; // Start from 200 to avoid conflicts with standard SMART IDs
+                        const seenAttributes = new Set(); // Track which attributes we've already added
+                        
+                        for (const line of logLines) {
+                            // Skip empty lines, headers, and separators
+                            if (!line.trim() || line.match(/^[=\-]+$/) || line.match(/^[A-Z\s]+$/) || 
+                                line.match(/^===/) || line.match(/^---/) || line.match(/^SMART/)) {
+                                continue;
+                            }
+                            
+                            // Parse various NVMe log entries - try multiple patterns
+                            const tempMatch = line.match(/Temperature[:\s]+(\d+)/i);
+                            const warningMatch = line.match(/Critical Warning[:\s]+(0x[\da-fA-F]+|\d+)/i);
+                            const availableMatch = line.match(/Available Spare[:\s]+(\d+)/i);
+                            const spareThresholdMatch = line.match(/Available Spare Threshold[:\s]+(\d+)/i);
+                            const percentageMatch = line.match(/Percentage Used[:\s]+(\d+)/i);
+                            const dataUnitsReadMatch = line.match(/Data Units Read[:\s]+([\d,]+)/i);
+                            const dataUnitsWrittenMatch = line.match(/Data Units Written[:\s]+([\d,]+)/i);
+                            const hostReadsMatch = line.match(/Host Read Commands[:\s]+([\d,]+)/i);
+                            const hostWritesMatch = line.match(/Host Write Commands[:\s]+([\d,]+)/i);
+                            const controllerBusyMatch = line.match(/Controller Busy Time[:\s]+([\d,]+)/i);
+                            const powerCyclesMatch = line.match(/Power Cycles[:\s]+([\d,]+)/i);
+                            const powerOnHoursMatch = line.match(/Power On Hours[:\s]+([\d,]+)/i);
+                            const unsafeShutdownsMatch = line.match(/Unsafe Shutdowns[:\s]+([\d,]+)/i);
+                            const mediaErrorsMatch = line.match(/Media and Data Integrity Errors[:\s]+([\d,]+)/i);
+                            const errorInfoMatch = line.match(/Error Information Log Entries[:\s]+([\d,]+)/i);
+                            
+                            if (tempMatch && !seenAttributes.has('Temperature')) {
+                                seenAttributes.add('Temperature');
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Temperature',
+                                    value: parseInt(tempMatch[1]),
+                                    worst: parseInt(tempMatch[1]),
+                                    threshold: 0,
+                                    rawValue: parseInt(tempMatch[1])
+                                });
+                            }
+                            
+                            if (warningMatch && !seenAttributes.has('Critical Warning')) {
+                                seenAttributes.add('Critical Warning');
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Critical Warning',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: warningMatch[1]
+                                });
+                            }
+                            
+                            if (availableMatch && !seenAttributes.has('Available Spare')) {
+                                seenAttributes.add('Available Spare');
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Available Spare',
+                                    value: parseInt(availableMatch[1]),
+                                    worst: parseInt(availableMatch[1]),
+                                    threshold: 0,
+                                    rawValue: parseInt(availableMatch[1])
+                                });
+                            }
+                            
+                            if (spareThresholdMatch && !seenAttributes.has('Available Spare Threshold')) {
+                                seenAttributes.add('Available Spare Threshold');
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Available Spare Threshold',
+                                    value: parseInt(spareThresholdMatch[1]),
+                                    worst: parseInt(spareThresholdMatch[1]),
+                                    threshold: 0,
+                                    rawValue: parseInt(spareThresholdMatch[1])
+                                });
+                            }
+                            
+                            if (percentageMatch && !seenAttributes.has('Percentage Used')) {
+                                seenAttributes.add('Percentage Used');
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Percentage Used',
+                                    value: parseInt(percentageMatch[1]),
+                                    worst: parseInt(percentageMatch[1]),
+                                    threshold: 100,
+                                    rawValue: parseInt(percentageMatch[1])
+                                });
+                            }
+                            
+                            if (dataUnitsReadMatch && !seenAttributes.has('Data Units Read')) {
+                                seenAttributes.add('Data Units Read');
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Data Units Read',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: parseInt(dataUnitsReadMatch[1].replace(/,/g, ''))
+                                });
+                            }
+                            
+                            if (dataUnitsWrittenMatch && !seenAttributes.has('Data Units Written')) {
+                                seenAttributes.add('Data Units Written');
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Data Units Written',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: parseInt(dataUnitsWrittenMatch[1].replace(/,/g, ''))
+                                });
+                            }
+                            
+                            if (hostReadsMatch && !seenAttributes.has('Host Read Commands')) {
+                                seenAttributes.add('Host Read Commands');
+                                smartInfo.hostReads = parseInt(hostReadsMatch[1].replace(/,/g, ''));
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Host Read Commands',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: parseInt(hostReadsMatch[1].replace(/,/g, ''))
+                                });
+                            }
+                            
+                            if (hostWritesMatch && !seenAttributes.has('Host Write Commands')) {
+                                seenAttributes.add('Host Write Commands');
+                                smartInfo.hostWrites = parseInt(hostWritesMatch[1].replace(/,/g, ''));
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Host Write Commands',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: parseInt(hostWritesMatch[1].replace(/,/g, ''))
+                                });
+                            }
+                            
+                            if (controllerBusyMatch && !seenAttributes.has('Controller Busy Time')) {
+                                seenAttributes.add('Controller Busy Time');
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Controller Busy Time',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: parseInt(controllerBusyMatch[1].replace(/,/g, ''))
+                                });
+                            }
+                            
+                            if (powerCyclesMatch && !seenAttributes.has('Power Cycles')) {
+                                seenAttributes.add('Power Cycles');
+                                if (!smartInfo.powerCycleCount) {
+                                    smartInfo.powerCycleCount = parseInt(powerCyclesMatch[1].replace(/,/g, ''));
+                                }
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Power Cycles',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: parseInt(powerCyclesMatch[1].replace(/,/g, ''))
+                                });
+                            }
+                            
+                            if (powerOnHoursMatch && !seenAttributes.has('Power On Hours')) {
+                                seenAttributes.add('Power On Hours');
+                                if (!smartInfo.powerOnHours) {
+                                    smartInfo.powerOnHours = parseInt(powerOnHoursMatch[1].replace(/,/g, ''));
+                                }
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Power On Hours',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: parseInt(powerOnHoursMatch[1].replace(/,/g, ''))
+                                });
+                            }
+                            
+                            if (unsafeShutdownsMatch && !seenAttributes.has('Unsafe Shutdowns')) {
+                                seenAttributes.add('Unsafe Shutdowns');
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Unsafe Shutdowns',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: parseInt(unsafeShutdownsMatch[1].replace(/,/g, ''))
+                                });
+                            }
+                            
+                            if (mediaErrorsMatch && !seenAttributes.has('Media and Data Integrity Errors')) {
+                                seenAttributes.add('Media and Data Integrity Errors');
+                                if (!smartInfo.reallocatedSectors) {
+                                    smartInfo.reallocatedSectors = parseInt(mediaErrorsMatch[1].replace(/,/g, ''));
+                                }
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Media and Data Integrity Errors',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: parseInt(mediaErrorsMatch[1].replace(/,/g, ''))
+                                });
+                            }
+                            
+                            if (errorInfoMatch && !seenAttributes.has('Error Information Log Entries')) {
+                                seenAttributes.add('Error Information Log Entries');
+                                smartInfo.attributes.push({
+                                    id: attrId++,
+                                    name: 'Error Information Log Entries',
+                                    value: 0,
+                                    worst: 0,
+                                    threshold: 0,
+                                    rawValue: parseInt(errorInfoMatch[1].replace(/,/g, ''))
+                                });
+                            }
+                        }
+                        
+                        console.log(`Parsed ${smartInfo.attributes.length} NVMe attributes for ${devicePath}`);
                         console.log(`Parsed SMART info for ${devicePath}:`, smartInfo);
                         resolve(smartInfo);
                         } else {
@@ -438,6 +661,102 @@ export class DisksApi {
                         
                         // Set type for NVMe
                         smartInfo.type = 'NVMe';
+                        
+                        // Parse NVMe SMART attributes/log pages from the entire output (same as in done callback)
+                        const logLines = nvmeOutput.split('\n');
+                        let attrId = 200;
+                        const seenAttributes = new Set();
+                        
+                        for (const line of logLines) {
+                            if (!line.trim() || line.match(/^[=\-]+$/) || line.match(/^[A-Z\s]+$/) || 
+                                line.match(/^===/) || line.match(/^---/) || line.match(/^SMART/)) {
+                                continue;
+                            }
+                            
+                            const tempMatch = line.match(/Temperature[:\s]+(\d+)/i);
+                            const warningMatch = line.match(/Critical Warning[:\s]+(0x[\da-fA-F]+|\d+)/i);
+                            const availableMatch = line.match(/Available Spare[:\s]+(\d+)/i);
+                            const spareThresholdMatch = line.match(/Available Spare Threshold[:\s]+(\d+)/i);
+                            const percentageMatch = line.match(/Percentage Used[:\s]+(\d+)/i);
+                            const dataUnitsReadMatch = line.match(/Data Units Read[:\s]+([\d,]+)/i);
+                            const dataUnitsWrittenMatch = line.match(/Data Units Written[:\s]+([\d,]+)/i);
+                            const hostReadsMatch = line.match(/Host Read Commands[:\s]+([\d,]+)/i);
+                            const hostWritesMatch = line.match(/Host Write Commands[:\s]+([\d,]+)/i);
+                            const controllerBusyMatch = line.match(/Controller Busy Time[:\s]+([\d,]+)/i);
+                            const powerCyclesMatch = line.match(/Power Cycles[:\s]+([\d,]+)/i);
+                            const powerOnHoursMatch = line.match(/Power On Hours[:\s]+([\d,]+)/i);
+                            const unsafeShutdownsMatch = line.match(/Unsafe Shutdowns[:\s]+([\d,]+)/i);
+                            const mediaErrorsMatch = line.match(/Media and Data Integrity Errors[:\s]+([\d,]+)/i);
+                            const errorInfoMatch = line.match(/Error Information Log Entries[:\s]+([\d,]+)/i);
+                            
+                            if (tempMatch && !seenAttributes.has('Temperature')) {
+                                seenAttributes.add('Temperature');
+                                smartInfo.attributes.push({ id: attrId++, name: 'Temperature', value: parseInt(tempMatch[1]), worst: parseInt(tempMatch[1]), threshold: 0, rawValue: parseInt(tempMatch[1]) });
+                            }
+                            if (warningMatch && !seenAttributes.has('Critical Warning')) {
+                                seenAttributes.add('Critical Warning');
+                                smartInfo.attributes.push({ id: attrId++, name: 'Critical Warning', value: 0, worst: 0, threshold: 0, rawValue: warningMatch[1] });
+                            }
+                            if (availableMatch && !seenAttributes.has('Available Spare')) {
+                                seenAttributes.add('Available Spare');
+                                smartInfo.attributes.push({ id: attrId++, name: 'Available Spare', value: parseInt(availableMatch[1]), worst: parseInt(availableMatch[1]), threshold: 0, rawValue: parseInt(availableMatch[1]) });
+                            }
+                            if (spareThresholdMatch && !seenAttributes.has('Available Spare Threshold')) {
+                                seenAttributes.add('Available Spare Threshold');
+                                smartInfo.attributes.push({ id: attrId++, name: 'Available Spare Threshold', value: parseInt(spareThresholdMatch[1]), worst: parseInt(spareThresholdMatch[1]), threshold: 0, rawValue: parseInt(spareThresholdMatch[1]) });
+                            }
+                            if (percentageMatch && !seenAttributes.has('Percentage Used')) {
+                                seenAttributes.add('Percentage Used');
+                                smartInfo.attributes.push({ id: attrId++, name: 'Percentage Used', value: parseInt(percentageMatch[1]), worst: parseInt(percentageMatch[1]), threshold: 100, rawValue: parseInt(percentageMatch[1]) });
+                            }
+                            if (dataUnitsReadMatch && !seenAttributes.has('Data Units Read')) {
+                                seenAttributes.add('Data Units Read');
+                                smartInfo.attributes.push({ id: attrId++, name: 'Data Units Read', value: 0, worst: 0, threshold: 0, rawValue: parseInt(dataUnitsReadMatch[1].replace(/,/g, '')) });
+                            }
+                            if (dataUnitsWrittenMatch && !seenAttributes.has('Data Units Written')) {
+                                seenAttributes.add('Data Units Written');
+                                smartInfo.attributes.push({ id: attrId++, name: 'Data Units Written', value: 0, worst: 0, threshold: 0, rawValue: parseInt(dataUnitsWrittenMatch[1].replace(/,/g, '')) });
+                            }
+                            if (hostReadsMatch && !seenAttributes.has('Host Read Commands')) {
+                                seenAttributes.add('Host Read Commands');
+                                smartInfo.hostReads = parseInt(hostReadsMatch[1].replace(/,/g, ''));
+                                smartInfo.attributes.push({ id: attrId++, name: 'Host Read Commands', value: 0, worst: 0, threshold: 0, rawValue: parseInt(hostReadsMatch[1].replace(/,/g, '')) });
+                            }
+                            if (hostWritesMatch && !seenAttributes.has('Host Write Commands')) {
+                                seenAttributes.add('Host Write Commands');
+                                smartInfo.hostWrites = parseInt(hostWritesMatch[1].replace(/,/g, ''));
+                                smartInfo.attributes.push({ id: attrId++, name: 'Host Write Commands', value: 0, worst: 0, threshold: 0, rawValue: parseInt(hostWritesMatch[1].replace(/,/g, '')) });
+                            }
+                            if (controllerBusyMatch && !seenAttributes.has('Controller Busy Time')) {
+                                seenAttributes.add('Controller Busy Time');
+                                smartInfo.attributes.push({ id: attrId++, name: 'Controller Busy Time', value: 0, worst: 0, threshold: 0, rawValue: parseInt(controllerBusyMatch[1].replace(/,/g, '')) });
+                            }
+                            if (powerCyclesMatch && !seenAttributes.has('Power Cycles')) {
+                                seenAttributes.add('Power Cycles');
+                                if (!smartInfo.powerCycleCount) smartInfo.powerCycleCount = parseInt(powerCyclesMatch[1].replace(/,/g, ''));
+                                smartInfo.attributes.push({ id: attrId++, name: 'Power Cycles', value: 0, worst: 0, threshold: 0, rawValue: parseInt(powerCyclesMatch[1].replace(/,/g, '')) });
+                            }
+                            if (powerOnHoursMatch && !seenAttributes.has('Power On Hours')) {
+                                seenAttributes.add('Power On Hours');
+                                if (!smartInfo.powerOnHours) smartInfo.powerOnHours = parseInt(powerOnHoursMatch[1].replace(/,/g, ''));
+                                smartInfo.attributes.push({ id: attrId++, name: 'Power On Hours', value: 0, worst: 0, threshold: 0, rawValue: parseInt(powerOnHoursMatch[1].replace(/,/g, '')) });
+                            }
+                            if (unsafeShutdownsMatch && !seenAttributes.has('Unsafe Shutdowns')) {
+                                seenAttributes.add('Unsafe Shutdowns');
+                                smartInfo.attributes.push({ id: attrId++, name: 'Unsafe Shutdowns', value: 0, worst: 0, threshold: 0, rawValue: parseInt(unsafeShutdownsMatch[1].replace(/,/g, '')) });
+                            }
+                            if (mediaErrorsMatch && !seenAttributes.has('Media and Data Integrity Errors')) {
+                                seenAttributes.add('Media and Data Integrity Errors');
+                                if (!smartInfo.reallocatedSectors) smartInfo.reallocatedSectors = parseInt(mediaErrorsMatch[1].replace(/,/g, ''));
+                                smartInfo.attributes.push({ id: attrId++, name: 'Media and Data Integrity Errors', value: 0, worst: 0, threshold: 0, rawValue: parseInt(mediaErrorsMatch[1].replace(/,/g, '')) });
+                            }
+                            if (errorInfoMatch && !seenAttributes.has('Error Information Log Entries')) {
+                                seenAttributes.add('Error Information Log Entries');
+                                smartInfo.attributes.push({ id: attrId++, name: 'Error Information Log Entries', value: 0, worst: 0, threshold: 0, rawValue: parseInt(errorInfoMatch[1].replace(/,/g, '')) });
+                            }
+                        }
+                        
+                        console.log(`Parsed ${smartInfo.attributes.length} NVMe attributes from error output for ${devicePath}`);
                         
                         // If we parsed at least the model, consider it successful
                         if (smartInfo.model || smartInfo.serial || smartInfo.capacity) {
