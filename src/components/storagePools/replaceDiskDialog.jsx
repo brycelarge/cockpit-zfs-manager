@@ -184,16 +184,17 @@ function ReplaceDiskDialog({ pool, onRefresh }) {
                                 </Alert>
                             )}
 
-                            <Checkbox
-                                id="force-replace-disk"
-                                label="Force replacement (replace even if device is in use)"
-                                isChecked={force}
-                                onChange={(_, checked) => setForce(checked)}
-                                style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}
-                            />
-                            <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
-                                Use this if the replacement device is in use or contains a filesystem.
-                            </p>
+                            <FormGroup fieldId="force-replace-disk">
+                                <Checkbox
+                                    id="force-replace-disk"
+                                    label="Force replacement (replace even if device is in use)"
+                                    isChecked={force}
+                                    onChange={(_, checked) => setForce(checked)}
+                                />
+                                <div style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                                    Use this if the replacement device is in use or contains a filesystem.
+                                </div>
+                            </FormGroup>
                         </>
                     )}
                 </Form>
