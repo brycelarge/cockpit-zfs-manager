@@ -15,21 +15,12 @@ import { ZfsApi } from '../../zfsApi/index.js';
 
 function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
     const Dialogs = useDialogs();
-    const [confirmName, setConfirmName] = useState('');
     const [confirmYes, setConfirmYes] = useState('');
     const [force, setForce] = useState(false);
     const [error, setError] = useState({});
     const [deleting, setDeleting] = useState(false);
 
     const handleDelete = async () => {
-        if (confirmName.trim() !== snapshot.name.trim()) {
-            setError({
-                dialogError: 'Snapshot name does not match',
-                dialogErrorDetail: 'Please type the snapshot name exactly to confirm deletion'
-            });
-            return;
-        }
-
         if (confirmYes.trim().toLowerCase() !== 'yes') {
             setError({
                 dialogError: 'Confirmation required',
@@ -71,23 +62,6 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
                 </Alert>
 
                 <p>
-                    Type <strong>{snapshot.name}</strong> to confirm:
-                </p>
-                <TextInput
-                    id="confirm-snapshot-name"
-                    value={confirmName}
-                    onChange={(_, value) => {
-                        setConfirmName(value);
-                        if (error.dialogError) {
-                            setError({});
-                        }
-                    }}
-                    placeholder={snapshot.name}
-                    validated={confirmName && confirmName !== snapshot.name ? 'error' : 'default'}
-                    style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}
-                />
-
-                <p>
                     Type <strong>"yes"</strong> to confirm deletion:
                 </p>
                 <TextInput
@@ -119,8 +93,6 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
                     variant="danger"
                     onClick={handleDelete}
                     isDisabled={
-                        !confirmName || 
-                        confirmName.trim() !== snapshot.name.trim() || 
                         !confirmYes || 
                         confirmYes.trim().toLowerCase() !== 'yes' || 
                         deleting
