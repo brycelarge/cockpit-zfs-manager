@@ -143,20 +143,21 @@ autoprune = yes
     }
 
     static async getConfigPath() {
-        // Common sanoid config paths
+        // Common sanoid config paths (in order of preference)
         const paths = [
             '/etc/sanoid/sanoid.conf',
             '/usr/local/etc/sanoid/sanoid.conf',
-            '/etc/sanoid.conf'
+            '/etc/sanoid.conf',
+            '/usr/share/sanoid/sanoid.conf',
+            '/root/.config/sanoid/sanoid.conf'
         ];
 
+        // Check each path
         for (const path of paths) {
             const proc = cockpit.spawn(['test', '-f', path]);
             const exists = await new Promise((resolve) => {
                 proc.done((exitCode) => {
                     // Exit code 0 means file exists
-                    // Exit code 1 means file doesn't exist
-                    // null/undefined/empty exit code means process completed - treat as "doesn't exist" (not found)
                     resolve(exitCode === 0);
                 });
                 proc.fail(() => resolve(false));
@@ -165,6 +166,80 @@ autoprune = yes
                 return path;
             }
         }
+        
+        // Try to find config by checking sanoid systemd service or cron job
+        // They might specify a custom config path
+        try {
+            // Check systemd service for sanoid
+            const serviceProc = cockpit.spawn(['systemctl', 'show', 'sanoid.service', '-p', 'ExecStart', '--value'], { err: 'message' });
+            let serviceOutput = '';
+            serviceProc.stream((data) => {
+                serviceOutput += data;
+            });
+            
+            await new Promise((resolve) => {
+                serviceProc.done(() => resolve());
+                serviceProc.fail(() => resolve());
+            });
+            
+            // Parse ExecStart to find --config argument
+            if (serviceOutput) {
+                const configMatch = serviceOutput.match(/--config\s+(\S+)/);
+                if (configMatch && configMatch[1]) {
+                    const configPath = configMatch[1].trim();
+                    // Verify it exists
+                    const verifyProc = cockpit.spawn(['test', '-f', configPath]);
+                    const exists = await new Promise((resolve) => {
+                        verifyProc.done((exitCode) => resolve(exitCode === 0));
+                        verifyProc.fail(() => resolve(false));
+                    });
+                    if (exists) {
+                        return configPath;
+                    }
+                }
+            }
+        } catch {
+            // Ignore errors
+        }
+        
+        // Try checking cron jobs for sanoid config path
+        try {
+            const cronProc = cockpit.spawn(['crontab', '-l'], { err: 'message' });
+            let cronOutput = '';
+            cronProc.stream((data) => {
+                cronOutput += data;
+            });
+            
+            await new Promise((resolve) => {
+                cronProc.done(() => resolve());
+                cronProc.fail(() => resolve());
+            });
+            
+            // Look for --config in cron jobs
+            if (cronOutput) {
+                const lines = cronOutput.split('\n');
+                for (const line of lines) {
+                    if (line.includes('sanoid')) {
+                        const configMatch = line.match(/--config\s+(\S+)/);
+                        if (configMatch && configMatch[1]) {
+                            const configPath = configMatch[1].trim();
+                            // Verify it exists
+                            const verifyProc = cockpit.spawn(['test', '-f', configPath]);
+                            const exists = await new Promise((resolve) => {
+                                verifyProc.done((exitCode) => resolve(exitCode === 0));
+                                verifyProc.fail(() => resolve(false));
+                            });
+                            if (exists) {
+                                return configPath;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch {
+            // Ignore errors
+        }
+        
         return null;
     }
 

@@ -211,8 +211,14 @@ function SanoidTab({ pool }) {
         return (
             <div>
                 <Alert variant="warning" title="Sanoid configuration not found" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
-                    <p>Sanoid is installed but no configuration file was found.</p>
-                    <p>Create a configuration file at <code>/etc/sanoid/sanoid.conf</code></p>
+                    <p>Sanoid is installed but no configuration file was found in the standard locations.</p>
+                    {sanoidSnapshots.length > 0 && (
+                        <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontWeight: 'bold' }}>
+                            Note: Sanoid has created {sanoidSnapshots.length} snapshot(s) for this pool, so a configuration file exists somewhere.
+                            It may be in a non-standard location or sanoid may be using default settings.
+                        </p>
+                    )}
+                    <p>Create a configuration file at <code>/etc/sanoid/sanoid.conf</code> to manage it from this interface.</p>
                 </Alert>
 
                 {error.dialogError && (
