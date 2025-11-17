@@ -351,6 +351,68 @@ export class DisksApi {
                 
                 nvmeProc.fail((error) => {
                     console.error(`smartctl failed for ${devicePath}:`, error);
+                    console.log(`Output captured before fail: length=${nvmeOutput.length}, content="${nvmeOutput.substring(0, 500)}"`);
+                    // Even if smartctl returns a non-zero exit code, check if we got any output
+                    // Exit code 4 is common for NVMe devices but output may still be valid
+                    if (nvmeOutput && nvmeOutput.trim().length > 0) {
+                        console.log(`smartctl returned error but has output, attempting to parse...`);
+                        // Try to parse the output we got
+                        const modelMatch = nvmeOutput.match(/Model Number:\s*(.+)/i) ||
+                                         nvmeOutput.match(/Device Model:\s*(.+)/i);
+                        if (modelMatch) {
+                            smartInfo.model = modelMatch[1].trim();
+                        }
+                        
+                        const serialMatch = nvmeOutput.match(/Serial Number:\s*(.+)/i);
+                        if (serialMatch) {
+                            smartInfo.serial = serialMatch[1].trim();
+                        }
+                        
+                        const capacityMatch = nvmeOutput.match(/Total NVM Capacity:\s*([\d,]+)\s*bytes/i) ||
+                                            nvmeOutput.match(/Namespace 1 Size\/Capacity:\s*([\d,]+)\s*bytes/i) ||
+                                            nvmeOutput.match(/User Capacity:\s*\[?([\d,]+)\s*bytes\]?/i);
+                        if (capacityMatch) {
+                            const bytes = parseInt(capacityMatch[1].replace(/,/g, ''));
+                            smartInfo.capacity = DisksApi.formatBytes(bytes);
+                        }
+                        
+                        if (nvmeOutput.match(/SMART overall-health self-assessment test result:\s*PASSED/i) ||
+                            nvmeOutput.match(/Health Status:\s*OK/i)) {
+                            smartInfo.health = 'PASSED';
+                        } else if (nvmeOutput.match(/SMART overall-health self-assessment test result:\s*FAILED/i) ||
+                                  nvmeOutput.match(/Health Status:\s*FAILED/i)) {
+                            smartInfo.health = 'FAILED';
+                        }
+                        
+                        const tempMatch = nvmeOutput.match(/Temperature:\s*(\d+)\s*Celsius/i) ||
+                                        nvmeOutput.match(/Temperature Sensor \d+:\s*(\d+)\s*C/i) ||
+                                        nvmeOutput.match(/Temperature:\s*(\d+)\s*C/i);
+                        if (tempMatch) {
+                            smartInfo.temperature = parseInt(tempMatch[1]);
+                        }
+                        
+                        const pohMatch = nvmeOutput.match(/Power On Hours:\s*(\d+)/i);
+                        if (pohMatch) {
+                            smartInfo.powerOnHours = parseInt(pohMatch[1]);
+                        }
+                        
+                        const pcMatch = nvmeOutput.match(/Power Cycles:\s*(\d+)/i);
+                        if (pcMatch) {
+                            smartInfo.powerCycleCount = parseInt(pcMatch[1]);
+                        }
+                        
+                        const mediaErrorMatch = nvmeOutput.match(/Media and Data Integrity Errors:\s*(\d+)/i);
+                        if (mediaErrorMatch) {
+                            smartInfo.reallocatedSectors = parseInt(mediaErrorMatch[1]);
+                        }
+                        
+                        // If we parsed at least the model, consider it successful
+                        if (smartInfo.model || smartInfo.serial || smartInfo.capacity) {
+                            console.log(`Parsed SMART info from error output for ${devicePath}:`, smartInfo);
+                            resolve(smartInfo);
+                            return;
+                        }
+                    }
                     resolve(null);
                 });
             } else {
