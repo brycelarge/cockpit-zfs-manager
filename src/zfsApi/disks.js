@@ -39,23 +39,44 @@ export class DisksApi {
                 if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined || output.trim().length > 0) {
                     const lines = output.split('\n');
                     const deviceSet = new Set();
+                    let inDeviceTable = false;
                     
                     for (const line of lines) {
-                        // Look for device paths like /dev/sda, /dev/nvme0n1, etc.
-                        const deviceMatch = line.match(/\s+(\/dev\/[^\s]+)/);
-                        if (deviceMatch && deviceMatch[1]) {
-                            const devicePath = deviceMatch[1];
-                            if (!deviceSet.has(devicePath)) {
-                                deviceSet.add(devicePath);
+                        const trimmed = line.trim();
+                        
+                        // Device table starts with "NAME" header
+                        if (trimmed.startsWith('NAME') || trimmed.match(/^\s*NAME\s+STATE\s+READ\s+WRITE\s+CHECKSUM/)) {
+                            inDeviceTable = true;
+                            continue;
+                        }
+                        
+                        // Parse device rows
+                        if (inDeviceTable && trimmed && !trimmed.startsWith('pool:') && !trimmed.startsWith('state:')) {
+                            // Skip separator lines
+                            if (trimmed.match(/^-+$/)) continue;
+                            
+                            // Skip the pool name row itself
+                            if (trimmed.startsWith(poolName + ' ')) continue;
+                            
+                            const parts = trimmed.split(/\s+/);
+                            if (parts.length >= 2) {
+                                const deviceName = parts[0];
                                 
-                                // Extract device name from path
-                                const deviceName = devicePath.replace('/dev/', '');
-                                
-                                devices.push({
-                                    path: devicePath,
-                                    name: deviceName,
-                                    type: DisksApi.getDeviceType(devicePath)
-                                });
+                                // Only process /dev/ paths (physical devices)
+                                if (deviceName.startsWith('/dev/')) {
+                                    if (!deviceSet.has(deviceName)) {
+                                        deviceSet.add(deviceName);
+                                        
+                                        // Extract device name from path
+                                        const deviceShortName = deviceName.replace('/dev/', '');
+                                        
+                                        devices.push({
+                                            path: deviceName,
+                                            name: deviceShortName,
+                                            type: DisksApi.getDeviceType(deviceName)
+                                        });
+                                    }
+                                }
                             }
                         }
                     }
