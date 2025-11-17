@@ -46,118 +46,43 @@ export class ZfsApi {
     static async listAvailableDisks() {
         return new Promise((resolve, reject) => {
             const disks = [];
-            // Use -P for parseable output (key="value" format) to handle spaces in MODEL field
-            const proc = cockpit.spawn(['lsblk', '-P', '-o', 'NAME,TYPE,SIZE,MODEL', '-d', '-e', '7,11'], {
+            
+            // Use the same approach that worked in the old code
+            // Use lsblk with awk to parse and format output properly
+            const proc = cockpit.spawn(['sh', '-c', 'lsblk -nd -o NAME,TYPE,SIZE,MODEL -e 7,11 2>/dev/null | awk \'$2=="disk" && $1!~/^loop/ && $1!~/^ram/ {path="/dev/"$1; size=$3; model=""; for(i=4;i<=NF;i++) model=model" "$i; gsub(/^ /,"",model); if(model=="") model=$1; print path"|"model"|"size}\''], {
                 err: 'message'
             });
-
+            
             proc.stream((data) => {
-                const lines = data.trim().split('\n');
+                const lines = data.split('\n');
                 lines.forEach(line => {
-                    if (line.trim()) {
-                        try {
-                            // Parse KEY="VALUE" format
-                            const nameMatch = line.match(/NAME="([^"]+)"/);
-                            const typeMatch = line.match(/TYPE="([^"]+)"/);
-                            const sizeMatch = line.match(/SIZE="([^"]+)"/);
-                            const modelMatch = line.match(/MODEL="([^"]+)"/);
-
-                            if (nameMatch && typeMatch && sizeMatch && typeMatch[1] === 'disk') {
-                                const name = nameMatch[1];
-                                // Skip loop devices and ram disks
-                                if (!name.startsWith('loop') && !name.startsWith('ram') && !name.startsWith('zram')) {
-                                    disks.push({
-                                        name: name,
-                                        path: `/dev/${name}`,
-                                        type: typeMatch[1],
-                                        size: sizeMatch[1],
-                                        model: modelMatch ? modelMatch[1] : name
-                                    });
-                                }
-                            }
-                        } catch (e) {
-                            // Skip malformed lines
-                            console.warn('Failed to parse lsblk line:', line, e);
-                        }
-                    }
-                });
-            });
-
-            proc.done((exitCode, data) => {
-                if (exitCode === 0) {
-                    if (disks.length === 0) {
-                        // Try fallback method
-                        this.listAvailableDisksFallback().then(resolve).catch(() => {
-                            resolve([]); // Return empty array instead of rejecting
+                    const parts = line.trim().split('|');
+                    if (parts.length >= 3 && parts[0].startsWith('/dev/')) {
+                        disks.push({
+                            name: parts[1] || parts[0].replace('/dev/', ''),
+                            path: parts[0],
+                            type: 'disk',
+                            size: parts[2] || 'Unknown',
+                            model: parts[1] || parts[0].replace('/dev/', '')
                         });
-                    } else {
-                        resolve(disks);
-                    }
-                } else {
-                    // Try fallback method
-                    const errorMsg = data || `lsblk exited with code ${exitCode}`;
-                    console.warn('lsblk failed:', errorMsg);
-                    this.listAvailableDisksFallback().then(resolve).catch(() => {
-                        reject(new Error(`Failed to list disks: ${errorMsg}`));
-                    });
-                }
-            });
-
-            proc.fail((error) => {
-                // Try fallback method
-                console.warn('lsblk failed:', error);
-                this.listAvailableDisksFallback().then(resolve).catch(() => {
-                    reject(error);
-                });
-            });
-        });
-    }
-
-    static async listAvailableDisksFallback() {
-        return new Promise((resolve, reject) => {
-            const disks = [];
-            // Fallback: use lsblk without -P flag and parse differently
-            const proc = cockpit.spawn(['lsblk', '-o', 'NAME,TYPE,SIZE,MODEL', '-n', '-d', '-e', '7,11'], {
-                err: 'message'
-            });
-
-            proc.stream((data) => {
-                const lines = data.trim().split('\n');
-                lines.forEach(line => {
-                    if (line.trim()) {
-                        // Split by whitespace, but MODEL can have spaces
-                        // Format: NAME TYPE SIZE MODEL...
-                        const parts = line.trim().split(/\s+/);
-                        if (parts.length >= 3 && parts[1] === 'disk') {
-                            const name = parts[0];
-                            // Skip loop devices and ram disks
-                            if (!name.startsWith('loop') && !name.startsWith('ram') && !name.startsWith('zram')) {
-                                const size = parts[2];
-                                // Everything after SIZE is MODEL
-                                const model = parts.slice(3).join(' ') || name;
-                                disks.push({
-                                    name: name,
-                                    path: `/dev/${name}`,
-                                    type: parts[1],
-                                    size: size,
-                                    model: model
-                                });
-                            }
-                        }
                     }
                 });
             });
-
+            
             proc.done((exitCode) => {
+                disks.sort((a, b) => a.path.localeCompare(b.path));
                 if (exitCode === 0) {
                     resolve(disks);
                 } else {
-                    reject(new Error(`lsblk fallback exited with code ${exitCode}`));
+                    // Even if exit code is non-zero, return what we got
+                    resolve(disks);
                 }
             });
-
+            
             proc.fail((error) => {
-                reject(error);
+                // If lsblk fails completely, return empty array instead of rejecting
+                console.warn('lsblk failed:', error);
+                resolve([]);
             });
         });
     }
