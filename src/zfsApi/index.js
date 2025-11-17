@@ -727,17 +727,23 @@ export class ZfsApi {
                                     vdevType = 'mirror';
                                     break;
                                 }
-                                // Check for raidz3
+                                // Check for raidz3 (must be before raidz2 and raidz1)
                                 if (nextLine.includes('raidz3') || nextLine.match(/^\s+raidz3-/)) {
                                     vdevType = 'raidz3';
                                     break;
                                 }
-                                // Check for raidz2
+                                // Check for raidz2 (must be before raidz1)
                                 if (nextLine.includes('raidz2') || nextLine.match(/^\s+raidz2-/)) {
                                     vdevType = 'raidz2';
                                     break;
                                 }
-                                // Check for raidz (must be after raidz2 and raidz3)
+                                // Check for raidz1 (single parity, same as raidz)
+                                // Must check after raidz2 and raidz3 to avoid false matches
+                                if (nextLine.includes('raidz1') || nextLine.match(/^\s+raidz1-/)) {
+                                    vdevType = 'raidz';
+                                    break;
+                                }
+                                // Check for raidz (generic, must be last)
                                 if (nextLine.includes('raidz') || nextLine.match(/^\s+raidz-/)) {
                                     vdevType = 'raidz';
                                     break;
