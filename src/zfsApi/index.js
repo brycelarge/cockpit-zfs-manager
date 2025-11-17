@@ -201,7 +201,9 @@ export class ZfsApi {
             });
 
             proc.fail((error) => {
-                reject(error);
+                // Cockpit error objects have a message property
+                const errorMsg = error?.message || error?.toString() || String(error) || 'Failed to create pool';
+                reject(new Error(errorMsg));
             });
         });
     }

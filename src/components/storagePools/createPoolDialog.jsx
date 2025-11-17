@@ -135,9 +135,11 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
             });
             onClose();
         } catch (exc) {
+            // Handle cockpit error objects which have a message property
+            const errorMessage = exc?.message || (typeof exc === 'string' ? exc : String(exc));
             setError({
                 dialogError: 'Failed to create pool',
-                dialogErrorDetail: exc.message || String(exc)
+                dialogErrorDetail: errorMessage || 'Unknown error occurred'
             });
             setCreating(false);
         }

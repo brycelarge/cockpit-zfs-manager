@@ -24,14 +24,9 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
     const handleCreatePool = async (poolData) => {
-        try {
-            await ZfsApi.createPool(poolData.name, poolData.devices, poolData.vdevType);
-            setCreateDialogOpen(false);
-            onRefresh();
-        } catch (error) {
-            console.error('Failed to create pool:', error);
-            // Error handling will be done in the dialog
-        }
+        await ZfsApi.createPool(poolData.name, poolData.devices, poolData.vdevType);
+        setCreateDialogOpen(false);
+        onRefresh();
     };
 
     const handleImportPool = () => {
