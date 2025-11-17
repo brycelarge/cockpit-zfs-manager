@@ -24,7 +24,7 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
     const handleCreatePool = async (poolData) => {
-        await ZfsApi.createPool(poolData.name, poolData.devices, poolData.vdevType);
+        await ZfsApi.createPool(poolData.name, poolData.devices, poolData.vdevType, poolData.force || false);
         setCreateDialogOpen(false);
         onRefresh();
     };

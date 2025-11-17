@@ -16,7 +16,6 @@ import { HelpIcon } from '@patternfly/react-icons';
 import { FormHelper } from 'cockpit-components-form-helper.jsx';
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
-import { VDEV_TYPES } from '../../constants/index.js';
 
 function CreatePoolDialog({ isOpen, onClose, onCreate }) {
     const [poolName, setPoolName] = useState('');
@@ -27,6 +26,7 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
     const [creating, setCreating] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [confirmText, setConfirmText] = useState('');
+    const [force, setForce] = useState(false);
     const [validationFailed, setValidationFailed] = useState({});
     const [error, setError] = useState({});
 
@@ -41,6 +41,7 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
             setCreating(false);
             setShowConfirm(false);
             setConfirmText('');
+            setForce(false);
             loadDisks();
         }
     }, [isOpen]);
@@ -131,7 +132,8 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
             await onCreate({
                 name: poolName.trim(),
                 vdevType,
-                devices
+                devices,
+                force
             });
             onClose();
         } catch (exc) {
@@ -197,6 +199,16 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
                                 validated={confirmText && confirmText.toLowerCase() !== 'yes' ? 'error' : 'default'}
                             />
                         </FormGroup>
+
+                        <Checkbox
+                            id="force-create-pool"
+                            label="Force creation (overwrite existing filesystems on devices)"
+                            isChecked={force}
+                            onChange={(_, checked) => setForce(checked)}
+                        />
+                        <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                            Use this if devices contain existing filesystems that you want to overwrite. This will destroy all data on the devices.
+                        </p>
                     </Form>
                 ) : (
                     <Form isHorizontal>

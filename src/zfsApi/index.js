@@ -170,9 +170,16 @@ export class ZfsApi {
         });
     }
 
-    static async createPool(name, devices, vdevType) {
+    static async createPool(name, devices, vdevType, force = false) {
         return new Promise((resolve, reject) => {
-            const args = ['zpool', 'create', name];
+            const args = ['zpool', 'create'];
+            
+            // Add force flag if requested
+            if (force) {
+                args.push('-f');
+            }
+            
+            args.push(name);
             
             // Add vdev type if not stripe
             if (vdevType !== 'stripe') {
