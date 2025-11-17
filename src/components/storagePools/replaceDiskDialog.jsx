@@ -35,12 +35,16 @@ function ReplaceDiskDialog({ pool, onRefresh }) {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [devices, disks] = await Promise.all([
+            const [devices, allDisks] = await Promise.all([
                 DisksApi.getPoolDevices(pool.name),
                 ZfsApi.listAvailableDisks()
             ]);
             setPoolDevices(devices);
-            setAvailableDisks(disks);
+            
+            // Filter out disks already in the pool from replacement options
+            const poolDevicePaths = new Set(devices.map(d => d.path));
+            const filteredDisks = allDisks.filter(disk => !poolDevicePaths.has(disk.path));
+            setAvailableDisks(filteredDisks);
         } catch (exc) {
             setError({
                 dialogError: 'Failed to load devices',
