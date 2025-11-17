@@ -23,8 +23,19 @@ function CreateSnapshotDialog({ pool, filesystem = null, onRefresh }) {
 
     const handleCreate = async () => {
         const validation = {};
-        if (!name || !name.trim()) {
+        const trimmedName = name.trim();
+        
+        if (!trimmedName) {
             validation.name = 'Snapshot name is required';
+        } else {
+            // Snapshot names cannot contain @ or #
+            if (trimmedName.includes('@')) {
+                validation.name = 'Snapshot name cannot contain @';
+            } else if (trimmedName.includes('#')) {
+                validation.name = 'Snapshot name cannot contain #';
+            } else if (trimmedName.length > 255) {
+                validation.name = 'Snapshot name must be 255 characters or less';
+            }
         }
 
         if (Object.keys(validation).length > 0) {
@@ -32,7 +43,7 @@ function CreateSnapshotDialog({ pool, filesystem = null, onRefresh }) {
             return;
         }
 
-        const fullName = filesystem ? `${filesystem.name}@${name.trim()}` : `${pool.name}@${name.trim()}`;
+        const fullName = filesystem ? `${filesystem.name}@${trimmedName}` : `${pool.name}@${trimmedName}`;
         setCreating(true);
         try {
             await ZfsApi.createSnapshot(fullName);

@@ -4,6 +4,7 @@ import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import {
     Modal, ModalBody, ModalFooter, ModalHeader
 } from '@patternfly/react-core/dist/esm/components/Modal';
+import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { useDialogs } from 'dialogs.jsx';
@@ -12,10 +13,19 @@ import { ZfsApi } from '../../zfsApi/index.js';
 
 function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
     const Dialogs = useDialogs();
+    const [confirmName, setConfirmName] = useState('');
     const [error, setError] = useState({});
     const [deleting, setDeleting] = useState(false);
 
     const handleDelete = async () => {
+        if (confirmName !== snapshot.name) {
+            setError({
+                dialogError: 'Snapshot name does not match',
+                dialogErrorDetail: 'Please type the snapshot name exactly to confirm deletion'
+            });
+            return;
+        }
+
         setDeleting(true);
         try {
             await ZfsApi.destroySnapshot(snapshot.name);
@@ -31,7 +41,7 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
     };
 
     return (
-        <Modal position="top" variant="small" isOpen onClose={Dialogs.close}>
+        <Modal position="top" variant="medium" isOpen onClose={Dialogs.close}>
             <ModalHeader title={`Delete Snapshot ${snapshot.name}`} />
             <ModalBody>
                 {error.dialogError && (
@@ -44,12 +54,27 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
                     This will permanently delete the snapshot <strong>{snapshot.name}</strong>.
                     This action cannot be undone.
                 </p>
+                <p>
+                    Type <strong>{snapshot.name}</strong> to confirm:
+                </p>
+                <TextInput
+                    id="confirm-snapshot-name"
+                    value={confirmName}
+                    onChange={(_, value) => {
+                        setConfirmName(value);
+                        if (error.dialogError) {
+                            setError({});
+                        }
+                    }}
+                    placeholder={snapshot.name}
+                    validated={confirmName && confirmName !== snapshot.name ? 'error' : 'default'}
+                />
             </ModalBody>
             <ModalFooter>
                 <Button
                     variant="danger"
                     onClick={handleDelete}
-                    isDisabled={deleting}
+                    isDisabled={confirmName !== snapshot.name || deleting}
                     isLoading={deleting}
                 >
                     Delete Snapshot

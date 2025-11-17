@@ -4,6 +4,7 @@ import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import {
     Modal, ModalBody, ModalFooter, ModalHeader
 } from '@patternfly/react-core/dist/esm/components/Modal';
+import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
 
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
@@ -13,11 +14,20 @@ import { ZfsApi } from '../../zfsApi/index.js';
 
 function DeleteFileSystemDialog({ filesystem, pool, onRefresh }) {
     const Dialogs = useDialogs();
+    const [confirmName, setConfirmName] = useState('');
     const [force, setForce] = useState(false);
     const [error, setError] = useState({});
     const [deleting, setDeleting] = useState(false);
 
     const handleDelete = async () => {
+        if (confirmName !== filesystem.name) {
+            setError({
+                dialogError: 'File system name does not match',
+                dialogErrorDetail: 'Please type the file system name exactly to confirm deletion'
+            });
+            return;
+        }
+
         setDeleting(true);
         try {
             await ZfsApi.destroyFileSystem(filesystem.name, force);
@@ -46,6 +56,22 @@ function DeleteFileSystemDialog({ filesystem, pool, onRefresh }) {
                     This will permanently delete the file system <strong>{filesystem.name}</strong> and all its data.
                     This action cannot be undone.
                 </p>
+                <p>
+                    Type <strong>{filesystem.name}</strong> to confirm:
+                </p>
+                <TextInput
+                    id="confirm-filesystem-name"
+                    value={confirmName}
+                    onChange={(_, value) => {
+                        setConfirmName(value);
+                        if (error.dialogError) {
+                            setError({});
+                        }
+                    }}
+                    placeholder={filesystem.name}
+                    validated={confirmName && confirmName !== filesystem.name ? 'error' : 'default'}
+                    style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}
+                />
                 <Checkbox
                     id="force-delete-fs"
                     label="Force deletion (recursive, destroy children)"
@@ -57,7 +83,7 @@ function DeleteFileSystemDialog({ filesystem, pool, onRefresh }) {
                 <Button
                     variant="danger"
                     onClick={handleDelete}
-                    isDisabled={deleting}
+                    isDisabled={confirmName !== filesystem.name || deleting}
                     isLoading={deleting}
                 >
                     Delete File System

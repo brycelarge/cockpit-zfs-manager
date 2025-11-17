@@ -61,14 +61,35 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
 
     const handleCreate = () => {
         const validation = {};
-        if (!poolName.trim()) {
+        const trimmedName = poolName.trim();
+        
+        if (!trimmedName) {
             validation.name = 'Pool name is required';
+        } else {
+            // ZFS pool names must start with a letter and contain only alphanumeric characters, underscores, hyphens, and colons
+            if (!/^[a-zA-Z]/.test(trimmedName)) {
+                validation.name = 'Pool name must start with a letter';
+            } else if (!/^[a-zA-Z0-9_\-:]+$/.test(trimmedName)) {
+                validation.name = 'Pool name can only contain letters, numbers, underscores, hyphens, and colons';
+            } else if (trimmedName.length > 255) {
+                validation.name = 'Pool name must be 255 characters or less';
+            }
         }
+        
         if (devices.length === 0) {
             validation.devices = 'Please select at least one device';
         }
         if (vdevType === 'mirror' && devices.length < 2) {
             validation.devices = 'Mirror requires at least 2 devices';
+        }
+        if (vdevType === 'raidz' && devices.length < 3) {
+            validation.devices = 'RAID-Z requires at least 3 devices';
+        }
+        if (vdevType === 'raidz2' && devices.length < 4) {
+            validation.devices = 'RAID-Z2 requires at least 4 devices';
+        }
+        if (vdevType === 'raidz3' && devices.length < 5) {
+            validation.devices = 'RAID-Z3 requires at least 5 devices';
         }
 
         if (Object.keys(validation).length > 0) {
@@ -77,7 +98,7 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
         }
 
         onCreate({
-            name: poolName,
+            name: trimmedName,
             vdevType,
             devices
         });

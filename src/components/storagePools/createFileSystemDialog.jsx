@@ -25,11 +25,28 @@ function CreateFileSystemDialog({ pool, onRefresh }) {
 
     const handleCreate = async () => {
         const validation = {};
-        if (!fsName || !fsName.trim() || !fsName.startsWith(`${pool.name}/`)) {
+        const trimmedName = fsName.trim();
+        
+        if (!trimmedName || !trimmedName.startsWith(`${pool.name}/`)) {
             validation.name = 'File system name must start with pool name';
+        } else {
+            // Extract the dataset name part (after pool name)
+            const datasetPart = trimmedName.substring(pool.name.length + 1);
+            if (!datasetPart) {
+                validation.name = 'File system name cannot be empty';
+            } else if (datasetPart.includes('@')) {
+                validation.name = 'File system name cannot contain @ (use snapshot name format)';
+            } else if (datasetPart.includes('#')) {
+                validation.name = 'File system name cannot contain #';
+            } else if (datasetPart.length > 255) {
+                validation.name = 'File system name must be 255 characters or less';
+            }
         }
-        if (encrypted && !passphrase) {
+        
+        if (encrypted && !passphrase.trim()) {
             validation.passphrase = 'Passphrase is required for encrypted file systems';
+        } else if (encrypted && passphrase.trim().length < 8) {
+            validation.passphrase = 'Passphrase must be at least 8 characters long';
         }
 
         if (Object.keys(validation).length > 0) {
@@ -39,7 +56,7 @@ function CreateFileSystemDialog({ pool, onRefresh }) {
 
         setCreating(true);
         try {
-            await ZfsApi.createFileSystem(fsName.trim(), encrypted, passphrase || null);
+            await ZfsApi.createFileSystem(trimmedName, encrypted, passphrase.trim() || null);
             Dialogs.close();
             onRefresh();
         } catch (exc) {
