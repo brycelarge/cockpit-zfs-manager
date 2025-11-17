@@ -249,40 +249,48 @@ function DisksTab({ pool }) {
                             </div>
 
                             {/* S.M.A.R.T. Attributes Table */}
-                            {disk.smart.attributes && disk.smart.attributes.length > 0 && (
-                                <Card style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
-                                    <CardTitle>S.M.A.R.T.</CardTitle>
-                                    <CardBody>
-                                        <ListingTable
-                                            aria-label="SMART attributes"
-                                            variant="compact"
-                                            columns={[
-                                                { title: "ID", props: { width: 5 } },
-                                                { title: "Attribute Name", header: true, props: { width: 25 } },
-                                                { title: "Current", props: { width: 10 } },
-                                                { title: "Worst", props: { width: 10 } },
-                                                { title: "Threshold", props: { width: 12 } },
-                                                { title: "Raw Value", props: { width: 20 } },
-                                            ]}
-                                            rows={disk.smart.attributes.map(attr => ({
-                                                columns: [
-                                                    { title: attr.id.toString() },
-                                                    { title: attr.name, header: true },
-                                                    { title: attr.value.toString() },
-                                                    { title: attr.worst.toString() },
-                                                    { title: attr.threshold.toString() },
-                                                    { 
-                                                        title: attr.rawValue !== null && attr.rawValue !== undefined 
-                                                            ? attr.rawValue.toLocaleString() 
-                                                            : '-' 
-                                                    },
-                                                ],
-                                                key: `attr-${attr.id}`,
-                                            }))}
-                                        />
-                                    </CardBody>
-                                </Card>
-                            )}
+                            {(() => {
+                                console.log(`Checking SMART attributes for ${disk.path}:`, {
+                                    hasSmart: !!disk.smart,
+                                    hasAttributes: !!(disk.smart && disk.smart.attributes),
+                                    attributesLength: disk.smart?.attributes?.length || 0,
+                                    attributes: disk.smart?.attributes
+                                });
+                                return disk.smart && disk.smart.attributes && disk.smart.attributes.length > 0 ? (
+                                    <Card style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
+                                        <CardTitle>S.M.A.R.T.</CardTitle>
+                                        <CardBody>
+                                            <ListingTable
+                                                aria-label="SMART attributes"
+                                                variant="compact"
+                                                columns={[
+                                                    { title: "ID", props: { width: 5 } },
+                                                    { title: "Attribute Name", header: true, props: { width: 25 } },
+                                                    { title: "Current", props: { width: 10 } },
+                                                    { title: "Worst", props: { width: 10 } },
+                                                    { title: "Threshold", props: { width: 12 } },
+                                                    { title: "Raw Value", props: { width: 20 } },
+                                                ]}
+                                                rows={disk.smart.attributes.map(attr => ({
+                                                    columns: [
+                                                        { title: attr.id.toString() },
+                                                        { title: attr.name, header: true },
+                                                        { title: attr.value.toString() },
+                                                        { title: attr.worst.toString() },
+                                                        { title: attr.threshold.toString() },
+                                                        { 
+                                                            title: attr.rawValue !== null && attr.rawValue !== undefined 
+                                                                ? attr.rawValue.toLocaleString() 
+                                                                : '-' 
+                                                        },
+                                                    ],
+                                                    key: `attr-${attr.id}`,
+                                                }))}
+                                            />
+                                        </CardBody>
+                                    </Card>
+                                ) : null;
+                            })()}
                         </div>
                     ),
                 }))}

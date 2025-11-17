@@ -478,6 +478,7 @@ export class DisksApi {
                     });
                     
                     attrsProc.done(async (attrsExitCode) => {
+                        console.log(`smartctl -A ${devicePath} exit code: ${attrsExitCode}, output length: ${attrsOutput.length}`);
                         // Parse model and serial from info section
                         const infoProc = cockpit.spawn([smartctlCmd, '-i', devicePath], { err: 'message' });
                         let infoOutput = '';
@@ -566,13 +567,18 @@ export class DisksApi {
                             }
                             
                             // Parse SMART attributes
+                            console.log(`Parsing SMART attributes for ${devicePath}, output length: ${attrsOutput.length}`);
                             const lines = attrsOutput.split('\n');
+                            console.log(`Split into ${lines.length} lines`);
                             for (const line of lines) {
                                 // Parse attribute lines (ID# ATTRIBUTE_NAME FLAG VALUE WORST THRESH TYPE UPDATED WHEN_FAILED RAW_VALUE)
                                 // Format: ID# ATTRIBUTE_NAME FLAG VALUE WORST THRESH TYPE UPDATED WHEN_FAILED RAW_VALUE
                                 // Example: "  5 Reallocated_Sector_Ct   0x0033   100   100   010    Pre-fail  Always       -       0"
-                                const attrMatch = line.match(/^\s*(\d+)\s+([A-Za-z0-9_][A-Za-z0-9_\s]+?)\s+\w+\s+(\d+)\s+(\d+)\s+(\d+)/);
+                                // Try multiple patterns to match different smartctl output formats
+                                const attrMatch = line.match(/^\s*(\d+)\s+([A-Za-z0-9_][A-Za-z0-9_\s]+?)\s+\w+\s+(\d+)\s+(\d+)\s+(\d+)/) ||
+                                                line.match(/^\s*(\d+)\s+([A-Za-z0-9_][A-Za-z0-9_\s]+?)\s+0x[\da-fA-F]+\s+(\d+)\s+(\d+)\s+(\d+)/);
                                 if (attrMatch) {
+                                    console.log(`Matched attribute line: ${line.trim()}`);
                                     const id = parseInt(attrMatch[1]);
                                     const name = attrMatch[2].trim();
                                     const value = parseInt(attrMatch[3]);
@@ -634,6 +640,7 @@ export class DisksApi {
                                 }
                             }
                             
+                            console.log(`Parsed ${smartInfo.attributes.length} SMART attributes for ${devicePath}`);
                             resolve(smartInfo);
                         });
                         
@@ -642,7 +649,8 @@ export class DisksApi {
                         });
                     });
                     
-                    attrsProc.fail(() => {
+                    attrsProc.fail((error) => {
+                        console.error(`smartctl -A failed for ${devicePath}:`, error);
                         resolve(smartInfo); // Return what we have
                     });
                 });
