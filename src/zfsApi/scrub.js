@@ -121,33 +121,37 @@ export class ScrubApi {
                 if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     try {
                         if (output.trim()) {
-                            const timers = output.trim().split('\n')
-                                .filter(line => line.trim())
-                                .map(line => {
-                                    try {
-                                        return JSON.parse(line);
-                                    } catch {
-                                        return null;
-                                    }
-                                })
-                                .filter(t => t !== null)
-                                .filter(t => {
-                                    // Check various possible field names for unit name
-                                    const unitName = t.unit || t.UNIT || t.name || '';
-                                    return unitName.includes('zfs-scrub');
-                                })
-                                .map(t => {
-                                    // Normalize unit name field
-                                    const unitName = t.unit || t.UNIT || t.name || '';
-                                    return {
-                                        ...t,
-                                        unit: unitName,
-                                        type: 'systemd'
-                                    };
-                                });
-                            
-                            console.log('Found systemd timers:', timers);
-                            results.push(...timers);
+                        const timers = output.trim().split('\n')
+                            .filter(line => line.trim())
+                            .map(line => {
+                                try {
+                                    return JSON.parse(line);
+                                } catch {
+                                    return null;
+                                }
+                            })
+                            .filter(t => t !== null)
+                            .filter(t => {
+                                // Check various possible field names for unit name
+                                const unitName = t.unit || t.UNIT || t.name || '';
+                                const matches = unitName.includes('zfs-scrub');
+                                if (matches) {
+                                    console.log('Found matching systemd timer:', unitName);
+                                }
+                                return matches;
+                            })
+                            .map(t => {
+                                // Normalize unit name field
+                                const unitName = t.unit || t.UNIT || t.name || '';
+                                return {
+                                    ...t,
+                                    unit: unitName,
+                                    type: 'systemd'
+                                };
+                            });
+                        
+                        console.log('Found systemd timers:', timers);
+                        results.push(...timers);
                         }
                     } catch (e) {
                         console.error('Error parsing systemd timers:', e);
@@ -310,26 +314,21 @@ WantedBy=timers.target
                         // Exit code 0 means success
                         // null/undefined/empty exit code means process completed (treat as success)
                         if (enableExitCode === 0 || enableExitCode == null || enableExitCode === '' || enableExitCode === undefined) {
-                            // Verify timer was actually created by checking if it exists
-                            const verifyProc = cockpit.spawn(['systemctl', 'list-timers', '--all', '--no-pager', timerName], { err: 'message' });
-                            let verifyOutput = '';
-                            
-                            verifyProc.stream((data) => {
-                                verifyOutput += data;
-                            });
+                            // Verify timer file actually exists (more reliable than checking list-timers)
+                            const verifyProc = cockpit.spawn(['test', '-f', timerPath], { err: 'message' });
                             
                             verifyProc.done((verifyExitCode) => {
-                                if (verifyOutput.includes(timerName)) {
-                                    console.log('Systemd timer verified successfully');
+                                if (verifyExitCode === 0) {
+                                    console.log('Systemd timer file verified successfully');
                                     resolve();
                                 } else {
-                                    console.warn('Systemd timer not found after creation, will fall back to cron');
+                                    console.warn('Systemd timer file not found after creation, will fall back to cron');
                                     reject(new Error('Systemd timer creation failed verification'));
                                 }
                             });
                             
                             verifyProc.fail((error) => {
-                                console.warn('Failed to verify systemd timer, will fall back to cron:', error);
+                                console.warn('Failed to verify systemd timer file, will fall back to cron:', error);
                                 reject(new Error('Systemd timer verification failed'));
                             });
                         } else {

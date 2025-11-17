@@ -127,24 +127,17 @@ function ScrubTab({ pool }) {
 
             console.log(`Creating schedule for pool ${pool.name} with schedule: ${schedule}`);
 
-            // Try systemd first, fallback to cron
+            // Skip systemd due to DBus issues, use cron directly
+            // Systemd timers require DBus access which Cockpit doesn't have in this context
             let created = false;
             try {
-                console.log('Attempting to create systemd timer...');
-                await ScrubApi.createSystemdTimer(pool.name, schedule);
-                console.log('Systemd timer created successfully');
+                console.log('Attempting to create cron job (skipping systemd due to DBus limitations)...');
+                await ScrubApi.createCronJob(pool.name, schedule);
+                console.log('Cron job created successfully');
                 created = true;
-            } catch (systemdError) {
-                console.warn('Systemd timer creation failed, falling back to cron:', systemdError);
-                try {
-                    console.log('Attempting to create cron job...');
-                    await ScrubApi.createCronJob(pool.name, schedule);
-                    console.log('Cron job created successfully');
-                    created = true;
-                } catch (cronError) {
-                    console.error('Both systemd and cron creation failed:', cronError);
-                    throw new Error(`Failed to create schedule: ${cronError.message || String(cronError)}`);
-                }
+            } catch (cronError) {
+                console.error('Cron creation failed:', cronError);
+                throw new Error(`Failed to create schedule: ${cronError.message || String(cronError)}`);
             }
 
             if (created) {
