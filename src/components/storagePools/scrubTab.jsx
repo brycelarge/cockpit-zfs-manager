@@ -37,18 +37,38 @@ function ScrubTab({ pool }) {
             ]);
             setScrubStatus(status);
             
+            // Debug: log what we got
+            console.log('Scheduled scrubs:', scheduled);
+            console.log('Looking for pool:', pool.name);
+            
             // Find scheduled scrub for this pool
             // For systemd timers: unit name is like "zfs-scrub-poolname.timer"
             // For cron jobs: command includes "zpool scrub poolname"
             const poolScrub = scheduled.find(s => {
                 if (s.type === 'systemd') {
-                    return s.unit?.includes(`zfs-scrub-${pool.name}`) || s.unit?.includes(pool.name);
+                    // Unit name format: "zfs-scrub-poolname.timer"
+                    const unitName = s.unit || '';
+                    const matches = unitName.includes(`zfs-scrub-${pool.name}`) || 
+                                   unitName.includes(`zfs-scrub-${pool.name}.timer`) ||
+                                   unitName.includes(pool.name);
+                    console.log(`Checking systemd timer: unit="${unitName}", matches=${matches}`);
+                    return matches;
                 } else if (s.type === 'cron') {
-                    return s.command?.includes(`zpool scrub ${pool.name}`) || s.command?.includes(pool.name);
+                    // Command format: "/usr/sbin/zpool scrub poolname" or "zpool scrub poolname"
+                    const command = s.command || '';
+                    const matches = command.includes(`zpool scrub ${pool.name}`) || 
+                                   command.includes(`/usr/sbin/zpool scrub ${pool.name}`) ||
+                                   command.includes(pool.name);
+                    console.log(`Checking cron job: command="${command}", matches=${matches}`);
+                    return matches;
                 }
                 // Fallback for old format
-                return s.unit?.includes(pool.name) || s.command?.includes(pool.name);
+                const matches = s.unit?.includes(pool.name) || s.command?.includes(pool.name);
+                console.log(`Checking fallback: unit="${s.unit}", command="${s.command}", matches=${matches}`);
+                return matches;
             });
+            
+            console.log('Found pool scrub:', poolScrub);
             setScheduledScrub(poolScrub || null);
         } catch (exc) {
             setError({

@@ -129,19 +129,36 @@ export class ScrubApi {
                                     return null;
                                 }
                             })
-                            .filter(t => t && t.unit && t.unit.includes('zfs-scrub'))
-                            .map(t => ({ ...t, type: 'systemd' }));
+                            .filter(t => t !== null)
+                            .filter(t => {
+                                // Check various possible field names for unit name
+                                const unitName = t.unit || t.UNIT || t.name || '';
+                                return unitName.includes('zfs-scrub');
+                            })
+                            .map(t => {
+                                // Normalize unit name field
+                                const unitName = t.unit || t.UNIT || t.name || '';
+                                return {
+                                    ...t,
+                                    unit: unitName,
+                                    type: 'systemd'
+                                };
+                            });
                         
+                        console.log('Found systemd timers:', timers);
                         results.push(...timers);
-                    } catch {
+                    } catch (e) {
+                        console.error('Error parsing systemd timers:', e);
                         // Continue to check cron
                     }
                 }
                 
                 // Always check cron as well (in case both exist)
                 const cronScrubs = await this.getCronScrubs();
+                console.log('Found cron scrubs:', cronScrubs);
                 results.push(...cronScrubs);
                 
+                console.log('All scheduled scrubs:', results);
                 resolve(results);
             });
 
