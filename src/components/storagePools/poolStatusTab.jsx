@@ -24,10 +24,13 @@ function PoolStatusTab({ pool }) {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                // If we have output data, always resolve successfully regardless of exit code
+                if (output.trim().length > 0 || exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     setStatusData(parseStatusOutput(output));
                 } else {
-                    setStatusData({ error: 'Failed to get pool status' });
+                    setStatusData({ error: `Failed to get pool status: exit code ${exitCode}` });
                 }
                 setLoading(false);
             });

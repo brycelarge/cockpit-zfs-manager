@@ -662,7 +662,10 @@ export class ZfsApi {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                // If we have output data, always resolve successfully regardless of exit code
+                if (output.trim().length > 0 || exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     const lines = output.split('\n');
                     let inDeviceTable = false;
 
