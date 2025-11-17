@@ -87,36 +87,57 @@
                 this.backdrop.className = 'pf-v6-c-backdrop';
                 this.backdrop.style.display = 'block';
 
+                const modalId = `modal-${Date.now()}`;
+                const titleId = `pf-modal-part-1-${modalId}`;
+                const bodyId = `pf-modal-part-2-${modalId}`;
+
                 this.modal = document.createElement('div');
-                this.modal.className = 'pf-v6-c-modal-box';
+                this.modal.id = modalId;
+                this.modal.className = 'pf-v6-c-modal-box pf-m-align-top pf-m-md';
                 this.modal.setAttribute('role', 'dialog');
+                this.modal.setAttribute('aria-labelledby', titleId);
+                this.modal.setAttribute('aria-describedby', bodyId);
+                this.modal.setAttribute('aria-modal', 'true');
+                this.modal.setAttribute('data-ouia-component-type', 'PF6/ModalContent');
+                this.modal.setAttribute('data-ouia-safe', 'true');
+                this.modal.setAttribute('data-ouia-component-id', `OUIA-Generated-Modal-medium-${modalId}`);
                 this.modal.innerHTML = `
-                    <div class="pf-v6-c-modal-box__header">
-                        <h1 class="pf-v6-c-modal-box__title">${Utils.escapeHtml(this.title)}</h1>
-                        <button class="pf-v6-c-button pf-m-plain" type="button" aria-label="Close dialog">
-                            <svg class="pf-v6-svg" viewBox="0 0 352 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
-                                <path d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path>
-                            </svg>
+                    <div class="pf-v6-c-modal-box__close">
+                        <button aria-label="Close" class="pf-v6-c-button pf-m-plain" type="button" data-ouia-component-type="PF6/Button" data-ouia-safe="true" data-ouia-component-id="OUIA-Generated-Modal-medium-${modalId}-ModalBoxCloseButton">
+                            <span class="pf-v6-c-button__icon">
+                                <svg class="pf-v6-svg" viewBox="0 0 352 512" fill="currentColor" aria-hidden="true" role="img" width="1em" height="1em">
+                                    <path d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path>
+                                </svg>
+                            </span>
                         </button>
                     </div>
-                    <div class="pf-v6-c-modal-box__body">
+                    <header class="pf-v6-c-modal-box__header">
+                        <h1 id="${titleId}" class="pf-v6-c-modal-box__title">
+                            <span class="pf-v6-c-modal-box__title-text">${Utils.escapeHtml(this.title)}</span>
+                        </h1>
+                    </header>
+                    <div id="${bodyId}" class="pf-v6-c-modal-box__body">
                         ${this.content}
                     </div>
                     ${this.options.footer !== false ? `
-                    <div class="pf-v6-c-modal-box__footer">
+                    <footer class="pf-v6-c-modal-box__footer">
                         ${this.options.footer || `
-                            <button class="pf-v6-c-button pf-m-primary" type="button">${this.options.confirmText || 'OK'}</button>
-                            <button class="pf-v6-c-button pf-v6-m-link" type="button">Cancel</button>
+                            <button class="pf-v6-c-button pf-m-primary" type="button" data-ouia-component-type="PF6/Button" data-ouia-safe="true" data-ouia-component-id="OUIA-Generated-Button-primary-${modalId}">
+                                <span class="pf-v6-c-button__text">${this.options.confirmText || 'OK'}</span>
+                            </button>
+                            <button class="pf-v6-c-button pf-m-link" type="button" data-ouia-component-type="PF6/Button" data-ouia-safe="true" data-ouia-component-id="OUIA-Generated-Button-link-${modalId}">
+                                <span class="pf-v6-c-button__text">Cancel</span>
+                            </button>
                         `}
-                    </div>
+                    </footer>
                     ` : ''}
                 `;
 
                 document.body.appendChild(this.backdrop);
                 document.body.appendChild(this.modal);
 
-                const closeBtn = this.modal.querySelector('.pf-v6-c-button[aria-label="Close dialog"]');
-                const cancelBtn = this.modal.querySelector('.pf-v6-c-button.pf-v6-m-link');
+                const closeBtn = this.modal.querySelector('.pf-v6-c-button[aria-label="Close"]');
+                const cancelBtn = this.modal.querySelector('.pf-v6-c-button.pf-m-link');
                 const confirmBtn = this.modal.querySelector('.pf-v6-c-button.pf-m-primary');
 
                 const close = () => {
@@ -190,9 +211,36 @@
             document.getElementById('btn-storagepools-refresh')?.addEventListener('click', () => this.loadPools());
             document.getElementById('btn-storagepools-create')?.addEventListener('click', () => this.showCreatePoolModal());
             document.getElementById('btn-storagepools-import')?.addEventListener('click', () => this.showImportPoolModal());
-            document.getElementById('btn-filesystems-unlock')?.addEventListener('click', () => this.showUnlockFileSystemsModal());
-            document.getElementById('btn-configure')?.addEventListener('click', () => this.showConfigureModal());
-            document.getElementById('btn-about')?.addEventListener('click', () => this.showAboutModal());
+            
+            // Actions menu items - close menu when clicked
+            const actionsMenu = document.getElementById('actions-menu');
+            const actionsMenuToggle = document.getElementById('actions-menu-toggle');
+            const actionsMenuToggleContainer = actionsMenuToggle?.closest('.pf-v6-c-menu-toggle');
+            
+            document.getElementById('btn-filesystems-unlock')?.addEventListener('click', () => {
+                if (actionsMenu) {
+                    actionsMenu.hidden = true;
+                    actionsMenuToggle?.setAttribute('aria-expanded', 'false');
+                    actionsMenuToggleContainer?.classList.remove('pf-m-expanded');
+                }
+                this.showUnlockFileSystemsModal();
+            });
+            document.getElementById('btn-configure')?.addEventListener('click', () => {
+                if (actionsMenu) {
+                    actionsMenu.hidden = true;
+                    actionsMenuToggle?.setAttribute('aria-expanded', 'false');
+                    actionsMenuToggleContainer?.classList.remove('pf-m-expanded');
+                }
+                this.showConfigureModal();
+            });
+            document.getElementById('btn-about')?.addEventListener('click', () => {
+                if (actionsMenu) {
+                    actionsMenu.hidden = true;
+                    actionsMenuToggle?.setAttribute('aria-expanded', 'false');
+                    actionsMenuToggleContainer?.classList.remove('pf-m-expanded');
+                }
+                this.showAboutModal();
+            });
 
             // Dropdown menu toggle
             const dropdownToggles = document.querySelectorAll('.pf-v6-c-menu-toggle__button');
@@ -200,16 +248,21 @@
                 toggle.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const menuContainer = toggle.closest('.menu-dropdown-wrapper');
+                    const menuToggle = toggle.closest('.pf-v6-c-menu-toggle');
                     const menu = menuContainer?.querySelector('.pf-v6-c-menu');
                     if (menu) {
                         const isHidden = menu.hidden;
                         // Close all menus first
                         document.querySelectorAll('.pf-v6-c-menu').forEach(m => m.hidden = true);
-                        document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                        document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => {
+                            t.setAttribute('aria-expanded', 'false');
+                            t.closest('.pf-v6-c-menu-toggle')?.classList.remove('pf-m-expanded');
+                        });
                         // Toggle this menu
                         if (isHidden) {
                             menu.hidden = false;
                             toggle.setAttribute('aria-expanded', 'true');
+                            menuToggle?.classList.add('pf-m-expanded');
                         }
                     }
                 });
@@ -223,6 +276,7 @@
                     });
                     document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(toggle => {
                         toggle.setAttribute('aria-expanded', 'false');
+                        toggle.closest('.pf-v6-c-menu-toggle')?.classList.remove('pf-m-expanded');
                     });
                 }
             });
@@ -417,6 +471,7 @@
             // Actions menu
             const dropdown = row.querySelector('.menu-dropdown-wrapper');
             const toggle = dropdown?.querySelector('.pf-v6-c-menu-toggle__button');
+            const menuToggle = toggle?.closest('.pf-v6-c-menu-toggle');
             const menu = dropdown?.querySelector('.pf-v6-c-menu');
             
             if (toggle && menu) {
@@ -425,11 +480,15 @@
                     const isHidden = menu.hidden;
                     // Close all menus first
                     document.querySelectorAll('.pf-v6-c-menu').forEach(m => m.hidden = true);
-                    document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                    document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => {
+                        t.setAttribute('aria-expanded', 'false');
+                        t.closest('.pf-v6-c-menu-toggle')?.classList.remove('pf-m-expanded');
+                    });
                     // Toggle this menu
                     if (isHidden) {
                         menu.hidden = false;
                         toggle.setAttribute('aria-expanded', 'true');
+                        menuToggle?.classList.add('pf-m-expanded');
                     }
                 });
 
@@ -437,6 +496,8 @@
                     btn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         menu.hidden = true;
+                        toggle.setAttribute('aria-expanded', 'false');
+                        menuToggle?.classList.remove('pf-m-expanded');
                         const action = btn.getAttribute('data-action');
                         this.handlePoolAction(pool, action);
                     });
@@ -708,6 +769,7 @@
             // Filesystem action dropdowns
             container.querySelectorAll('.menu-dropdown-wrapper').forEach(dropdown => {
                 const toggle = dropdown.querySelector('.pf-v6-c-menu-toggle__button');
+                const menuToggle = toggle?.closest('.pf-v6-c-menu-toggle');
                 const menu = dropdown.querySelector('.pf-v6-c-menu');
                 
                 if (toggle && menu) {
@@ -716,11 +778,15 @@
                         const isHidden = menu.hidden;
                         // Close all menus first
                         document.querySelectorAll('.pf-v6-c-menu').forEach(m => m.hidden = true);
-                        document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                        document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => {
+                            t.setAttribute('aria-expanded', 'false');
+                            t.closest('.pf-v6-c-menu-toggle')?.classList.remove('pf-m-expanded');
+                        });
                         // Toggle this menu
                         if (isHidden) {
                             menu.hidden = false;
                             toggle.setAttribute('aria-expanded', 'true');
+                            menuToggle?.classList.add('pf-m-expanded');
                         }
                     });
 
@@ -877,6 +943,7 @@
             // Snapshot action dropdowns
             container.querySelectorAll('.menu-dropdown-wrapper').forEach(dropdown => {
                 const toggle = dropdown.querySelector('.pf-v6-c-menu-toggle__button');
+                const menuToggle = toggle?.closest('.pf-v6-c-menu-toggle');
                 const menu = dropdown.querySelector('.pf-v6-c-menu');
                 
                 if (toggle && menu) {
@@ -885,11 +952,15 @@
                         const isHidden = menu.hidden;
                         // Close all menus first
                         document.querySelectorAll('.pf-v6-c-menu').forEach(m => m.hidden = true);
-                        document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => t.setAttribute('aria-expanded', 'false'));
+                        document.querySelectorAll('.pf-v6-c-menu-toggle__button').forEach(t => {
+                            t.setAttribute('aria-expanded', 'false');
+                            t.closest('.pf-v6-c-menu-toggle')?.classList.remove('pf-m-expanded');
+                        });
                         // Toggle this menu
                         if (isHidden) {
                             menu.hidden = false;
                             toggle.setAttribute('aria-expanded', 'true');
+                            menuToggle?.classList.add('pf-m-expanded');
                         }
                     });
 
