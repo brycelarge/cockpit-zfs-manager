@@ -208,11 +208,14 @@ autoprune = yes
                 serviceProc.fail(() => resolve());
             });
             
-            // Parse ExecStart to find --config argument
+            // Parse ExecStart to find --configdir argument (sanoid uses --configdir, not --config)
             if (serviceOutput) {
-                const configMatch = serviceOutput.match(/--config\s+(\S+)/);
-                if (configMatch && configMatch[1]) {
-                    const configPath = configMatch[1].trim();
+                // Check for --configdir (directory)
+                const configDirMatch = serviceOutput.match(/--configdir[= ](\S+)/);
+                if (configDirMatch && configDirMatch[1]) {
+                    const configDir = configDirMatch[1].trim();
+                    // Sanoid looks for sanoid.conf in the configdir
+                    const configPath = `${configDir}/sanoid.conf`;
                     // Verify it exists
                     const verifyProc = cockpit.spawn(['test', '-f', configPath]);
                     const exists = await new Promise((resolve) => {
@@ -241,14 +244,17 @@ autoprune = yes
                 cronProc.fail(() => resolve());
             });
             
-            // Look for --config in cron jobs
+            // Look for --configdir in cron jobs (sanoid uses --configdir, not --config)
             if (cronOutput) {
                 const lines = cronOutput.split('\n');
                 for (const line of lines) {
                     if (line.includes('sanoid')) {
-                        const configMatch = line.match(/--config\s+(\S+)/);
-                        if (configMatch && configMatch[1]) {
-                            const configPath = configMatch[1].trim();
+                        // Check for --configdir (directory)
+                        const configDirMatch = line.match(/--configdir[= ](\S+)/);
+                        if (configDirMatch && configDirMatch[1]) {
+                            const configDir = configDirMatch[1].trim();
+                            // Sanoid looks for sanoid.conf in the configdir
+                            const configPath = `${configDir}/sanoid.conf`;
                             // Verify it exists
                             const verifyProc = cockpit.spawn(['test', '-f', configPath]);
                             const exists = await new Promise((resolve) => {
@@ -360,7 +366,14 @@ autoprune = yes
 
     static async testConfig(configPath) {
         return new Promise((resolve, reject) => {
-            const proc = cockpit.spawn(['sanoid', '--config', configPath, '--dry-run'], { err: 'message' });
+            // Sanoid uses --configdir (directory) not --config (file)
+            // Extract directory from config path
+            const configDir = configPath.substring(0, configPath.lastIndexOf('/'));
+            const configFileName = configPath.substring(configPath.lastIndexOf('/') + 1);
+            
+            // Sanoid uses --readonly to simulate operations (not --dry-run)
+            // Use --readonly --verbose to test config without making changes
+            const proc = cockpit.spawn(['sanoid', '--configdir', configDir, '--readonly', '--verbose'], { err: 'message' });
             let output = '';
 
             proc.stream((data) => {
@@ -368,7 +381,7 @@ autoprune = yes
             });
 
             proc.done((exitCode) => {
-                // Exit code 0 means config is valid
+                // Exit code 0 means config is valid and sanoid ran successfully
                 // null/undefined/empty exit code means process completed (treat as valid if exitCode is 0 or null/undefined)
                 if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve({ valid: true, output });
