@@ -149,6 +149,7 @@ function ScrubTab({ pool }) {
                 <ModalError
                     dialogError={error.dialogError}
                     {...(error.dialogErrorDetail && { dialogErrorDetail: error.dialogErrorDetail })}
+                    style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}
                 />
             )}
 
@@ -193,7 +194,7 @@ function ScrubTab({ pool }) {
                 </DescriptionList>
             )}
 
-            <div style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
+            <div style={{ marginTop: error.dialogError ? 'var(--pf-t--global--spacer--md)' : '0', marginBottom: 'var(--pf-t--global--spacer--md)' }}>
                 {scrubStatus?.inProgress ? (
                     <Button
                         variant="danger"
