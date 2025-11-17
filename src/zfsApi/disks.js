@@ -82,21 +82,36 @@ export class DisksApi {
                                 const deviceName = parts[0];
                                 console.log('Checking device row:', trimmed, 'First part:', deviceName);
                                 
-                                // Only process /dev/ paths (physical devices)
-                                if (deviceName && deviceName.startsWith('/dev/')) {
-                                    if (!deviceSet.has(deviceName)) {
-                                        deviceSet.add(deviceName);
-                                        
-                                        // Extract device name from path
-                                        const deviceShortName = deviceName.replace('/dev/', '');
-                                        
-                                        devices.push({
-                                            path: deviceName,
-                                            name: deviceShortName,
-                                            type: DisksApi.getDeviceType(deviceName)
-                                        });
-                                        console.log('Added device:', deviceName);
+                                // Check if it's a physical device name (with or without /dev/ prefix)
+                                let devicePath = deviceName;
+                                let deviceShortName = deviceName;
+                                
+                                // If it doesn't start with /dev/, check if it looks like a device name
+                                if (!deviceName.startsWith('/dev/')) {
+                                    // Check if it matches common device name patterns
+                                    if (deviceName.match(/^(nvme\d+n\d+|sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+)/)) {
+                                        // It's a device name without /dev/ prefix, add it
+                                        devicePath = '/dev/' + deviceName;
+                                        deviceShortName = deviceName;
+                                    } else {
+                                        // Not a device name, skip it
+                                        continue;
                                     }
+                                } else {
+                                    // Already has /dev/ prefix
+                                    deviceShortName = deviceName.replace('/dev/', '');
+                                }
+                                
+                                // Only process if it looks like a physical device
+                                if (devicePath.startsWith('/dev/') && !deviceSet.has(devicePath)) {
+                                    deviceSet.add(devicePath);
+                                    
+                                    devices.push({
+                                        path: devicePath,
+                                        name: deviceShortName,
+                                        type: DisksApi.getDeviceType(devicePath)
+                                    });
+                                    console.log('Added device:', devicePath, '(from:', deviceName, ')');
                                 }
                             }
                         }
