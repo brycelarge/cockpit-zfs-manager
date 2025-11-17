@@ -6,6 +6,7 @@ import {
 } from '@patternfly/react-core/dist/esm/components/Modal';
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 import { Alert } from "@patternfly/react-core/dist/esm/components/Alert";
+import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
 
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { useDialogs } from 'dialogs.jsx';
