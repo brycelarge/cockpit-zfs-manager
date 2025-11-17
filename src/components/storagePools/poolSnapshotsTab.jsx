@@ -50,6 +50,10 @@ function PoolSnapshotsTab({ pool, onRefresh }) {
         onRefresh();
     };
 
+    const handleLocalRefresh = () => {
+        loadSnapshots();
+    };
+
     const handleCreateSnapshot = (filesystem = null) => {
         setCreateMenuOpen(false);
         Dialogs.show(<CreateSnapshotDialog pool={pool} filesystem={filesystem} onRefresh={handleRefresh} />);
@@ -119,7 +123,7 @@ function PoolSnapshotsTab({ pool, onRefresh }) {
                         { title: snap.used },
                         { title: snap.referenced },
                         { title: snap.creation },
-                        { title: <SnapshotActions snapshot={snap} pool={pool} onRefresh={handleRefresh} /> },
+                        { title: <SnapshotActions snapshot={snap} pool={pool} onRefresh={handleLocalRefresh} /> },
                     ],
                     key: snap.name,
                 }))}
