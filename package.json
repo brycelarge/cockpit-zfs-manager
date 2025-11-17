@@ -17,9 +17,11 @@
     "esbuild-sass-plugin": "^2.15.0",
     "esbuild-wasm": "^0.19.0",
     "eslint": "^8.50.0",
+    "eslint-config-standard": "^17.1.0",
     "gettext-parser": "^1.4.0",
     "stylelint": "^15.10.0",
-    "stylelint-config-standard": "^34.0.0"
+    "stylelint-config-standard-scss": "^13.0.0",
+    "stylelint-use-logical-spec": "^5.0.0"
   },
   "type": "module"
 }
