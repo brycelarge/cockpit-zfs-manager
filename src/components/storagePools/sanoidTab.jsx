@@ -298,7 +298,6 @@ autoprune = yes`}
                 <FormGroup
                     label="Sanoid Configuration"
                     fieldId="sanoid-config"
-                    helperText="Edit the sanoid configuration for this pool. Changes are saved immediately."
                 >
                     <TextArea
                         id="sanoid-config"
@@ -317,6 +316,9 @@ autoprune = yes`}
                             color: 'var(--pf-t--global--text--color--100)'
                         }}
                     />
+                    <div style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                        Edit the sanoid configuration for this pool. Changes are saved immediately.
+                    </div>
                 </FormGroup>
             </Form>
 

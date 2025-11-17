@@ -140,12 +140,8 @@ function ScrubTab({ pool }) {
         setScheduling(true);
         setError({});
         try {
-            // Try removing systemd timer first, then cron
-            try {
-                await ScrubApi.removeSystemdTimer(pool.name);
-            } catch {
-                await ScrubApi.removeCronJob(pool.name);
-            }
+            // Remove cron job (we only use cron now due to DBus limitations)
+            await ScrubApi.removeCronJob(pool.name);
             await loadScrubInfo();
         } catch (exc) {
             setError({
