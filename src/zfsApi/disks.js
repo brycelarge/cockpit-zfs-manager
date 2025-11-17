@@ -296,14 +296,16 @@ export class DisksApi {
                             smartInfo.serial = serialMatch[1].trim();
                         }
                         
-                        // Parse NVMe capacity
-                        const capacityMatch = nvmeOutput.match(/Total NVM Capacity:\s*([\d,]+)\s*bytes/i) ||
-                                            nvmeOutput.match(/Namespace 1 Size\/Capacity:\s*([\d,]+)\s*bytes/i) ||
-                                            nvmeOutput.match(/User Capacity:\s*\[?([\d,]+)\s*bytes\]?/i);
-                        if (capacityMatch) {
-                            const bytes = parseInt(capacityMatch[1].replace(/,/g, ''));
-                            smartInfo.capacity = DisksApi.formatBytes(bytes);
-                        }
+                            // Parse NVMe capacity - try multiple patterns as NVMe output can vary
+                            const capacityMatch = nvmeOutput.match(/Total NVM Capacity:\s*([\d,]+)\s*bytes/i) ||
+                                                nvmeOutput.match(/Namespace 1 Size\/Capacity:\s*([\d,]+)\s*\[/i) ||
+                                                nvmeOutput.match(/Namespace 1 Size\/Capacity:\s*([\d,]+)/i) ||
+                                                nvmeOutput.match(/User Capacity:\s*\[?([\d,]+)\s*bytes\]?/i) ||
+                                                nvmeOutput.match(/User Capacity:\s*\[?([\d,]+)\s*\[/i);
+                            if (capacityMatch) {
+                                const bytes = parseInt(capacityMatch[1].replace(/,/g, ''));
+                                smartInfo.capacity = DisksApi.formatBytes(bytes);
+                            }
                         
                         // Parse NVMe health status
                         if (nvmeOutput.match(/SMART overall-health self-assessment test result:\s*PASSED/i) ||
@@ -368,9 +370,12 @@ export class DisksApi {
                             smartInfo.serial = serialMatch[1].trim();
                         }
                         
+                        // Parse NVMe capacity - try multiple patterns as NVMe output can vary
                         const capacityMatch = nvmeOutput.match(/Total NVM Capacity:\s*([\d,]+)\s*bytes/i) ||
-                                            nvmeOutput.match(/Namespace 1 Size\/Capacity:\s*([\d,]+)\s*bytes/i) ||
-                                            nvmeOutput.match(/User Capacity:\s*\[?([\d,]+)\s*bytes\]?/i);
+                                            nvmeOutput.match(/Namespace 1 Size\/Capacity:\s*([\d,]+)\s*\[/i) ||
+                                            nvmeOutput.match(/Namespace 1 Size\/Capacity:\s*([\d,]+)/i) ||
+                                            nvmeOutput.match(/User Capacity:\s*\[?([\d,]+)\s*bytes\]?/i) ||
+                                            nvmeOutput.match(/User Capacity:\s*\[?([\d,]+)\s*\[/i);
                         if (capacityMatch) {
                             const bytes = parseInt(capacityMatch[1].replace(/,/g, ''));
                             smartInfo.capacity = DisksApi.formatBytes(bytes);
