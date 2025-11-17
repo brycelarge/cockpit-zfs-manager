@@ -336,6 +336,7 @@ WantedBy=timers.target
         // schedule format: cron-like "0 2 * * 0" (minute hour day month dayofweek)
         return new Promise((resolve, reject) => {
             const cronLine = `${schedule} /usr/sbin/zpool scrub ${poolName} > /dev/null 2>&1`;
+            console.log(`Creating cron job: ${cronLine}`);
             
             // Get current crontab, append new line, write back
             const proc = cockpit.spawn(['crontab', '-l'], { err: 'message' });
@@ -346,7 +347,10 @@ WantedBy=timers.target
             });
 
             proc.done((exitCode) => {
+                console.log(`crontab -l exit code: ${exitCode}, current crontab length: ${currentCrontab.length}`);
                 const newCrontab = (currentCrontab.trim() || '') + '\n' + cronLine + '\n';
+                console.log(`New crontab content:\n${newCrontab}`);
+                
                 // Write crontab via temp file - ensure we have valid content
                 if (!cronLine.trim()) {
                     reject(new Error('Invalid cron schedule format'));
@@ -360,6 +364,7 @@ WantedBy=timers.target
                 writeProc.input(newCrontab);
 
                 writeProc.done((writeExitCode) => {
+                    console.log(`Python write temp file exit code: ${writeExitCode}`);
                     // Exit code 0 means success
                     // null/undefined/empty exit code means process completed (treat as success)
                     if (writeExitCode !== 0 && writeExitCode != null && writeExitCode !== '' && writeExitCode !== undefined) {
@@ -370,12 +375,14 @@ WantedBy=timers.target
                     // Install crontab from temp file
                     const installProc = cockpit.spawn(['crontab', tempFile], { err: 'message' });
                     installProc.done((installExitCode) => {
+                        console.log(`crontab install exit code: ${installExitCode}`);
                         // Clean up temp file
                         cockpit.spawn(['rm', '-f', tempFile]);
                         
                         // Exit code 0 means success
                         // null/undefined/empty exit code means process completed (treat as success)
                         if (installExitCode === 0 || installExitCode == null || installExitCode === '' || installExitCode === undefined) {
+                            console.log('Cron job created successfully');
                             resolve();
                         } else {
                             reject(new Error(`Failed to install cron job: exit code ${installExitCode}`));
@@ -383,24 +390,28 @@ WantedBy=timers.target
                     });
                     
                     installProc.fail((error) => {
+                        console.error('Failed to install crontab:', error);
                         cockpit.spawn(['rm', '-f', tempFile]);
                         reject(error);
                     });
                 });
 
                 writeProc.fail((error) => {
+                    console.error('Failed to write temp crontab:', error);
                     reject(error);
                 });
             });
 
-            proc.fail(() => {
+            proc.fail((error) => {
                 // No existing crontab, create new one
+                console.log('No existing crontab, creating new one');
                 if (!cronLine.trim()) {
                     reject(new Error('Invalid cron schedule format'));
                     return;
                 }
                 
                 const cronContent = cronLine + '\n';
+                console.log(`New crontab content:\n${cronContent}`);
                 // Use temp file approach
                 const tempFile = `/tmp/crontab.${Date.now()}`;
                 const pythonCmd = `import sys; f=open('${tempFile}', 'w'); f.write(sys.stdin.read()); f.close()`;
@@ -408,6 +419,7 @@ WantedBy=timers.target
                 writeProc.input(cronContent);
 
                 writeProc.done((writeExitCode) => {
+                    console.log(`Python write temp file exit code: ${writeExitCode}`);
                     // Exit code 0 means success
                     // null/undefined/empty exit code means process completed (treat as success)
                     if (writeExitCode !== 0 && writeExitCode != null && writeExitCode !== '' && writeExitCode !== undefined) {
@@ -418,12 +430,14 @@ WantedBy=timers.target
                     // Install crontab from temp file
                     const installProc = cockpit.spawn(['crontab', tempFile], { err: 'message' });
                     installProc.done((installExitCode) => {
+                        console.log(`crontab install exit code: ${installExitCode}`);
                         // Clean up temp file
                         cockpit.spawn(['rm', '-f', tempFile]);
                         
                         // Exit code 0 means success
                         // null/undefined/empty exit code means process completed (treat as success)
                         if (installExitCode === 0 || installExitCode == null || installExitCode === '' || installExitCode === undefined) {
+                            console.log('Cron job created successfully');
                             resolve();
                         } else {
                             reject(new Error(`Failed to install cron job: exit code ${installExitCode}`));
@@ -431,12 +445,14 @@ WantedBy=timers.target
                     });
                     
                     installProc.fail((error) => {
+                        console.error('Failed to install crontab:', error);
                         cockpit.spawn(['rm', '-f', tempFile]);
                         reject(error);
                     });
                 });
 
                 writeProc.fail((error) => {
+                    console.error('Failed to write temp crontab:', error);
                     reject(error);
                 });
             });

@@ -125,15 +125,35 @@ function ScrubTab({ pool }) {
                 schedule = '0 2 1 * *'; // 1st of month, 2 AM
             }
 
+            console.log(`Creating schedule for pool ${pool.name} with schedule: ${schedule}`);
+
             // Try systemd first, fallback to cron
+            let created = false;
             try {
+                console.log('Attempting to create systemd timer...');
                 await ScrubApi.createSystemdTimer(pool.name, schedule);
-            } catch {
-                await ScrubApi.createCronJob(pool.name, schedule);
+                console.log('Systemd timer created successfully');
+                created = true;
+            } catch (systemdError) {
+                console.warn('Systemd timer creation failed, falling back to cron:', systemdError);
+                try {
+                    console.log('Attempting to create cron job...');
+                    await ScrubApi.createCronJob(pool.name, schedule);
+                    console.log('Cron job created successfully');
+                    created = true;
+                } catch (cronError) {
+                    console.error('Both systemd and cron creation failed:', cronError);
+                    throw new Error(`Failed to create schedule: ${cronError.message || String(cronError)}`);
+                }
             }
 
-            await loadScrubInfo();
+            if (created) {
+                // Wait a moment for the schedule to be registered
+                await new Promise(resolve => setTimeout(resolve, 500));
+                await loadScrubInfo();
+            }
         } catch (exc) {
+            console.error('Failed to schedule scrub:', exc);
             setError({
                 dialogError: 'Failed to schedule scrub',
                 dialogErrorDetail: exc.message || String(exc)
