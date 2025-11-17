@@ -22,7 +22,7 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
     const [deleting, setDeleting] = useState(false);
 
     const handleDelete = async () => {
-        if (confirmName !== snapshot.name) {
+        if (confirmName.trim() !== snapshot.name) {
             setError({
                 dialogError: 'Snapshot name does not match',
                 dialogErrorDetail: 'Please type the snapshot name exactly to confirm deletion'
@@ -30,7 +30,7 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
             return;
         }
 
-        if (confirmYes.toLowerCase() !== 'yes') {
+        if (confirmYes.trim().toLowerCase() !== 'yes') {
             setError({
                 dialogError: 'Confirmation required',
                 dialogErrorDetail: 'Please type "yes" to confirm deletion'
@@ -118,7 +118,7 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
                 <Button
                     variant="danger"
                     onClick={handleDelete}
-                    isDisabled={confirmName !== snapshot.name || confirmYes.toLowerCase() !== 'yes' || deleting}
+                    isDisabled={confirmName.trim() !== snapshot.name || confirmYes.trim().toLowerCase() !== 'yes' || deleting}
                     isLoading={deleting}
                 >
                     Delete Snapshot

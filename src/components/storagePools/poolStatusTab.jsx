@@ -224,7 +224,7 @@ function PoolStatusTab({ pool }) {
                                 { title: device.message || '-' },
                                 { title: device.product || '-' },
                             ],
-                            props: { key: `${device.name}-${idx}` },
+                            key: `${device.name}-${idx}`,
                         }))}
                     />
                 </div>

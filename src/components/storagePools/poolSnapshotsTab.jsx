@@ -121,7 +121,7 @@ function PoolSnapshotsTab({ pool, onRefresh }) {
                         { title: snap.creation },
                         { title: <SnapshotActions snapshot={snap} pool={pool} onRefresh={handleRefresh} /> },
                     ],
-                    props: { key: snap.name },
+                    key: snap.name,
                 }))}
             />
         </>

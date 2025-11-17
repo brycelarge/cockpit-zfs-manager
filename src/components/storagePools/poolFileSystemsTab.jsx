@@ -74,7 +74,7 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
                         { title: fs.mountpoint || '-' },
                         { title: <FileSystemActions filesystem={fs} pool={pool} onRefresh={handleRefresh} /> },
                     ],
-                    props: { key: fs.name },
+                    key: fs.name,
                 }))}
             />
         </>
