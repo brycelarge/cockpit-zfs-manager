@@ -310,13 +310,35 @@ WantedBy=timers.target
                         // Exit code 0 means success
                         // null/undefined/empty exit code means process completed (treat as success)
                         if (enableExitCode === 0 || enableExitCode == null || enableExitCode === '' || enableExitCode === undefined) {
-                            resolve();
+                            // Verify timer was actually created by checking if it exists
+                            const verifyProc = cockpit.spawn(['systemctl', 'list-timers', '--all', '--no-pager', timerName], { err: 'message' });
+                            let verifyOutput = '';
+                            
+                            verifyProc.stream((data) => {
+                                verifyOutput += data;
+                            });
+                            
+                            verifyProc.done((verifyExitCode) => {
+                                if (verifyOutput.includes(timerName)) {
+                                    console.log('Systemd timer verified successfully');
+                                    resolve();
+                                } else {
+                                    console.warn('Systemd timer not found after creation, will fall back to cron');
+                                    reject(new Error('Systemd timer creation failed verification'));
+                                }
+                            });
+                            
+                            verifyProc.fail((error) => {
+                                console.warn('Failed to verify systemd timer, will fall back to cron:', error);
+                                reject(new Error('Systemd timer verification failed'));
+                            });
                         } else {
                             reject(new Error(`Failed to enable timer: exit code ${enableExitCode}`));
                         }
                     });
                     
                     enableProc.fail((error) => {
+                        console.warn('Failed to enable systemd timer:', error);
                         reject(error);
                     });
                 });
@@ -348,6 +370,13 @@ WantedBy=timers.target
 
             proc.done((exitCode) => {
                 console.log(`crontab -l exit code: ${exitCode}, current crontab length: ${currentCrontab.length}`);
+                
+                // If exit code is 1, it means no crontab exists - treat as empty
+                if (exitCode === 1 && !currentCrontab.trim()) {
+                    console.log('No existing crontab (exit code 1), will create new one');
+                    // Fall through to create new crontab
+                }
+                
                 const newCrontab = (currentCrontab.trim() || '') + '\n' + cronLine + '\n';
                 console.log(`New crontab content:\n${newCrontab}`);
                 
@@ -359,6 +388,7 @@ WantedBy=timers.target
                 
                 // Use temp file approach like sanoid config writing
                 const tempFile = `/tmp/crontab.${Date.now()}`;
+                console.log(`Writing crontab to temp file: ${tempFile}`);
                 const pythonCmd = `import sys; f=open('${tempFile}', 'w'); f.write(sys.stdin.read()); f.close()`;
                 const writeProc = cockpit.spawn(['python3', '-c', pythonCmd], { err: 'message' });
                 writeProc.input(newCrontab);
@@ -404,7 +434,7 @@ WantedBy=timers.target
 
             proc.fail((error) => {
                 // No existing crontab, create new one
-                console.log('No existing crontab, creating new one');
+                console.log('crontab -l failed (likely no crontab exists), creating new one:', error);
                 if (!cronLine.trim()) {
                     reject(new Error('Invalid cron schedule format'));
                     return;
@@ -414,6 +444,7 @@ WantedBy=timers.target
                 console.log(`New crontab content:\n${cronContent}`);
                 // Use temp file approach
                 const tempFile = `/tmp/crontab.${Date.now()}`;
+                console.log(`Writing crontab to temp file: ${tempFile}`);
                 const pythonCmd = `import sys; f=open('${tempFile}', 'w'); f.write(sys.stdin.read()); f.close()`;
                 const writeProc = cockpit.spawn(['python3', '-c', pythonCmd], { err: 'message' });
                 writeProc.input(cronContent);
