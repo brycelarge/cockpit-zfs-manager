@@ -305,7 +305,9 @@ autoprune = yes`}
                         rows={20}
                         style={{
                             fontFamily: 'var(--pf-t--global--font--family--mono)',
-                            fontSize: 'var(--pf-t--global--font--size--sm)'
+                            fontSize: 'var(--pf-t--global--font--size--sm)',
+                            backgroundColor: 'var(--pf-t--global--background--color--100)',
+                            color: 'var(--pf-t--global--text--color--100)'
                         }}
                     />
                 </FormGroup>

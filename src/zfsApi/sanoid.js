@@ -120,8 +120,10 @@ autoprune = yes
             });
 
             mkdirProc.done(async (exitCode) => {
-                if (exitCode !== 0 && exitCode !== null) {
-                    reject(new Error(`Failed to create directory ${dirPath}`));
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode !== 0 && exitCode != null && exitCode !== '' && exitCode !== undefined) {
+                    reject(new Error(`Failed to create directory ${dirPath}: exit code ${exitCode}`));
                     return;
                 }
 
