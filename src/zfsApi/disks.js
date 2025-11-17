@@ -467,13 +467,8 @@ export class DisksApi {
                 healthProc.fail(() => {
                     resolve(null); // SMART not available for this device
                 });
-                }
-            });
-            
-            checkProc.fail((error) => {
-                console.error(`which smartctl failed:`, error);
-                resolve(null); // smartctl not available
-            });
+            }
+        }
         });
     }
 
