@@ -211,15 +211,26 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                                     title: (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--xs)' }}>
                                             <div style={{ width: '80px', height: '16px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
-                                                <div
-                                                    style={{
-                                                        height: '100%',
-                                                        width: `${Math.min(parseFloat(poolUsagePercent) || 0, 100)}%`,
-                                                        backgroundColor: parseFloat(poolUsagePercent) > 90 ? '#c9190b' : parseFloat(poolUsagePercent) > 75 ? '#f0ab00' : '#3e8635',
-                                                        transition: 'width 0.3s ease',
-                                                        minWidth: parseFloat(poolUsagePercent) > 0 ? '2px' : '0'
-                                                    }}
-                                                />
+                                                {parseFloat(poolUsagePercent) > 0 ? (
+                                                    <div
+                                                        style={{
+                                                            height: '100%',
+                                                            width: `${Math.min(Math.max(parseFloat(poolUsagePercent) || 0, 0), 100)}%`,
+                                                            backgroundColor: parseFloat(poolUsagePercent) > 90 ? '#c9190b' : parseFloat(poolUsagePercent) > 75 ? '#f0ab00' : '#3e8635',
+                                                            transition: 'width 0.3s ease',
+                                                            minWidth: '2px'
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div
+                                                        style={{
+                                                            height: '100%',
+                                                            width: '2px',
+                                                            backgroundColor: '#3e8635',
+                                                            opacity: 0.3
+                                                        }}
+                                                    />
+                                                )}
                                             </div>
                                             <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>{poolUsagePercent}%</span>
                                         </div>

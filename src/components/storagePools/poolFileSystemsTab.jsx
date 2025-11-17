@@ -55,11 +55,12 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
 
     const calculateUsagePercent = (used, quota, available) => {
         // If quota is set, calculate usage based on quota
-        if (quota && quota !== '-') {
+        if (quota && quota !== '-' && quota !== 'none') {
             const usedBytes = parseSize(used);
             const quotaBytes = parseSize(quota);
             if (quotaBytes === 0) return null;
-            return ((usedBytes / quotaBytes) * 100).toFixed(1);
+            const percent = ((usedBytes / quotaBytes) * 100).toFixed(1);
+            return percent;
         }
         // Otherwise, calculate usage based on used / (used + available)
         if (available && available !== '-') {
@@ -67,7 +68,16 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
             const availableBytes = parseSize(available);
             const totalBytes = usedBytes + availableBytes;
             if (totalBytes === 0) return null;
-            return ((usedBytes / totalBytes) * 100).toFixed(1);
+            const percent = ((usedBytes / totalBytes) * 100).toFixed(1);
+            return percent;
+        }
+        // If we have used but no available/quota, try to calculate from used alone
+        if (used && used !== '-') {
+            const usedBytes = parseSize(used);
+            if (usedBytes > 0) {
+                // Can't calculate percentage without total, but at least show something
+                return null;
+            }
         }
         return null;
     };
@@ -127,10 +137,24 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
     const renderTreeNodes = (nodes, level = 0) => {
         const rows = [];
         
-        nodes.forEach(node => {
+            nodes.forEach(node => {
             const isExpanded = expandedNodes.has(node.name);
             const hasChildren = node.children.length > 0;
-            const usagePercent = calculateUsagePercent(node.used, node.quota, node.available);
+            // Calculate usage - ensure we always try if we have data
+            let usagePercent = calculateUsagePercent(node.used, node.quota, node.available);
+            // Fallback: if calculation returned null but we have used and available, try direct calculation
+            if (usagePercent === null && node.used && node.used !== '-' && node.available && node.available !== '-') {
+                const usedBytes = parseSize(node.used);
+                const availableBytes = parseSize(node.available);
+                if (usedBytes >= 0 && availableBytes >= 0) {
+                    const totalBytes = usedBytes + availableBytes;
+                    if (totalBytes > 0) {
+                        usagePercent = ((usedBytes / totalBytes) * 100).toFixed(1);
+                    } else if (usedBytes === 0 && availableBytes === 0) {
+                        usagePercent = '0.0';
+                    }
+                }
+            }
             const compressionRatio = formatCompressionRatio(node.compressratio);
             const dedupRatio = formatDedupRatio(node.dedupratio);
 
@@ -191,15 +215,26 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
                         title: usagePercent !== null ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--xs)' }}>
                                 <div style={{ width: '60px', height: '16px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
-                                    <div
-                                        style={{
-                                            height: '100%',
-                                            width: `${Math.min(parseFloat(usagePercent) || 0, 100)}%`,
-                                            backgroundColor: parseFloat(usagePercent) > 90 ? '#c9190b' : parseFloat(usagePercent) > 75 ? '#f0ab00' : '#3e8635',
-                                            transition: 'width 0.3s ease',
-                                            minWidth: parseFloat(usagePercent) > 0 ? '2px' : '0'
-                                        }}
-                                    />
+                                    {parseFloat(usagePercent) > 0 ? (
+                                        <div
+                                            style={{
+                                                height: '100%',
+                                                width: `${Math.min(Math.max(parseFloat(usagePercent) || 0, 0), 100)}%`,
+                                                backgroundColor: parseFloat(usagePercent) > 90 ? '#c9190b' : parseFloat(usagePercent) > 75 ? '#f0ab00' : '#3e8635',
+                                                transition: 'width 0.3s ease',
+                                                minWidth: '2px'
+                                            }}
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{
+                                                height: '100%',
+                                                width: '2px',
+                                                backgroundColor: '#3e8635',
+                                                opacity: 0.3
+                                            }}
+                                        />
+                                    )}
                                 </div>
                                 <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>{usagePercent}%</span>
                             </div>
