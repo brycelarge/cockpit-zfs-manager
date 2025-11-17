@@ -4,9 +4,19 @@
         "browser": true,
         "es2022": true
     },
-    "extends": ["eslint:recommended", "standard"],
+    "extends": ["eslint:recommended", "standard", "plugin:react/recommended"],
+    "plugins": ["react"],
     "parserOptions": {
-        "ecmaVersion": 2022
+        "ecmaVersion": 2022,
+        "ecmaFeatures": {
+            "jsx": true
+        },
+        "sourceType": "module"
+    },
+    "settings": {
+        "react": {
+            "version": "detect"
+        }
     },
     "rules": {
         "indent": ["error", 4,

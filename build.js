@@ -76,11 +76,13 @@ function watch_dirs(dir, on_change) {
 const context = await esbuild.context({
     ...!production ? { sourcemap: "linked" } : {},
     bundle: true,
-    entryPoints: ["./src/index.js"],
+    entryPoints: ["./src/index.jsx"],
     external: ['*.woff', '*.woff2', '*.jpg', '*.svg', '../../assets*'], // Allow external font files which live in ../../static/fonts
     legalComments: 'external', // Move all legal comments to a .LEGAL.txt file
+    jsx: 'automatic',
     loader: {
         ".js": "jsx",
+        ".jsx": "jsx",
         ".py": "text",
         ".sh": "text",
     },
@@ -101,6 +103,12 @@ const context = await esbuild.context({
                     if (output?.errors.length === 0) {
                         fs.copyFileSync('./src/manifest.json', './dist/manifest.json');
                         fs.copyFileSync('./src/index.html', './dist/index.html');
+                        // Rename index.jsx to index.js in dist (esbuild outputs based on entry name)
+                        const jsxFile = './dist/index.jsx';
+                        const jsFile = './dist/index.js';
+                        if (fs.existsSync(jsxFile)) {
+                            fs.renameSync(jsxFile, jsFile);
+                        }
                     }
                 });
             }
