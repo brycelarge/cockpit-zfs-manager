@@ -141,23 +141,30 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
 
                         // Format health with color
                         const formatHealth = (health) => {
-                            const healthUpper = (health || '').toUpperCase();
-                            let color = 'var(--pf-t--global--text--color--100)'; // Default
+                            if (!health) return health;
+                            
+                            const healthUpper = health.toUpperCase();
+                            let color = undefined; // Default - use theme color
                             
                             if (healthUpper === 'ONLINE') {
-                                color = 'var(--pf-t--global--success--color--100)';
+                                color = '#3e8635'; // PatternFly success green
                             } else if (healthUpper === 'DEGRADED' || healthUpper === 'FAULTED') {
-                                color = 'var(--pf-t--global--danger--color--100)';
+                                color = '#c9190b'; // PatternFly danger red
                             } else if (healthUpper === 'OFFLINE' || healthUpper === 'UNAVAIL') {
-                                color = 'var(--pf-t--global--warning--color--100)';
+                                color = '#f0ab00'; // PatternFly warning orange
                             }
                             
+                            const style = color ? { 
+                                color: color,
+                                fontWeight: 'bold',
+                                fontSize: 'var(--pf-t--global--font--size--md)'
+                            } : {
+                                fontWeight: 'bold',
+                                fontSize: 'var(--pf-t--global--font--size--md)'
+                            };
+                            
                             return (
-                                <span style={{ 
-                                    color: color,
-                                    fontWeight: 'bold',
-                                    fontSize: 'var(--pf-t--global--font--size--md)'
-                                }}>
+                                <span style={style}>
                                     {health}
                                 </span>
                             );
