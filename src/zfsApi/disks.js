@@ -1,9 +1,11 @@
 const cockpit = window.cockpit;
 
 export class DisksApi {
-    static async checkSmartctlAvailable() {
+    static async getSmartctlPath() {
         return new Promise((resolve) => {
-            const checkProc = cockpit.spawn(['which', 'smartctl'], { err: 'message' });
+            // Check common locations for smartctl (prioritize direct path checks since PATH might be restricted)
+            // Order: /usr/sbin (most common), /sbin, /usr/bin, then try command -v/which
+            const checkProc = cockpit.spawn(['sh', '-c', 'test -x /usr/sbin/smartctl && echo /usr/sbin/smartctl || test -x /sbin/smartctl && echo /sbin/smartctl || test -x /usr/bin/smartctl && echo /usr/bin/smartctl || command -v smartctl 2>/dev/null || which smartctl 2>/dev/null || echo ""'], { err: 'message' });
             let checkOutput = '';
             
             checkProc.stream((data) => {
@@ -11,11 +13,15 @@ export class DisksApi {
             });
             
             checkProc.done((exitCode) => {
-                resolve(exitCode === 0 && checkOutput.trim().length > 0);
+                const path = checkOutput.trim();
+                const found = path.length > 0;
+                console.log(`smartctl check: exitCode=${exitCode}, output="${path}", found=${found}`);
+                resolve(found ? path : null);
             });
             
-            checkProc.fail(() => {
-                resolve(false);
+            checkProc.fail((error) => {
+                console.error(`smartctl check failed:`, error);
+                resolve(null);
             });
         });
     }
@@ -27,16 +33,17 @@ export class DisksApi {
                 const devices = await DisksApi.getPoolDevices(poolName);
                 console.log(`Got ${devices.length} devices, fetching SMART info...`);
                 
-                // Check if smartctl is available once
-                const smartctlAvailable = await DisksApi.checkSmartctlAvailable();
-                console.log(`smartctl available: ${smartctlAvailable}`);
+                // Check if smartctl is available once and get its path
+                const smartctlPath = await DisksApi.getSmartctlPath();
+                const smartctlAvailable = smartctlPath !== null;
+                console.log(`smartctl available: ${smartctlAvailable}, path: ${smartctlPath}`);
                 
                 // Get SMART info for each device sequentially to avoid overwhelming the system
                 const disksWithSmart = [];
                 for (const device of devices) {
                     try {
                         console.log(`Fetching SMART for ${device.path}...`);
-                        const smartInfo = smartctlAvailable ? await DisksApi.getSmartInfo(device.path) : null;
+                        const smartInfo = smartctlAvailable ? await DisksApi.getSmartInfo(device.path, smartctlPath) : null;
                         console.log(`SMART info for ${device.path}:`, smartInfo);
                         disksWithSmart.push({
                             ...device,
@@ -200,27 +207,40 @@ export class DisksApi {
         return 'Unknown';
     }
 
-    static async getSmartInfo(devicePath) {
+    static async getSmartInfo(devicePath, smartctlPath = null) {
         return new Promise((resolve, reject) => {
-            console.log(`Getting SMART info for ${devicePath}`);
+            console.log(`Getting SMART info for ${devicePath}, using smartctl: ${smartctlPath || 'smartctl'}`);
             
-            // Check if smartctl is available first
-            const checkProc = cockpit.spawn(['which', 'smartctl'], { err: 'message' });
-            let checkOutput = '';
-            
-            checkProc.stream((data) => {
-                checkOutput += data;
-            });
-            
-            checkProc.done((checkExitCode) => {
-                // If smartctl is not found, resolve with null
-                if (checkExitCode !== 0 || !checkOutput.trim()) {
-                    console.log(`smartctl not found (exit code: ${checkExitCode}, output: ${checkOutput.trim()})`);
-                    resolve(null);
-                    return;
-                }
+            // If no path provided, try to find it
+            if (!smartctlPath) {
+                // Fallback: try common locations (prioritize direct path checks)
+                const checkProc = cockpit.spawn(['sh', '-c', 'test -x /usr/sbin/smartctl && echo /usr/sbin/smartctl || test -x /sbin/smartctl && echo /sbin/smartctl || test -x /usr/bin/smartctl && echo /usr/bin/smartctl || command -v smartctl 2>/dev/null || which smartctl 2>/dev/null || echo ""'], { err: 'message' });
+                let checkOutput = '';
                 
-                console.log(`smartctl found at: ${checkOutput.trim()}`);
+                checkProc.stream((data) => {
+                    checkOutput += data;
+                });
+                
+                checkProc.done((checkExitCode) => {
+                    if (!checkOutput.trim()) {
+                        console.log(`smartctl not found (exit code: ${checkExitCode})`);
+                        resolve(null);
+                        return;
+                    }
+                    smartctlPath = checkOutput.trim();
+                    console.log(`smartctl found at: ${smartctlPath}`);
+                    proceedWithSmartInfo();
+                });
+                
+                checkProc.fail(() => {
+                    resolve(null);
+                });
+                return;
+            }
+            
+            proceedWithSmartInfo();
+            
+            function proceedWithSmartInfo() {
                 // Try to run smartctl directly - if it fails, we'll catch it
                 const isNVMe = devicePath.includes('nvme');
                 const smartInfo = {
@@ -241,8 +261,9 @@ export class DisksApi {
                 // For NVMe devices, use different approach
                 if (isNVMe) {
                     console.log(`Getting NVMe SMART info for ${devicePath}`);
-                    // Get NVMe SMART info directly
-                    const nvmeProc = cockpit.spawn(['smartctl', '-a', devicePath], { err: 'message' });
+                    // Get NVMe SMART info directly - use full path if we found it, otherwise try smartctl
+                    const smartctlCmd = smartctlPath || 'smartctl';
+                    const nvmeProc = cockpit.spawn([smartctlCmd, '-a', devicePath], { err: 'message' });
                     let nvmeOutput = '';
                     
                     nvmeProc.stream((data) => {
@@ -325,8 +346,9 @@ export class DisksApi {
                 });
             } else {
                 // Traditional SATA/SAS device handling
-                // Get SMART health status
-                const healthProc = cockpit.spawn(['smartctl', '-H', devicePath], { err: 'message' });
+                // Get SMART health status - use full path if we found it
+                const smartctlCmd = smartctlPath || 'smartctl';
+                const healthProc = cockpit.spawn([smartctlCmd, '-H', devicePath], { err: 'message' });
                 let healthOutput = '';
                 
                 healthProc.stream((data) => {
@@ -342,7 +364,7 @@ export class DisksApi {
                     }
                     
                     // Get detailed SMART attributes
-                    const attrsProc = cockpit.spawn(['smartctl', '-A', devicePath], { err: 'message' });
+                    const attrsProc = cockpit.spawn([smartctlCmd, '-A', devicePath], { err: 'message' });
                     let attrsOutput = '';
                     
                     attrsProc.stream((data) => {
@@ -351,7 +373,7 @@ export class DisksApi {
                     
                     attrsProc.done(async (attrsExitCode) => {
                         // Parse model and serial from info section
-                        const infoProc = cockpit.spawn(['smartctl', '-i', devicePath], { err: 'message' });
+                        const infoProc = cockpit.spawn([smartctlCmd, '-i', devicePath], { err: 'message' });
                         let infoOutput = '';
                         
                         infoProc.stream((data) => {
