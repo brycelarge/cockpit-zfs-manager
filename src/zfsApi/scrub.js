@@ -105,6 +105,8 @@ export class ScrubApi {
 
     static async getScheduledScrubs() {
         return new Promise((resolve) => {
+            const results = [];
+            
             // Check for systemd timers
             const proc = cockpit.spawn(['systemctl', 'list-timers', '--all', '--no-pager', '--output=json']);
             let output = '';
@@ -113,7 +115,7 @@ export class ScrubApi {
                 output += data;
             });
 
-            proc.done((exitCode) => {
+            proc.done(async (exitCode) => {
                 // Exit code 0 means success
                 // null/undefined/empty exit code means process completed (treat as success)
                 if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
@@ -127,21 +129,26 @@ export class ScrubApi {
                                     return null;
                                 }
                             })
-                            .filter(t => t && t.unit && t.unit.includes('zfs-scrub'));
+                            .filter(t => t && t.unit && t.unit.includes('zfs-scrub'))
+                            .map(t => ({ ...t, type: 'systemd' }));
                         
-                        resolve(timers);
+                        results.push(...timers);
                     } catch {
-                        resolve([]);
+                        // Continue to check cron
                     }
-                } else {
-                    // Fallback to checking cron
-                    this.getCronScrubs().then(resolve);
                 }
+                
+                // Always check cron as well (in case both exist)
+                const cronScrubs = await this.getCronScrubs();
+                results.push(...cronScrubs);
+                
+                resolve(results);
             });
 
-            proc.fail(() => {
-                // Fallback to checking cron
-                this.getCronScrubs().then(resolve);
+            proc.fail(async () => {
+                // If systemd check fails, still check cron
+                const cronScrubs = await this.getCronScrubs();
+                resolve(cronScrubs);
             });
         });
     }

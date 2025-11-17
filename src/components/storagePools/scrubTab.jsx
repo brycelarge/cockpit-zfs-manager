@@ -38,9 +38,17 @@ function ScrubTab({ pool }) {
             setScrubStatus(status);
             
             // Find scheduled scrub for this pool
-            const poolScrub = scheduled.find(s => 
-                s.unit?.includes(pool.name) || s.command?.includes(pool.name)
-            );
+            // For systemd timers: unit name is like "zfs-scrub-poolname.timer"
+            // For cron jobs: command includes "zpool scrub poolname"
+            const poolScrub = scheduled.find(s => {
+                if (s.type === 'systemd') {
+                    return s.unit?.includes(`zfs-scrub-${pool.name}`) || s.unit?.includes(pool.name);
+                } else if (s.type === 'cron') {
+                    return s.command?.includes(`zpool scrub ${pool.name}`) || s.command?.includes(pool.name);
+                }
+                // Fallback for old format
+                return s.unit?.includes(pool.name) || s.command?.includes(pool.name);
+            });
             setScheduledScrub(poolScrub || null);
         } catch (exc) {
             setError({
