@@ -1,9 +1,10 @@
 {
   "version": "0.1.0",
-  "tools": {
+  "menu": {
     "zfs-manager": {
       "label": "ZFS Manager",
-      "path": "index.html"
+      "path": "index.html",
+      "order": 30
     }
   }
 }
