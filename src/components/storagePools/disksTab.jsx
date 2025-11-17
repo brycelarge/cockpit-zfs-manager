@@ -68,9 +68,12 @@ function DisksTab({ pool }) {
         );
     }
 
-    // Check if any disk has SMART data
-    const hasSmartData = disks.some(disk => disk.smart && disk.smart.available);
-    const smartctlMissing = disks.length > 0 && !hasSmartData && disks.every(disk => disk.smart === null);
+    // Check if smartctl is available - check the first disk's smartctlAvailable flag
+    const smartctlAvailable = disks.length > 0 && disks[0].smartctlAvailable === true;
+    const allDisksNullSmart = disks.length > 0 && disks.every(disk => disk.smart === null);
+    
+    // Only show alert if smartctl is not available (not installed)
+    const smartctlMissing = !smartctlAvailable && allDisksNullSmart;
 
     return (
         <div>
