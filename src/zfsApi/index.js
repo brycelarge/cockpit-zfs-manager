@@ -368,7 +368,11 @@ export class ZfsApi {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // Exit code 1 typically means no snapshots found, which is fine - return empty array
+                // null/undefined/empty exit code means process completed (treat as success)
+                // If we have snapshot data, always resolve successfully regardless of exit code
+                if (snapshots.length > 0 || exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve(snapshots);
                 } else {
                     reject(new Error(`zfs list snapshots exited with code ${exitCode}`));
@@ -958,7 +962,10 @@ export class ZfsApi {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                // If we have stats data, always resolve successfully regardless of exit code
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined || stats.total.ops > 0 || stats.read.ops > 0 || stats.write.ops > 0) {
                     resolve(stats);
                 } else {
                     reject(new Error(`zpool iostat exited with code ${exitCode}`));

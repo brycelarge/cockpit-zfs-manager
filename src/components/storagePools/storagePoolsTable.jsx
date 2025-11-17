@@ -137,7 +137,6 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                                 { title: <PoolActions pool={pool} onRefresh={onRefresh} /> },
                             ],
                             key: pool.name,
-                            props: {},
                             expandedContent: <ListingPanel tabRenderers={tabRenderers} />
                         };
                     })}
