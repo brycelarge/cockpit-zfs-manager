@@ -42,7 +42,7 @@ export class DisksApi {
                     
                     for (const line of lines) {
                         // Look for device paths like /dev/sda, /dev/nvme0n1, etc.
-                        const deviceMatch = line.match(/\s+(/dev/[^\s]+)/);
+                        const deviceMatch = line.match(/\s+(\/dev\/[^\s]+)/);
                         if (deviceMatch && deviceMatch[1]) {
                             const devicePath = deviceMatch[1];
                             if (!deviceSet.has(devicePath)) {
