@@ -5,21 +5,19 @@ import {
 } from '@patternfly/react-core/dist/esm/components/Modal';
 import { Form, FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 import { FormSelect, FormSelectOption } from "@patternfly/react-core/dist/esm/components/FormSelect";
-import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
-import { Tooltip } from "@patternfly/react-core/dist/esm/components/Tooltip";
-import { HelpIcon } from '@patternfly/react-icons';
 
 import { FormHelper } from 'cockpit-components-form-helper.jsx';
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { useDialogs } from 'dialogs.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
+import { DisksApi } from '../../zfsApi/disks.js';
 
 function ExpandPoolDialog({ pool, onRefresh }) {
     const Dialogs = useDialogs();
-    const [vdevType, setVdevType] = useState('stripe');
+    const [vdevType, setVdevType] = useState(pool.vdevType || 'stripe');
     const [devices, setDevices] = useState([]);
     const [availableDisks, setAvailableDisks] = useState([]);
     const [loadingDisks, setLoadingDisks] = useState(false);
@@ -29,16 +27,39 @@ function ExpandPoolDialog({ pool, onRefresh }) {
     const [expanding, setExpanding] = useState(false);
 
     useEffect(() => {
+        loadPoolVdevType();
         loadDisks();
     }, []);
+
+    const loadPoolVdevType = async () => {
+        try {
+            // Get the current pool's VDEV type if not already set
+            if (!pool.vdevType) {
+                const currentVdevType = await ZfsApi.getPoolVdevType(pool.name);
+                setVdevType(currentVdevType || 'stripe');
+            }
+        } catch (error) {
+            // If we can't get the VDEV type, default to stripe
+            console.warn('Could not determine pool VDEV type, defaulting to stripe:', error);
+        }
+    };
 
     const loadDisks = async () => {
         setLoadingDisks(true);
         try {
-            const disks = await ZfsApi.listAvailableDisks();
-            setAvailableDisks(disks);
-            if (disks.length === 0) {
-                console.warn('No disks found. Make sure lsblk is installed and you have permissions to list block devices.');
+            // Get all available disks
+            const allDisks = await ZfsApi.listAvailableDisks();
+            
+            // Get devices already in the pool
+            const poolDevices = await DisksApi.getPoolDevices(pool.name);
+            const poolDevicePaths = new Set(poolDevices.map(d => d.path));
+            
+            // Filter out disks already in the pool
+            const filteredDisks = allDisks.filter(disk => !poolDevicePaths.has(disk.path));
+            
+            setAvailableDisks(filteredDisks);
+            if (filteredDisks.length === 0) {
+                console.warn('No available disks found that are not already part of the pool.');
             }
         } catch (error) {
             console.error('Failed to load disks:', error);
@@ -110,16 +131,7 @@ function ExpandPoolDialog({ pool, onRefresh }) {
                         )}
 
                         <FormGroup
-                            label={
-                                <span>
-                                    VDEV Type
-                                    <Tooltip content="Virtual Device (VDEV) type determines redundancy and performance characteristics">
-                                        <span style={{ marginLeft: 'var(--pf-t--global--spacer--xs)' }}>
-                                            <HelpIcon />
-                                        </span>
-                                    </Tooltip>
-                                </span>
-                            }
+                            label="VDEV Type"
                             fieldId="pool-vdev-type"
                         >
                             <FormSelect
@@ -127,7 +139,7 @@ function ExpandPoolDialog({ pool, onRefresh }) {
                                 value={vdevType}
                                 onChange={(_, value) => {
                                     setVdevType(value);
-                                    if (validationFailed.devices && value !== 'mirror') {
+                                    if (validationFailed.devices) {
                                         setValidationFailed({ ...validationFailed, devices: undefined });
                                     }
                                 }}
@@ -138,6 +150,10 @@ function ExpandPoolDialog({ pool, onRefresh }) {
                                 <FormSelectOption value="raidz2" label="RAID-Z2 (double parity, requires 4+ devices)" />
                                 <FormSelectOption value="raidz3" label="RAID-Z3 (triple parity, requires 5+ devices)" />
                             </FormSelect>
+                            <FormHelper
+                                fieldId="pool-vdev-type"
+                                helperText={`Current pool VDEV type: ${pool.vdevType || 'stripe'}. You can add a different VDEV type, but keeping types consistent is recommended.`}
+                            />
                         </FormGroup>
 
                         <FormGroup
@@ -183,15 +199,17 @@ function ExpandPoolDialog({ pool, onRefresh }) {
                                 fieldId="pool-devices"
                                 helperTextInvalid={validationFailed.devices}
                                 helperText={
-                                    vdevType === 'mirror' && devices.length > 0 && devices.length < 2
-                                        ? 'Mirror requires at least 2 devices'
-                                        : vdevType === 'raidz' && devices.length > 0 && devices.length < 3
-                                            ? 'RAID-Z requires at least 3 devices'
-                                            : vdevType === 'raidz2' && devices.length > 0 && devices.length < 4
-                                                ? 'RAID-Z2 requires at least 4 devices'
-                                                : vdevType === 'raidz3' && devices.length > 0 && devices.length < 5
-                                                    ? 'RAID-Z3 requires at least 5 devices'
-                                                    : undefined
+                                    devices.length === 0
+                                        ? 'Select devices to add to the pool'
+                                        : vdevType === 'mirror' && devices.length > 0 && devices.length < 2
+                                            ? 'Mirror requires at least 2 devices'
+                                            : vdevType === 'raidz' && devices.length > 0 && devices.length < 3
+                                                ? 'RAID-Z requires at least 3 devices'
+                                                : vdevType === 'raidz2' && devices.length > 0 && devices.length < 4
+                                                    ? 'RAID-Z2 requires at least 4 devices'
+                                                    : vdevType === 'raidz3' && devices.length > 0 && devices.length < 5
+                                                        ? 'RAID-Z3 requires at least 5 devices'
+                                                        : undefined
                                 }
                             />
                         </FormGroup>
