@@ -167,6 +167,32 @@ autoprune = yes
             }
         }
         
+        // Try to find config file using find command
+        try {
+            const findProc = cockpit.spawn(['sh', '-c', 'find /etc /usr/local/etc /usr/share /root -name sanoid.conf -type f 2>/dev/null'], { err: 'message' });
+            let findOutput = '';
+            findProc.stream((data) => {
+                findOutput += data;
+            });
+            
+            await new Promise((resolve) => {
+                findProc.done(() => resolve());
+                findProc.fail(() => resolve());
+            });
+            
+            if (findOutput.trim()) {
+                const foundPaths = findOutput.trim().split('\n').filter(p => p.trim());
+                // Return the first found path (prefer /etc paths)
+                const etcPath = foundPaths.find(p => p.startsWith('/etc'));
+                if (etcPath) {
+                    return etcPath.trim();
+                }
+                return foundPaths[0].trim();
+            }
+        } catch {
+            // Ignore errors
+        }
+        
         // Try to find config by checking sanoid systemd service or cron job
         // They might specify a custom config path
         try {

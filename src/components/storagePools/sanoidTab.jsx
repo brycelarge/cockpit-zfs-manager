@@ -256,9 +256,9 @@ use_template = production
 recursive = yes
 
 [template_production]
-hourly = 24
-daily = 7
-monthly = 3
+hourly = 6
+daily = 3
+monthly = 1
 yearly = 1
 autosnap = yes
 autoprune = yes`}
