@@ -134,11 +134,7 @@ export class ScrubApi {
                             .filter(t => {
                                 // Check various possible field names for unit name
                                 const unitName = t.unit || t.UNIT || t.name || '';
-                                const matches = unitName.includes('zfs-scrub');
-                                if (matches) {
-                                    console.log('Found matching systemd timer:', unitName);
-                                }
-                                return matches;
+                                return unitName.includes('zfs-scrub');
                             })
                             .map(t => {
                                 // Normalize unit name field
@@ -150,7 +146,6 @@ export class ScrubApi {
                                 };
                             });
                         
-                        console.log('Found systemd timers:', timers);
                         results.push(...timers);
                         }
                     } catch (e) {
@@ -162,13 +157,11 @@ export class ScrubApi {
                 // Always check cron as well (in case both exist)
                 try {
                     const cronScrubs = await this.getCronScrubs();
-                    console.log('Found cron scrubs:', cronScrubs);
                     results.push(...cronScrubs);
                 } catch (e) {
                     console.error('Error getting cron scrubs:', e);
                 }
                 
-                console.log('All scheduled scrubs:', results);
                 resolve(results);
             });
 

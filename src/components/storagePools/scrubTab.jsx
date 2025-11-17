@@ -37,10 +37,6 @@ function ScrubTab({ pool }) {
             ]);
             setScrubStatus(status);
             
-            // Debug: log what we got
-            console.log('Scheduled scrubs:', scheduled);
-            console.log('Looking for pool:', pool.name);
-            
             // Find scheduled scrub for this pool
             // For systemd timers: unit name is like "zfs-scrub-poolname.timer"
             // For cron jobs: command includes "zpool scrub poolname"
@@ -48,27 +44,20 @@ function ScrubTab({ pool }) {
                 if (s.type === 'systemd') {
                     // Unit name format: "zfs-scrub-poolname.timer"
                     const unitName = s.unit || '';
-                    const matches = unitName.includes(`zfs-scrub-${pool.name}`) || 
-                                   unitName.includes(`zfs-scrub-${pool.name}.timer`) ||
-                                   unitName.includes(pool.name);
-                    console.log(`Checking systemd timer: unit="${unitName}", matches=${matches}`);
-                    return matches;
+                    return unitName.includes(`zfs-scrub-${pool.name}`) || 
+                           unitName.includes(`zfs-scrub-${pool.name}.timer`) ||
+                           unitName.includes(pool.name);
                 } else if (s.type === 'cron') {
                     // Command format: "/usr/sbin/zpool scrub poolname" or "zpool scrub poolname"
                     const command = s.command || '';
-                    const matches = command.includes(`zpool scrub ${pool.name}`) || 
-                                   command.includes(`/usr/sbin/zpool scrub ${pool.name}`) ||
-                                   command.includes(pool.name);
-                    console.log(`Checking cron job: command="${command}", matches=${matches}`);
-                    return matches;
+                    return command.includes(`zpool scrub ${pool.name}`) || 
+                           command.includes(`/usr/sbin/zpool scrub ${pool.name}`) ||
+                           command.includes(pool.name);
                 }
                 // Fallback for old format
-                const matches = s.unit?.includes(pool.name) || s.command?.includes(pool.name);
-                console.log(`Checking fallback: unit="${s.unit}", command="${s.command}", matches=${matches}`);
-                return matches;
+                return s.unit?.includes(pool.name) || s.command?.includes(pool.name);
             });
             
-            console.log('Found pool scrub:', poolScrub);
             setScheduledScrub(poolScrub || null);
         } catch (exc) {
             setError({
@@ -125,26 +114,17 @@ function ScrubTab({ pool }) {
                 schedule = '0 2 1 * *'; // 1st of month, 2 AM
             }
 
-            console.log(`Creating schedule for pool ${pool.name} with schedule: ${schedule}`);
-
             // Skip systemd due to DBus issues, use cron directly
             // Systemd timers require DBus access which Cockpit doesn't have in this context
-            let created = false;
             try {
-                console.log('Attempting to create cron job (skipping systemd due to DBus limitations)...');
                 await ScrubApi.createCronJob(pool.name, schedule);
-                console.log('Cron job created successfully');
-                created = true;
             } catch (cronError) {
-                console.error('Cron creation failed:', cronError);
                 throw new Error(`Failed to create schedule: ${cronError.message || String(cronError)}`);
             }
 
-            if (created) {
-                // Wait a moment for the schedule to be registered
-                await new Promise(resolve => setTimeout(resolve, 500));
-                await loadScrubInfo();
-            }
+            // Wait a moment for the schedule to be registered
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await loadScrubInfo();
         } catch (exc) {
             console.error('Failed to schedule scrub:', exc);
             setError({
