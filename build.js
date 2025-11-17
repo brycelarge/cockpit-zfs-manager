@@ -4,9 +4,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import process from 'node:process';
-import { execSync } from 'child_process';
 
 import { sassPlugin } from 'esbuild-sass-plugin';
+
+import { cockpitCompressPlugin } from './pkg/lib/esbuild-compress-plugin.js';
+import { cockpitPoEsbuildPlugin } from './pkg/lib/cockpit-po-plugin.js';
+import { cockpitRsyncEsbuildPlugin } from './pkg/lib/cockpit-rsync-plugin.js';
+import { cleanPlugin } from './pkg/lib/esbuild-cleanup-plugin.js';
 
 const useWasm = os.arch() !== 'x64';
 const esbuild = (await import(useWasm ? 'esbuild-wasm' : 'esbuild'));
@@ -28,20 +32,6 @@ const args = parser.parse_args();
 if (args.rsync)
     process.env.RSYNC = args.rsync;
 
-function cleanPlugin() {
-    return {
-        name: 'clean',
-        setup(build) {
-            build.onStart(() => {
-                if (fs.existsSync(outdir)) {
-                    fs.rmSync(outdir, { recursive: true });
-                }
-                fs.mkdirSync(outdir, { recursive: true });
-            });
-        }
-    };
-}
-
 function notifyEndPlugin() {
     return {
         name: 'notify-end',
@@ -56,25 +46,6 @@ function notifyEndPlugin() {
                 const endTime = new Date();
                 const timeStamp = endTime.toTimeString().split(' ')[0];
                 console.log(`${timeStamp}: Build finished in ${endTime - startTime} ms`);
-            });
-        }
-    };
-}
-
-function cockpitRsyncEsbuildPlugin({ dest }) {
-    return {
-        name: 'cockpit-rsync',
-        setup(build) {
-            build.onEnd((result) => {
-                if (result?.errors.length === 0 && process.env.RSYNC) {
-                    const rsyncTarget = process.env.RSYNC;
-                    const rsyncDest = process.env.RSYNC_DEVEL 
-                        ? `${rsyncTarget}:~/.local/share/cockpit/${dest}`
-                        : `${rsyncTarget}:/usr/share/cockpit/${dest}`;
-                    
-                    console.log(`Syncing to ${rsyncDest}...`);
-                    execSync(`rsync -avz --delete ${outdir}/ ${rsyncDest}/`, { stdio: 'inherit' });
-                }
             });
         }
     };
@@ -106,10 +77,12 @@ const context = await esbuild.context({
     ...!production ? { sourcemap: "linked" } : {},
     bundle: true,
     entryPoints: ["./src/index.js"],
-    external: ['*.woff', '*.woff2', '*.jpg', '*.svg', '../../assets*'],
-    legalComments: 'external',
+    external: ['*.woff', '*.woff2', '*.jpg', '*.svg', '../../assets*'], // Allow external font files which live in ../../static/fonts
+    legalComments: 'external', // Move all legal comments to a .LEGAL.txt file
     loader: {
-        ".js": "js",
+        ".js": "jsx",
+        ".py": "text",
+        ".sh": "text",
     },
     metafile: !!args.metafile,
     minify: production,
@@ -139,6 +112,9 @@ const context = await esbuild.context({
             quietDeps: true,
         }),
 
+        cockpitPoEsbuildPlugin(),
+
+        ...production ? [cockpitCompressPlugin()] : [],
         cockpitRsyncEsbuildPlugin({ dest: packageJson.name }),
 
         notifyEndPlugin(),
