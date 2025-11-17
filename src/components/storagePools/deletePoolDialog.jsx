@@ -113,7 +113,8 @@ function DeletePoolDialog({ pool, onRefresh }) {
             </ModalBody>
             <ModalFooter>
                 <Button
-                    variant="danger"
+                    variant="secondary"
+                    isDanger
                     id="delete-pool-dialog-confirm"
                     onClick={handleDelete}
                     isDisabled={confirmName !== pool.name || confirmYes.toLowerCase() !== 'yes' || deleting}

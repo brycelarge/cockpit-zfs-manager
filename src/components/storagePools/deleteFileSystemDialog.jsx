@@ -113,7 +113,8 @@ function DeleteFileSystemDialog({ filesystem, pool, onRefresh }) {
             </ModalBody>
             <ModalFooter>
                 <Button
-                    variant="danger"
+                    variant="secondary"
+                    isDanger
                     onClick={handleDelete}
                     isDisabled={confirmName !== filesystem.name || confirmYes.toLowerCase() !== 'yes' || deleting}
                     isLoading={deleting}

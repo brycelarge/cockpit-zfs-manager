@@ -333,7 +333,8 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
                 {showConfirm ? (
                     <>
                         <Button
-                            variant="danger"
+                            variant="secondary"
+                            isDanger
                             onClick={handleConfirmCreate}
                             isDisabled={confirmText.toLowerCase() !== 'yes' || creating}
                             isLoading={creating}

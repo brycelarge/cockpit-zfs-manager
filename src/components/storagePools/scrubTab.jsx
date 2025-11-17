@@ -222,7 +222,8 @@ function ScrubTab({ pool }) {
             <div style={{ marginTop: error.dialogError ? 'var(--pf-t--global--spacer--md)' : '0', marginBottom: 'var(--pf-t--global--spacer--md)' }}>
                 {scrubStatus?.inProgress ? (
                     <Button
-                        variant="danger"
+                        variant="secondary"
+                        isDanger
                         onClick={handleStopScrub}
                         isDisabled={stopping}
                         isLoading={stopping}

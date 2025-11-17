@@ -103,7 +103,8 @@ function RollbackSnapshotDialog({ snapshot, pool, onRefresh }) {
             </ModalBody>
             <ModalFooter>
                 <Button
-                    variant="danger"
+                    variant="secondary"
+                    isDanger
                     onClick={handleRollback}
                     isDisabled={confirmText.toLowerCase() !== 'yes' || rollingBack}
                     isLoading={rollingBack}

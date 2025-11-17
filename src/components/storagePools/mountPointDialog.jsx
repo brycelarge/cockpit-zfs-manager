@@ -168,7 +168,8 @@ function MountPointDialog({ filesystem, onRefresh }) {
                     <div style={{ display: 'flex', gap: 'var(--pf-t--global--spacer--sm)', marginTop: 'var(--pf-t--global--spacer--md)' }}>
                         {mounted ? (
                             <Button
-                                variant="danger"
+                                variant="secondary"
+                                isDanger
                                 onClick={handleUnmount}
                                 isDisabled={unmounting}
                                 isLoading={unmounting}

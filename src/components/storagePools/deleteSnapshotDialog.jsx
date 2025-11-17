@@ -90,7 +90,8 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
             </ModalBody>
             <ModalFooter>
                 <Button
-                    variant="danger"
+                    variant="secondary"
+                    isDanger
                     onClick={handleDelete}
                     isDisabled={
                         !confirmYes || 
