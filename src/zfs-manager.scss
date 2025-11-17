@@ -6,15 +6,39 @@
 // for $alert
 @use "@patternfly/patternfly/components/Alert/alert.scss";
 
-// for toolbar
-@use "@patternfly/patternfly/components/Toolbar/toolbar.scss";
-
 /* for pf-v6-u-text-color-subtle */
 @use "@patternfly/patternfly/utilities/Text/text.css";
 
 /* Style the list cards as ct-cards */
 .pf-v6-c-page__main-section > .pf-v6-c-card {
     @extend .ct-card;
+}
+
+/* Create a hybrid popover with an alert style */
+.ct-popover-alert .pf-v6-c-popover__content {
+    @extend .pf-v6-c-alert;
+    @extend .pf-m-danger;
+    display: block;
+    box-shadow: none;
+}
+
+/* Also style the hybrid popover alert title like an alert */
+.ct-popover-alert .pf-v6-c-title {
+    @extend .pf-v6-c-alert__title;
+    font-size: inherit;
+}
+
+.pf-v6-c-table {
+    .btn-group {
+        align-items: center;
+    }
+
+    > tbody > tr:not(.pf-v6-c-table__expandable-row) > [data-label="Actions"] .pf-v6-c-button {
+        // vertical: compensate for padding; fixing alignment
+        // horizontal: add some needed padding
+        margin-block: -0.25rem;
+        margin-inline: 0.25rem;
+    }
 }
 
 .hidden {
@@ -51,13 +75,25 @@
     z-index: calc(var(--pf-t--global--z-index--xl) - 1);
 }
 
-// Ensure modal is positioned correctly
-.pf-v6-c-modal-box {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: var(--pf-t--global--z-index--xl);
-    max-height: 90vh;
-    overflow-y: auto;
+.ct-monospace {
+    font-family: var(--pf-t--global--font--family--mono);
+}
+
+.pf-v6-c-modal-box__body .pf-v6-c-alert {
+    margin-block-end: var(--pf-t--global--spacer--md);
+}
+
+// FIXME: links in labels needs a redesign in the future
+.resource-state-text .pf-v6-c-button {
+    color: inherit;
+}
+
+// FIXME: Using an expandable content within a dialog would cause the card to be scrollable while nothing
+// would be in view. Makes it look like there is something to scroll to when there isn't anything.
+// PF deliberately makes expandable `[hidden]` content have `display: revert` which would make them have
+// `display: block` or whatever is default from the browser. They do this to make animations work.
+// Until fixed upstream we revert their `display: revert` rule.
+// https://github.com/patternfly/patternfly/issues/7746
+.pf-v6-c-modal-box__body .pf-v6-c-expandable-section__content:where([hidden]) {
+    display: none;
 }

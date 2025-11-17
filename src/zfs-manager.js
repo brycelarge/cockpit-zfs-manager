@@ -32,6 +32,54 @@
             return name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
         },
 
+        showPopover(element, title, description) {
+            // Remove existing popover if any
+            const existingPopover = document.querySelector('.pf-v6-c-popover');
+            if (existingPopover) {
+                existingPopover.remove();
+            }
+
+            const popoverId = 'popover-' + Date.now();
+            const popover = document.createElement('div');
+            popover.id = popoverId;
+            popover.className = 'pf-v6-c-popover ct-popover-alert';
+            popover.setAttribute('role', 'dialog');
+            popover.setAttribute('aria-labelledby', `${popoverId}-title`);
+            popover.innerHTML = `
+                <div class="pf-v6-c-popover__arrow"></div>
+                <div class="pf-v6-c-popover__content">
+                    <div class="pf-v6-c-title" id="${popoverId}-title">${this.escapeHtml(title)}</div>
+                    ${description ? `<div class="pf-v6-c-popover__body">${this.escapeHtml(description)}</div>` : ''}
+                </div>
+            `;
+
+            document.body.appendChild(popover);
+
+            // Position popover relative to element
+            const rect = element.getBoundingClientRect();
+            popover.style.position = 'fixed';
+            popover.style.top = `${rect.bottom + 8}px`;
+            popover.style.left = `${rect.left}px`;
+            popover.style.zIndex = '10000';
+
+            // Mark input as invalid
+            element.setAttribute('aria-invalid', 'true');
+            element.classList.add('pf-m-error');
+
+            return popover;
+        }
+
+        hidePopover(element) {
+            const popover = document.querySelector('.pf-v6-c-popover');
+            if (popover) {
+                popover.remove();
+            }
+            if (element) {
+                element.removeAttribute('aria-invalid');
+                element.classList.remove('pf-m-error');
+            }
+        }
+
         showNotification(status, title, description, timeout = 5000) {
             const alertContainer = document.getElementById('alerts-notifications') || document.body;
             const alertId = 'alert-' + Date.now();
@@ -1087,18 +1135,33 @@
                 onConfirm: () => {
                     const form = document.getElementById('create-pool-form');
                     const formData = new FormData(form);
+                    const nameInput = document.getElementById('pool-name');
+                    const vdevTypeSelect = document.getElementById('pool-vdev-type');
                     const name = formData.get('name');
                     const vdevType = formData.get('vdevType');
                     const selectedDevices = Array.from(form.querySelectorAll('input[name="devices"]:checked')).map(cb => cb.value);
 
-                    if (!name || selectedDevices.length === 0 || !vdevType) {
-                        Utils.showNotification('warning', 'Validation Error', 'Please fill in all required fields and select at least one device');
+                    // Hide any existing popovers
+                    Utils.hidePopover();
+
+                    if (!name) {
+                        Utils.showPopover(nameInput, 'Validation Error', 'Pool name is required');
+                        return false;
+                    }
+
+                    if (!vdevType) {
+                        Utils.showPopover(vdevTypeSelect, 'Validation Error', 'VDEV type is required');
+                        return false;
+                    }
+
+                    if (selectedDevices.length === 0) {
+                        Utils.showPopover(document.getElementById('pool-devices-list'), 'Validation Error', 'Please select at least one device');
                         return false;
                     }
 
                     // Validate device count for mirrors
                     if (vdevType === 'mirror' && selectedDevices.length < 2) {
-                        Utils.showNotification('warning', 'Validation Error', 'Mirror requires at least 2 devices');
+                        Utils.showPopover(document.getElementById('pool-devices-list'), 'Validation Error', 'Mirror requires at least 2 devices');
                         return false;
                     }
 
