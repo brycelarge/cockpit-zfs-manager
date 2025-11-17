@@ -319,28 +319,44 @@ export class ZfsApi {
         });
     }
 
-    static async createFileSystem(name, encrypted = false, passphrase = null) {
+    static async createFileSystem(name, encrypted = false, passphrase = null, properties = {}) {
         return new Promise((resolve, reject) => {
             const args = ['zfs', 'create'];
             if (encrypted) {
                 args.push('-o', 'encryption=aes-256-gcm', '-o', 'keyformat=passphrase', '-o', 'keylocation=prompt');
             }
+            
+            // Add properties
+            if (properties.compression) {
+                args.push('-o', `compression=${properties.compression}`);
+            }
+            if (properties.deduplication) {
+                args.push('-o', `dedup=${properties.deduplication}`);
+            }
+            if (properties.quota) {
+                args.push('-o', `quota=${properties.quota}`);
+            }
+            if (properties.reservation) {
+                args.push('-o', `reservation=${properties.reservation}`);
+            }
+            
             args.push(name);
 
-            const proc = cockpit.spawn(args);
+            const proc = cockpit.spawn(args, { err: 'message' });
             
             // If encrypted, send passphrase via stdin
             if (encrypted && passphrase) {
                 proc.input(passphrase + '\n');
             }
 
-            proc.done((exitCode) => {
+            proc.done((exitCode, data) => {
                 // Exit code 0 means success
                 // null/undefined/empty exit code means process completed (treat as success)
                 if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
-                    reject(new Error(`zfs create exited with code ${exitCode}`));
+                    const errorMsg = data || `zfs create exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
                 }
             });
 
