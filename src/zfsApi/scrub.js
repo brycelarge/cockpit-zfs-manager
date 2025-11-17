@@ -11,7 +11,9 @@ export class ScrubApi {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     const status = this.parseScrubStatus(output);
                     resolve(status);
                 } else {
@@ -66,7 +68,9 @@ export class ScrubApi {
             const proc = cockpit.spawn(['zpool', 'scrub', poolName]);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zpool scrub exited with code ${exitCode}`));
@@ -84,7 +88,9 @@ export class ScrubApi {
             const proc = cockpit.spawn(['zpool', 'scrub', '-s', poolName]);
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`zpool scrub -s exited with code ${exitCode}`));
@@ -108,7 +114,9 @@ export class ScrubApi {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     try {
                         const timers = output.trim().split('\n')
                             .filter(line => line.trim())
@@ -148,7 +156,10 @@ export class ScrubApi {
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // Exit code 1 typically means no crontab exists, which is fine - return empty array
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     const lines = output.split('\n');
                     const scrubJobs = lines
                         .filter(line => line.includes('zpool') && line.includes('scrub'))
@@ -235,7 +246,9 @@ WantedBy=timers.target
             serviceProc.input(serviceContent);
             
             serviceProc.done(async (exitCode) => {
-                if (exitCode !== 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode !== 0 && exitCode != null && exitCode !== '' && exitCode !== undefined) {
                     reject(new Error(`Failed to write service file: exit code ${exitCode}`));
                     return;
                 }
@@ -245,7 +258,9 @@ WantedBy=timers.target
                 timerProc.input(timerContent);
                 
                 timerProc.done(async (timerExitCode) => {
-                    if (timerExitCode !== 0) {
+                    // Exit code 0 means success
+                    // null/undefined/empty exit code means process completed (treat as success)
+                    if (timerExitCode !== 0 && timerExitCode != null && timerExitCode !== '' && timerExitCode !== undefined) {
                         reject(new Error(`Failed to write timer file: exit code ${timerExitCode}`));
                         return;
                     }
@@ -254,7 +269,9 @@ WantedBy=timers.target
                     const enableProc = cockpit.spawn(['sh', '-c', `systemctl daemon-reload && systemctl enable ${timerName} && systemctl start ${timerName}`], { err: 'message' });
                     
                     enableProc.done((enableExitCode) => {
-                        if (enableExitCode === 0) {
+                        // Exit code 0 means success
+                        // null/undefined/empty exit code means process completed (treat as success)
+                        if (enableExitCode === 0 || enableExitCode == null || enableExitCode === '' || enableExitCode === undefined) {
                             resolve();
                         } else {
                             reject(new Error(`Failed to enable timer: exit code ${enableExitCode}`));
@@ -305,7 +322,9 @@ WantedBy=timers.target
                 writeProc.input(newCrontab);
 
                 writeProc.done((writeExitCode) => {
-                    if (writeExitCode !== 0) {
+                    // Exit code 0 means success
+                    // null/undefined/empty exit code means process completed (treat as success)
+                    if (writeExitCode !== 0 && writeExitCode != null && writeExitCode !== '' && writeExitCode !== undefined) {
                         reject(new Error(`Failed to write temp crontab: exit code ${writeExitCode}`));
                         return;
                     }
@@ -316,7 +335,9 @@ WantedBy=timers.target
                         // Clean up temp file
                         cockpit.spawn(['rm', '-f', tempFile]);
                         
-                        if (installExitCode === 0) {
+                        // Exit code 0 means success
+                        // null/undefined/empty exit code means process completed (treat as success)
+                        if (installExitCode === 0 || installExitCode == null || installExitCode === '' || installExitCode === undefined) {
                             resolve();
                         } else {
                             reject(new Error(`Failed to install cron job: exit code ${installExitCode}`));
@@ -349,7 +370,9 @@ WantedBy=timers.target
                 writeProc.input(cronContent);
 
                 writeProc.done((writeExitCode) => {
-                    if (writeExitCode !== 0) {
+                    // Exit code 0 means success
+                    // null/undefined/empty exit code means process completed (treat as success)
+                    if (writeExitCode !== 0 && writeExitCode != null && writeExitCode !== '' && writeExitCode !== undefined) {
                         reject(new Error(`Failed to write temp crontab: exit code ${writeExitCode}`));
                         return;
                     }
@@ -360,7 +383,9 @@ WantedBy=timers.target
                         // Clean up temp file
                         cockpit.spawn(['rm', '-f', tempFile]);
                         
-                        if (installExitCode === 0) {
+                        // Exit code 0 means success
+                        // null/undefined/empty exit code means process completed (treat as success)
+                        if (installExitCode === 0 || installExitCode == null || installExitCode === '' || installExitCode === undefined) {
                             resolve();
                         } else {
                             reject(new Error(`Failed to install cron job: exit code ${installExitCode}`));
@@ -396,7 +421,9 @@ WantedBy=timers.target
             const proc = cockpit.spawn(['sh', '-c', commands], { err: 'message' });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
                     reject(new Error(`Failed to remove systemd timer: exit code ${exitCode}`));
@@ -419,7 +446,10 @@ WantedBy=timers.target
             });
 
             proc.done((exitCode) => {
-                if (exitCode === 0) {
+                // Exit code 0 means success
+                // Exit code 1 typically means no crontab exists, which is fine - resolve successfully
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     const lines = currentCrontab.split('\n');
                     const filtered = lines.filter(line => 
                         !(line.includes('zpool') && line.includes('scrub') && line.includes(poolName))
