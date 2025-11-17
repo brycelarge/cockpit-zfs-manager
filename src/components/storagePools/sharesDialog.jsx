@@ -155,7 +155,6 @@ function SharesDialog({ filesystem, onRefresh }) {
                                             </span>
                                         }
                                         fieldId="nfs-options"
-                                        helperText="Leave empty for default (rw). Examples: ro, rw=192.168.1.0/24, sync"
                                     >
                                         <TextInput
                                             id="nfs-options"
@@ -163,6 +162,9 @@ function SharesDialog({ filesystem, onRefresh }) {
                                             onChange={(_, value) => setNfsOptions(value)}
                                             placeholder="rw"
                                         />
+                                        <div style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                                            Leave empty for default (rw). Examples: ro, rw=192.168.1.0/24, sync
+                                        </div>
                                     </FormGroup>
                                 )}
                             </div>
@@ -188,7 +190,6 @@ function SharesDialog({ filesystem, onRefresh }) {
                                     <FormGroup
                                         label="Share Name"
                                         fieldId="smb-name"
-                                        helperText="Optional custom share name. Leave empty to use dataset name."
                                     >
                                         <TextInput
                                             id="smb-name"
@@ -196,6 +197,9 @@ function SharesDialog({ filesystem, onRefresh }) {
                                             onChange={(_, value) => setSmbName(value)}
                                             placeholder={filesystem.name.split('/').pop()}
                                         />
+                                        <div style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                                            Optional custom share name. Leave empty to use dataset name.
+                                        </div>
                                     </FormGroup>
                                 )}
                             </div>
