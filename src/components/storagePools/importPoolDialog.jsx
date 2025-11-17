@@ -6,6 +6,7 @@ import {
     Modal, ModalBody, ModalFooter, ModalHeader
 } from '@patternfly/react-core/dist/esm/components/Modal';
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
+import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
 
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { useDialogs } from 'dialogs.jsx';
@@ -15,13 +16,14 @@ import { ZfsApi } from '../../zfsApi/index.js';
 function ImportPoolDialog({ pools, onRefresh }) {
     const Dialogs = useDialogs();
     const [poolName, setPoolName] = useState('');
+    const [force, setForce] = useState(false);
     const [error, setError] = useState({});
     const [importing, setImporting] = useState(false);
 
     const handleImport = async () => {
         setImporting(true);
         try {
-            await ZfsApi.importPool(poolName.trim() || null);
+            await ZfsApi.importPool(poolName.trim() || null, force);
             Dialogs.close();
             onRefresh();
         } catch (exc) {
@@ -62,6 +64,15 @@ function ImportPoolDialog({ pools, onRefresh }) {
                             placeholder="Optional pool name"
                         />
                     </FormGroup>
+                    <Checkbox
+                        id="force-import-pool"
+                        label="Force import (import even if pool appears in use)"
+                        isChecked={force}
+                        onChange={(_, checked) => setForce(checked)}
+                    />
+                    <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                        Use this if the pool was not properly exported and appears to be in use.
+                    </p>
                 </Form>
             </ModalBody>
             <ModalFooter>

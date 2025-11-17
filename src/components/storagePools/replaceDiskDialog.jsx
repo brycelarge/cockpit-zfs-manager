@@ -6,6 +6,7 @@ import {
 import { Form, FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 import { FormSelect, FormSelectOption } from "@patternfly/react-core/dist/esm/components/FormSelect";
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
+import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
 import { Alert } from "@patternfly/react-core/dist/esm/components/Alert";
 
@@ -20,6 +21,7 @@ function ReplaceDiskDialog({ pool, onRefresh }) {
     const [availableDisks, setAvailableDisks] = useState([]);
     const [selectedDevice, setSelectedDevice] = useState('');
     const [replacementDevice, setReplacementDevice] = useState('');
+    const [force, setForce] = useState(false);
     const [loading, setLoading] = useState(true);
     const [replacing, setReplacing] = useState(false);
     const [validationFailed, setValidationFailed] = useState({});
@@ -68,7 +70,7 @@ function ReplaceDiskDialog({ pool, onRefresh }) {
         setReplacing(true);
         setError({});
         try {
-            await ZfsApi.replaceDisk(pool.name, selectedDevice, replacementDevice);
+            await ZfsApi.replaceDisk(pool.name, selectedDevice, replacementDevice, force);
             Dialogs.close();
             onRefresh();
         } catch (exc) {
@@ -176,6 +178,17 @@ function ReplaceDiskDialog({ pool, onRefresh }) {
                                     The selected device will be replaced with the new device. This operation may take some time depending on pool size. The pool will remain accessible during replacement.
                                 </Alert>
                             )}
+
+                            <Checkbox
+                                id="force-replace-disk"
+                                label="Force replacement (replace even if device is in use)"
+                                isChecked={force}
+                                onChange={(_, checked) => setForce(checked)}
+                                style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}
+                            />
+                            <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                                Use this if the replacement device is in use or contains a filesystem.
+                            </p>
                         </>
                     )}
                 </Form>

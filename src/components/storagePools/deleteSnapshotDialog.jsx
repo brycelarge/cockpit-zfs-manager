@@ -16,6 +16,7 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
     const Dialogs = useDialogs();
     const [confirmName, setConfirmName] = useState('');
     const [confirmYes, setConfirmYes] = useState('');
+    const [force, setForce] = useState(false);
     const [error, setError] = useState({});
     const [deleting, setDeleting] = useState(false);
 
@@ -38,7 +39,7 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
 
         setDeleting(true);
         try {
-            await ZfsApi.destroySnapshot(snapshot.name);
+            await ZfsApi.destroySnapshot(snapshot.name, force);
             Dialogs.close();
             onRefresh();
         } catch (exc) {
@@ -99,7 +100,18 @@ function DeleteSnapshotDialog({ snapshot, pool, onRefresh }) {
                     }}
                     placeholder="yes"
                     validated={confirmYes && confirmYes.toLowerCase() !== 'yes' ? 'error' : 'default'}
+                    style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}
                 />
+
+                <Checkbox
+                    id="force-delete-snapshot"
+                    label="Force deletion (destroy even if snapshot has clones)"
+                    isChecked={force}
+                    onChange={(_, checked) => setForce(checked)}
+                />
+                <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                    Use this if the snapshot has clones and you want to destroy it anyway.
+                </p>
             </ModalBody>
             <ModalFooter>
                 <Button

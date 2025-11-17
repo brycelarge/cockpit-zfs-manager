@@ -23,6 +23,7 @@ function ExpandPoolDialog({ pool, onRefresh }) {
     const [devices, setDevices] = useState([]);
     const [availableDisks, setAvailableDisks] = useState([]);
     const [loadingDisks, setLoadingDisks] = useState(false);
+    const [force, setForce] = useState(false);
     const [validationFailed, setValidationFailed] = useState({});
     const [error, setError] = useState({});
     const [expanding, setExpanding] = useState(false);
@@ -81,7 +82,7 @@ function ExpandPoolDialog({ pool, onRefresh }) {
         setExpanding(true);
         setError({});
         try {
-            await ZfsApi.addVdevToPool(pool.name, vdevType, devices);
+            await ZfsApi.addVdevToPool(pool.name, vdevType, devices, force);
             Dialogs.close();
             onRefresh();
         } catch (exc) {
@@ -194,6 +195,16 @@ function ExpandPoolDialog({ pool, onRefresh }) {
                                 }
                             />
                         </FormGroup>
+
+                        <Checkbox
+                            id="force-expand-pool"
+                            label="Force expansion (overwrite existing filesystems on devices)"
+                            isChecked={force}
+                            onChange={(_, checked) => setForce(checked)}
+                        />
+                        <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                            Use this if devices contain existing filesystems that you want to overwrite.
+                        </p>
                     </Form>
                 )}
             </ModalBody>

@@ -129,9 +129,12 @@ export class ZfsApi {
         });
     }
 
-    static async importPool(poolName = null) {
+    static async importPool(poolName = null, force = false) {
         return new Promise((resolve, reject) => {
             const args = ['zpool', 'import'];
+            if (force) {
+                args.push('-f');
+            }
             if (poolName) {
                 args.push(poolName);
             }
@@ -152,9 +155,14 @@ export class ZfsApi {
         });
     }
 
-    static async exportPool(poolName) {
+    static async exportPool(poolName, force = false) {
         return new Promise((resolve, reject) => {
-            const proc = cockpit.spawn(['zpool', 'export', poolName]);
+            const args = ['zpool', 'export'];
+            if (force) {
+                args.push('-f');
+            }
+            args.push(poolName);
+            const proc = cockpit.spawn(args);
 
             proc.done((exitCode) => {
                 if (exitCode === 0) {
@@ -385,9 +393,14 @@ export class ZfsApi {
         });
     }
 
-    static async destroySnapshot(snapName) {
+    static async destroySnapshot(snapName, force = false) {
         return new Promise((resolve, reject) => {
-            const proc = cockpit.spawn(['zfs', 'destroy', snapName]);
+            const args = ['zfs', 'destroy'];
+            if (force) {
+                args.push('-f');
+            }
+            args.push(snapName);
+            const proc = cockpit.spawn(args);
 
             proc.done((exitCode) => {
                 if (exitCode === 0) {
@@ -421,11 +434,14 @@ export class ZfsApi {
         });
     }
 
-    static async rollbackSnapshot(snapName, recursive = false) {
+    static async rollbackSnapshot(snapName, recursive = false, force = false) {
         return new Promise((resolve, reject) => {
             const args = ['zfs', 'rollback'];
             if (recursive) {
                 args.push('-r');
+            }
+            if (force) {
+                args.push('-f');
             }
             args.push(snapName);
 
@@ -584,9 +600,16 @@ export class ZfsApi {
     }
 
     // Pool Expansion
-    static async addVdevToPool(poolName, vdevType, devices) {
+    static async addVdevToPool(poolName, vdevType, devices, force = false) {
         return new Promise((resolve, reject) => {
-            const args = ['zpool', 'add', poolName];
+            const args = ['zpool', 'add'];
+            
+            // Add force flag if requested
+            if (force) {
+                args.push('-f');
+            }
+            
+            args.push(poolName);
             
             // Add vdev type if not stripe
             if (vdevType !== 'stripe') {
@@ -680,9 +703,14 @@ export class ZfsApi {
         });
     }
 
-    static async replaceDisk(poolName, oldDevice, newDevice) {
+    static async replaceDisk(poolName, oldDevice, newDevice, force = false) {
         return new Promise((resolve, reject) => {
-            const proc = cockpit.spawn(['zpool', 'replace', poolName, oldDevice, newDevice], {
+            const args = ['zpool', 'replace'];
+            if (force) {
+                args.push('-f');
+            }
+            args.push(poolName, oldDevice, newDevice);
+            const proc = cockpit.spawn(args, {
                 err: 'message'
             });
 

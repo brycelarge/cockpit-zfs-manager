@@ -4,6 +4,7 @@ import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import {
     Modal, ModalBody, ModalFooter, ModalHeader
 } from '@patternfly/react-core/dist/esm/components/Modal';
+import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
 
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { useDialogs } from 'dialogs.jsx';
@@ -12,13 +13,14 @@ import { ZfsApi } from '../../zfsApi/index.js';
 
 function ExportPoolDialog({ pool, onRefresh }) {
     const Dialogs = useDialogs();
+    const [force, setForce] = useState(false);
     const [error, setError] = useState({});
     const [exporting, setExporting] = useState(false);
 
     const handleExport = async () => {
         setExporting(true);
         try {
-            await ZfsApi.exportPool(pool.name);
+            await ZfsApi.exportPool(pool.name, force);
             Dialogs.close();
             onRefresh();
         } catch (exc) {
@@ -45,6 +47,16 @@ function ExportPoolDialog({ pool, onRefresh }) {
                 </p>
                 <p>
                     The pool will be unmounted and made available for import on another system.
+                </p>
+                <Checkbox
+                    id="force-export-pool"
+                    label="Force export (unmount filesystems if mounted)"
+                    isChecked={force}
+                    onChange={(_, checked) => setForce(checked)}
+                    style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}
+                />
+                <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                    Use this if filesystems are mounted and you want to force unmount them.
                 </p>
             </ModalBody>
             <ModalFooter>

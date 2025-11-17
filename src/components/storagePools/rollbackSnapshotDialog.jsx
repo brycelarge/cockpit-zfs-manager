@@ -16,6 +16,7 @@ import { ZfsApi } from '../../zfsApi/index.js';
 function RollbackSnapshotDialog({ snapshot, pool, onRefresh }) {
     const Dialogs = useDialogs();
     const [recursive, setRecursive] = useState(false);
+    const [force, setForce] = useState(false);
     const [confirmText, setConfirmText] = useState('');
     const [error, setError] = useState({});
     const [rollingBack, setRollingBack] = useState(false);
@@ -31,7 +32,7 @@ function RollbackSnapshotDialog({ snapshot, pool, onRefresh }) {
 
         setRollingBack(true);
         try {
-            await ZfsApi.rollbackSnapshot(snapshot.name, recursive);
+            await ZfsApi.rollbackSnapshot(snapshot.name, recursive, force);
             Dialogs.close();
             onRefresh();
         } catch (exc) {
@@ -71,6 +72,16 @@ function RollbackSnapshotDialog({ snapshot, pool, onRefresh }) {
                     onChange={(_, checked) => setRecursive(checked)}
                     style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}
                 />
+                <Checkbox
+                    id="force-rollback"
+                    label="Force rollback (destroy newer snapshots)"
+                    isChecked={force}
+                    onChange={(_, checked) => setForce(checked)}
+                    style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}
+                />
+                <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                    Use this if newer snapshots exist and you want to destroy them to allow rollback.
+                </p>
 
                 <div>
                     <p>
