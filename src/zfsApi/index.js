@@ -28,8 +28,9 @@ export class ZfsApi {
             proc.done((exitCode, data) => {
                 // Exit code 0 means success
                 // Exit code 1 typically means no pools found, which is fine - return empty array
-                // null/undefined exit code means process completed (treat as success)
-                if (exitCode === 0 || exitCode === 1 || exitCode === null || exitCode === undefined) {
+                // null/undefined/empty exit code means process completed (treat as success)
+                // If we have pool data, always resolve successfully regardless of exit code
+                if (pools.length > 0 || exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve(pools);
                 } else {
                     // For other exit codes, check if there's an error message
