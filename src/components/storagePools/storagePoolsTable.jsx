@@ -139,11 +139,35 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                             return types[type] || type || 'Stripe';
                         };
 
+                        // Format health with color
+                        const formatHealth = (health) => {
+                            const healthUpper = (health || '').toUpperCase();
+                            let color = 'var(--pf-t--global--text--color--100)'; // Default
+                            
+                            if (healthUpper === 'ONLINE') {
+                                color = 'var(--pf-t--global--success--color--100)';
+                            } else if (healthUpper === 'DEGRADED' || healthUpper === 'FAULTED') {
+                                color = 'var(--pf-t--global--danger--color--100)';
+                            } else if (healthUpper === 'OFFLINE' || healthUpper === 'UNAVAIL') {
+                                color = 'var(--pf-t--global--warning--color--100)';
+                            }
+                            
+                            return (
+                                <span style={{ 
+                                    color: color,
+                                    fontWeight: 'bold',
+                                    fontSize: 'var(--pf-t--global--font--size--md)'
+                                }}>
+                                    {health}
+                                </span>
+                            );
+                        };
+
                         return {
                             columns: [
                                 { title: pool.name, header: true },
                                 { title: formatVdevType(pool.vdevType) },
-                                { title: pool.health },
+                                { title: formatHealth(pool.health) },
                                 { title: pool.size },
                                 { title: pool.allocated },
                                 { title: pool.free },
