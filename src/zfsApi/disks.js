@@ -267,7 +267,8 @@ export class DisksApi {
                     // Ensure we only use the first path if multiple were returned
                     const smartctlCmd = (smartctlPath || 'smartctl').split('\n')[0].trim();
                     console.log(`Using smartctl command: "${smartctlCmd}"`);
-                    const nvmeProc = cockpit.spawn([smartctlCmd, '-a', devicePath], { err: 'message' });
+                    // For NVMe, smartctl might output to stderr, so merge stderr into stdout
+                    const nvmeProc = cockpit.spawn([smartctlCmd, '-a', devicePath], { err: 'out' });
                     let nvmeOutput = '';
                     
                     nvmeProc.stream((data) => {
@@ -276,8 +277,12 @@ export class DisksApi {
                     
                     nvmeProc.done((nvmeExitCode) => {
                         console.log(`smartctl -a ${devicePath} exit code: ${nvmeExitCode}`);
-                        console.log(`smartctl output (first 500 chars): ${nvmeOutput.substring(0, 500)}`);
-                        if (nvmeExitCode === 0 || nvmeExitCode == null || nvmeExitCode === '' || nvmeExitCode === undefined || nvmeOutput.trim().length > 0) {
+                        console.log(`smartctl output length: ${nvmeOutput.length}`);
+                        console.log(`smartctl output (first 1000 chars): ${nvmeOutput.substring(0, 1000)}`);
+                        // For NVMe devices, smartctl may return non-zero exit codes but still produce useful output
+                        // Exit code 4 is common for NVMe devices but output is still valid
+                        // Check if we have output first, regardless of exit code
+                        if (nvmeOutput && nvmeOutput.trim().length > 0) {
                         // Parse NVMe model
                         const modelMatch = nvmeOutput.match(/Model Number:\s*(.+)/i) ||
                                          nvmeOutput.match(/Device Model:\s*(.+)/i);
@@ -335,13 +340,13 @@ export class DisksApi {
                             smartInfo.reallocatedSectors = parseInt(mediaErrorMatch[1]);
                         }
                         
-                        console.log(`Parsed SMART info for ${devicePath}:`, smartInfo);
-                        resolve(smartInfo);
-                    } else {
-                        console.log(`smartctl failed for ${devicePath} with exit code: ${nvmeExitCode}`);
-                        console.log(`Output: ${nvmeOutput.substring(0, 500)}`);
-                        resolve(null);
-                    }
+                            console.log(`Parsed SMART info for ${devicePath}:`, smartInfo);
+                            resolve(smartInfo);
+                        } else {
+                            console.log(`smartctl failed for ${devicePath} with exit code: ${nvmeExitCode}, no output`);
+                            console.log(`Output length: ${nvmeOutput.length}`);
+                            resolve(null);
+                        }
                 });
                 
                 nvmeProc.fail((error) => {
