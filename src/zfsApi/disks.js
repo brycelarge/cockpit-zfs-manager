@@ -6,18 +6,29 @@ export class DisksApi {
             try {
                 // Get devices used by the pool
                 const devices = await DisksApi.getPoolDevices(poolName);
+                console.log(`Got ${devices.length} devices, fetching SMART info...`);
                 
-                // Get SMART info for each device
-                const disksWithSmart = await Promise.all(
-                    devices.map(async (device) => {
-                        const smartInfo = await DisksApi.getSmartInfo(device.path).catch(() => null);
-                        return {
+                // Get SMART info for each device sequentially to avoid overwhelming the system
+                const disksWithSmart = [];
+                for (const device of devices) {
+                    try {
+                        console.log(`Fetching SMART for ${device.path}...`);
+                        const smartInfo = await DisksApi.getSmartInfo(device.path);
+                        console.log(`SMART info for ${device.path}:`, smartInfo);
+                        disksWithSmart.push({
                             ...device,
                             smart: smartInfo
-                        };
-                    })
-                );
+                        });
+                    } catch (error) {
+                        console.error(`Error getting SMART for ${device.path}:`, error);
+                        disksWithSmart.push({
+                            ...device,
+                            smart: null
+                        });
+                    }
+                }
                 
+                console.log(`Final disks with SMART:`, disksWithSmart);
                 resolve(disksWithSmart);
             } catch (exc) {
                 reject(exc);
@@ -170,15 +181,21 @@ export class DisksApi {
             console.log(`Getting SMART info for ${devicePath}`);
             // Check if smartctl is available
             const checkProc = cockpit.spawn(['which', 'smartctl'], { err: 'message' });
+            let checkOutput = '';
+            
+            checkProc.stream((data) => {
+                checkOutput += data;
+            });
             
             checkProc.done(async (exitCode) => {
+                console.log(`which smartctl exit code: ${exitCode}, output: ${checkOutput.trim()}`);
                 if (exitCode !== 0) {
                     console.log(`smartctl not found (exit code: ${exitCode})`);
                     resolve(null); // smartctl not available
                     return;
                 }
                 
-                console.log(`smartctl found, checking device: ${devicePath}`);
+                console.log(`smartctl found at: ${checkOutput.trim()}, checking device: ${devicePath}`);
                 const isNVMe = devicePath.includes('nvme');
                 const smartInfo = {
                     available: true,
