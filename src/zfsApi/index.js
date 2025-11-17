@@ -201,20 +201,22 @@ export class ZfsApi {
     static async listFileSystems(poolName) {
         return new Promise((resolve, reject) => {
             const filesystems = [];
-            const proc = cockpit.spawn(['zfs', 'list', '-H', '-o', 'name,used,available,referenced,mountpoint,encryption', '-t', 'filesystem', '-r', poolName]);
+            const proc = cockpit.spawn(['zfs', 'list', '-H', '-o', 'name,used,available,referenced,mountpoint,encryption,quota,reservation', '-t', 'filesystem', '-r', poolName]);
 
             proc.stream((data) => {
                 const lines = data.trim().split('\n');
                 lines.forEach(line => {
                     if (line.trim() && !line.startsWith(poolName + '\t')) {
-                        const [name, used, available, referenced, mountpoint, encryption] = line.split('\t');
+                        const [name, used, available, referenced, mountpoint, encryption, quota, reservation] = line.split('\t');
                         filesystems.push({
                             name,
                             used,
                             available,
                             referenced,
                             mountpoint,
-                            encrypted: encryption && encryption !== '-'
+                            encrypted: encryption && encryption !== '-',
+                            quota: quota && quota !== '-' ? quota : null,
+                            reservation: reservation && reservation !== '-' ? reservation : null
                         });
                     }
                 });
@@ -430,6 +432,240 @@ export class ZfsApi {
                     resolve();
                 } else {
                     reject(new Error(`zfs load-key exited with code ${exitCode}`));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    // Dataset Properties Management
+    static async getDatasetProperties(datasetName) {
+        return new Promise((resolve, reject) => {
+            const properties = {};
+            const proc = cockpit.spawn(['zfs', 'get', '-H', '-p', 'all', datasetName], {
+                err: 'message'
+            });
+
+            proc.stream((data) => {
+                const lines = data.trim().split('\n');
+                lines.forEach(line => {
+                    if (line.trim()) {
+                        const [name, property, value, source] = line.split('\t');
+                        if (name === datasetName) {
+                            properties[property] = {
+                                value: value,
+                                source: source
+                            };
+                        }
+                    }
+                });
+            });
+
+            proc.done((exitCode) => {
+                if (exitCode === 0) {
+                    resolve(properties);
+                } else {
+                    reject(new Error(`zfs get exited with code ${exitCode}`));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async setDatasetProperty(datasetName, property, value) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zfs', 'set', `${property}=${value}`, datasetName], {
+                err: 'message'
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    resolve();
+                } else {
+                    const errorMsg = data || `zfs set exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    // Pool Properties Management
+    static async getPoolProperties(poolName) {
+        return new Promise((resolve, reject) => {
+            const properties = {};
+            const proc = cockpit.spawn(['zpool', 'get', '-H', 'all', poolName], {
+                err: 'message'
+            });
+
+            proc.stream((data) => {
+                const lines = data.trim().split('\n');
+                lines.forEach(line => {
+                    if (line.trim()) {
+                        const [name, property, value, source] = line.split('\t');
+                        if (name === poolName) {
+                            properties[property] = {
+                                value: value,
+                                source: source
+                            };
+                        }
+                    }
+                });
+            });
+
+            proc.done((exitCode) => {
+                if (exitCode === 0) {
+                    resolve(properties);
+                } else {
+                    reject(new Error(`zpool get exited with code ${exitCode}`));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async setPoolProperty(poolName, property, value) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zpool', 'set', `${property}=${value}`, poolName], {
+                err: 'message'
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    resolve();
+                } else {
+                    const errorMsg = data || `zpool set exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    // Pool Expansion
+    static async addVdevToPool(poolName, vdevType, devices) {
+        return new Promise((resolve, reject) => {
+            const args = ['zpool', 'add', poolName];
+            
+            // Add vdev type if not stripe
+            if (vdevType !== 'stripe') {
+                args.push(vdevType);
+            }
+            
+            // Add devices
+            args.push(...devices);
+
+            const proc = cockpit.spawn(args, {
+                err: 'message'
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    resolve();
+                } else {
+                    const errorMsg = data || `zpool add exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    // Disk Replacement
+    static async getPoolDevices(poolName) {
+        return new Promise((resolve, reject) => {
+            const devices = [];
+            const proc = cockpit.spawn(['zpool', 'status', poolName], {
+                err: 'message'
+            });
+            let output = '';
+
+            proc.stream((data) => {
+                output += data;
+            });
+
+            proc.done((exitCode) => {
+                if (exitCode === 0) {
+                    const lines = output.split('\n');
+                    let inDeviceTable = false;
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        
+                        // Device table starts with "NAME" header
+                        if (trimmed.startsWith('NAME') || trimmed.match(/^\s+NAME\s+STATE\s+READ\s+WRITE\s+CHECKSUM/)) {
+                            inDeviceTable = true;
+                            continue;
+                        }
+                        
+                        // Parse device rows
+                        if (inDeviceTable && trimmed && !trimmed.startsWith('pool:') && !trimmed.startsWith('state:')) {
+                            // Skip separator lines
+                            if (trimmed.match(/^-+$/)) continue;
+                            
+                            const parts = trimmed.split(/\s+/);
+                            if (parts.length >= 2) {
+                                const deviceName = parts[0];
+                                const state = parts[1];
+                                
+                                // Skip the pool name itself (first row)
+                                if (deviceName !== poolName && deviceName.startsWith('/dev/')) {
+                                    devices.push({
+                                        name: deviceName,
+                                        state: state,
+                                        read: parts[2] || '0',
+                                        write: parts[3] || '0',
+                                        checksum: parts[4] || '0',
+                                        message: parts.slice(5, -1).join(' ') || '',
+                                        product: parts[parts.length - 1] || ''
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    resolve(devices);
+                } else {
+                    reject(new Error(`zpool status exited with code ${exitCode}`));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async replaceDisk(poolName, oldDevice, newDevice) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zpool', 'replace', poolName, oldDevice, newDevice], {
+                err: 'message'
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0) {
+                    resolve();
+                } else {
+                    const errorMsg = data || `zpool replace exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
                 }
             });
 

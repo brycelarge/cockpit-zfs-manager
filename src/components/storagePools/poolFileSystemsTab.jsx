@@ -53,12 +53,14 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
                 aria-label="File systems"
                 variant="compact"
                 columns={[
-                    { title: "Name", header: true, props: { width: 30 } },
-                    { title: "Used", props: { width: 15 } },
-                    { title: "Available", props: { width: 15 } },
-                    { title: "Referenced", props: { width: 15 } },
-                    { title: "Mountpoint", props: { width: 15 } },
-                    { title: "", props: { width: 10, "aria-label": "Actions" } },
+                    { title: "Name", header: true, props: { width: 25 } },
+                    { title: "Used", props: { width: 12 } },
+                    { title: "Available", props: { width: 12 } },
+                    { title: "Referenced", props: { width: 12 } },
+                    { title: "Quota", props: { width: 10 } },
+                    { title: "Reservation", props: { width: 10 } },
+                    { title: "Mountpoint", props: { width: 12 } },
+                    { title: "", props: { width: 7, "aria-label": "Actions" } },
                 ]}
                 emptyCaption="No file systems found"
                 rows={filesystems.map(fs => ({
@@ -67,6 +69,8 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
                         { title: fs.used },
                         { title: fs.available },
                         { title: fs.referenced },
+                        { title: fs.quota || '-' },
+                        { title: fs.reservation || '-' },
                         { title: fs.mountpoint || '-' },
                         { title: <FileSystemActions filesystem={fs} pool={pool} onRefresh={handleRefresh} /> },
                     ],

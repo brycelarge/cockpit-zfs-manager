@@ -8,11 +8,20 @@ import { useDialogs } from 'dialogs.jsx';
 import CloneFileSystemDialog from './cloneFileSystemDialog.jsx';
 import DeleteFileSystemDialog from './deleteFileSystemDialog.jsx';
 import CreateSnapshotDialog from './createSnapshotDialog.jsx';
+import DatasetPropertiesDialog from './datasetPropertiesDialog.jsx';
 
 function FileSystemActions({ filesystem, pool, onRefresh }) {
     const Dialogs = useDialogs();
 
     const dropdownItems = [
+        <DropdownItem
+            key={`${filesystem.name}-properties`}
+            id={`${filesystem.name}-properties`}
+            onClick={() => Dialogs.show(<DatasetPropertiesDialog filesystem={filesystem} onRefresh={onRefresh} />)}
+        >
+            Properties
+        </DropdownItem>,
+        <Divider key={`${filesystem.name}-separator-1`} />,
         <DropdownItem
             key={`${filesystem.name}-snapshot`}
             id={`${filesystem.name}-snapshot`}
@@ -27,7 +36,7 @@ function FileSystemActions({ filesystem, pool, onRefresh }) {
         >
             Clone
         </DropdownItem>,
-        <Divider key={`${filesystem.name}-separator`} />,
+        <Divider key={`${filesystem.name}-separator-2`} />,
         <DropdownItem
             key={`${filesystem.name}-delete`}
             id={`${filesystem.name}-delete`}
