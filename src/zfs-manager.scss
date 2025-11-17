@@ -1,8 +1,7 @@
-// Import PatternFly base first (required for tokens/variables)
-// This already includes Font Awesome icons via patternfly-fa-icons
+// Import PatternFly base (Font Awesome will be skipped due to variable above)
 @use "@patternfly/patternfly/base" as *;
 
-// Import PatternFly components (using short paths like cockpit-machines)
+// Import PatternFly components (only what we actually use)
 @use "@patternfly/patternfly/components/Page/page.scss";
 @use "@patternfly/patternfly/components/Card/card.scss";
 @use "@patternfly/patternfly/components/Table/table.scss";
@@ -20,8 +19,6 @@
 @use "@patternfly/patternfly/components/Toolbar/toolbar.scss";
 @use "@patternfly/patternfly/components/CodeBlock/code-block.scss";
 @use "@patternfly/patternfly/components/Divider/divider.scss";
-@use "@patternfly/patternfly/components/Title/title.scss";
-@use "@patternfly/patternfly/layouts/Bullseye/bullseye.scss";
 
 // Import utilities (using .css like cockpit-machines)
 @use "@patternfly/patternfly/utilities/Spacing/spacing.css";
@@ -145,24 +142,30 @@
     overflow-y: auto;
 }
 
-// Ensure table is full width inside card
-.pf-v6-c-card .pf-v6-c-table {
+/* Style the list cards as ct-cards (like cockpit-machines) */
+/* Note: ct-card is provided by Cockpit's static files, so we can't @extend it here */
+/* But we ensure the card takes full width like ct-card does */
+.pf-v6-c-page__main-section > .pf-v6-c-card {
+    width: 100%;
+    max-width: none;
+}
+
+/* Ensure page structure takes full width */
+.pf-v6-c-page.no-masthead-sidebar {
     width: 100%;
 }
 
-// Ensure card body and table take full width
-.pf-v6-c-card__body {
+.pf-v6-c-page__main-container {
+    width: 100%;
+    max-width: none;
+}
+
+.pf-v6-c-page__main {
     width: 100%;
 }
 
 .pf-v6-c-page__main-section {
     width: 100%;
-}
-
-// Ensure main-container doesn't constrain width
-.pf-v6-c-page__main-container {
-    width: 100%;
-    max-width: none;
 }
 
 
