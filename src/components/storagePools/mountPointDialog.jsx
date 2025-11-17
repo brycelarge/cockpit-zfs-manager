@@ -12,7 +12,6 @@ import { Alert } from "@patternfly/react-core/dist/esm/components/Alert";
 import { Tooltip } from "@patternfly/react-core/dist/esm/components/Tooltip";
 import { HelpIcon } from '@patternfly/react-icons';
 
-import { FormHelper } from 'cockpit-components-form-helper.jsx';
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { useDialogs } from 'dialogs.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';

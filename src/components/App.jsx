@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 import { Page, PageSection } from "@patternfly/react-core/dist/esm/components/Page";
 
-import { loadPools } from '../actions/pools.js';
+import { ZfsApi } from '../zfsApi/index.js';
 import StoragePoolsTable from './storagePools/storagePoolsTable.jsx';
 
 function App() {
@@ -16,7 +16,7 @@ function App() {
     const refreshPools = async () => {
         setLoading(true);
         try {
-            const poolsData = await loadPools();
+            const poolsData = await ZfsApi.listPools();
             setPools(poolsData);
         } catch (error) {
             console.error('Failed to load pools:', error);

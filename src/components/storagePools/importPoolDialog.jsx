@@ -7,7 +7,6 @@ import {
 } from '@patternfly/react-core/dist/esm/components/Modal';
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 
-import { FormHelper } from 'cockpit-components-form-helper.jsx';
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { useDialogs } from 'dialogs.jsx';
 
