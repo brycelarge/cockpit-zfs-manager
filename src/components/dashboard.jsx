@@ -89,11 +89,15 @@ function Dashboard({ pools, loading }) {
     };
 
     const parseSize = (sizeStr) => {
-        if (!sizeStr) return 0;
-        const match = sizeStr.match(/^([\d.]+)([KMGT]?)$/);
-        if (!match) return 0;
+        if (!sizeStr || sizeStr === '-') return 0;
+        const match = sizeStr.match(/^([\d.]+)\s*([KMGT]i?B?)$/i);
+        if (!match) {
+            const numMatch = sizeStr.match(/^([\d.]+)$/);
+            if (numMatch) return parseFloat(numMatch[1]);
+            return 0;
+        }
         const value = parseFloat(match[1]);
-        const unit = match[2];
+        const unit = match[2].toUpperCase().replace(/I?B?$/, '');
         const multipliers = { '': 1, 'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3, 'T': 1024 ** 4 };
         return value * (multipliers[unit] || 1);
     };
@@ -180,18 +184,30 @@ function Dashboard({ pools, loading }) {
                         <DescriptionListGroup>
                             <DescriptionListTerm>Usage</DescriptionListTerm>
                             <DescriptionListDescription>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--sm)' }}>
-                                    <div style={{ flex: 1, height: '20px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden' }}>
-                                        <div
-                                            style={{
-                                                height: '100%',
-                                                width: `${stats.usagePercent}%`,
-                                                backgroundColor: parseFloat(stats.usagePercent) > 80 ? '#c9190b' : parseFloat(stats.usagePercent) > 60 ? '#f0ab00' : '#3e8635',
-                                                transition: 'width 0.3s ease'
-                                            }}
-                                        />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--xs)' }}>
+                                    <div style={{ width: '120px', height: '16px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
+                                        {parseFloat(stats.usagePercent) > 0 ? (
+                                            <div
+                                                style={{
+                                                    height: '100%',
+                                                    width: `${Math.min(Math.max(parseFloat(stats.usagePercent) || 0, 0), 100)}%`,
+                                                    backgroundColor: parseFloat(stats.usagePercent) > 90 ? '#c9190b' : parseFloat(stats.usagePercent) > 75 ? '#f0ab00' : '#3e8635',
+                                                    transition: 'width 0.3s ease',
+                                                    minWidth: '2px'
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                style={{
+                                                    height: '100%',
+                                                    width: '2px',
+                                                    backgroundColor: '#3e8635',
+                                                    opacity: 0.3
+                                                }}
+                                            />
+                                        )}
                                     </div>
-                                    <span>{stats.usagePercent}%</span>
+                                    <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>{stats.usagePercent}%</span>
                                 </div>
                             </DescriptionListDescription>
                         </DescriptionListGroup>
@@ -225,30 +241,49 @@ function Dashboard({ pools, loading }) {
                                 <DescriptionListDescription>{formatBytes(stats.arcStats.size)}</DescriptionListDescription>
                             </DescriptionListGroup>
                             {stats.arcStats.max > 0 && (
-                                <>
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Maximum Size</DescriptionListTerm>
-                                        <DescriptionListDescription>{formatBytes(stats.arcStats.max)}</DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                    <DescriptionListGroup>
-                                        <DescriptionListTerm>Usage</DescriptionListTerm>
-                                        <DescriptionListDescription>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--sm)' }}>
-                                                <div style={{ flex: 1, height: '20px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden' }}>
-                                                    <div
-                                                        style={{
-                                                            height: '100%',
-                                                            width: `${Math.min((stats.arcStats.size / stats.arcStats.max) * 100, 100).toFixed(1)}%`,
-                                                            backgroundColor: (stats.arcStats.size / stats.arcStats.max) > 0.9 ? '#c9190b' : (stats.arcStats.size / stats.arcStats.max) > 0.7 ? '#f0ab00' : '#3e8635',
-                                                            transition: 'width 0.3s ease'
-                                                        }}
-                                                    />
+                                <DescriptionListGroup>
+                                    <DescriptionListTerm>Maximum Size</DescriptionListTerm>
+                                    <DescriptionListDescription>{formatBytes(stats.arcStats.max)}</DescriptionListDescription>
+                                </DescriptionListGroup>
+                            )}
+                            {stats.arcStats.max > 0 && (
+                                <DescriptionListGroup>
+                                    <DescriptionListTerm>Usage</DescriptionListTerm>
+                                    <DescriptionListDescription>
+                                        {(() => {
+                                            const arcUsagePercent = stats.arcStats.max > 0 
+                                                ? ((stats.arcStats.size / stats.arcStats.max) * 100).toFixed(1)
+                                                : '0.0';
+                                            return (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--xs)' }}>
+                                                    <div style={{ width: '120px', height: '16px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
+                                                        {parseFloat(arcUsagePercent) > 0 ? (
+                                                            <div
+                                                                style={{
+                                                                    height: '100%',
+                                                                    width: `${Math.min(Math.max(parseFloat(arcUsagePercent) || 0, 0), 100)}%`,
+                                                                    backgroundColor: parseFloat(arcUsagePercent) > 90 ? '#c9190b' : parseFloat(arcUsagePercent) > 75 ? '#f0ab00' : '#3e8635',
+                                                                    transition: 'width 0.3s ease',
+                                                                    minWidth: '2px'
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <div
+                                                                style={{
+                                                                    height: '100%',
+                                                                    width: '2px',
+                                                                    backgroundColor: '#3e8635',
+                                                                    opacity: 0.3
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>{arcUsagePercent}%</span>
                                                 </div>
-                                                <span>{((stats.arcStats.size / stats.arcStats.max) * 100).toFixed(1)}%</span>
-                                            </div>
-                                        </DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                </>
+                                            );
+                                        })()}
+                                    </DescriptionListDescription>
+                                </DescriptionListGroup>
                             )}
                             {stats.arcStats.metadata > 0 && (
                                 <DescriptionListGroup>
