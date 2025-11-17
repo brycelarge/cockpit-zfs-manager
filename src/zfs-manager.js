@@ -131,13 +131,17 @@
                 this.resolve = resolve;
                 this.reject = reject;
 
-                this.backdrop = document.createElement('div');
-                this.backdrop.className = 'pf-v6-c-backdrop';
-                this.backdrop.style.display = 'block';
-
                 const modalId = `modal-${Date.now()}`;
+                const backdropId = `pf-modal-part-3-${modalId}`;
                 const titleId = `pf-modal-part-1-${modalId}`;
                 const bodyId = `pf-modal-part-2-${modalId}`;
+
+                this.backdrop = document.createElement('div');
+                this.backdrop.id = backdropId;
+                this.backdrop.className = 'pf-v6-c-backdrop';
+
+                const bullseye = document.createElement('div');
+                bullseye.className = 'pf-v6-l-bullseye';
 
                 this.modal = document.createElement('div');
                 this.modal.id = modalId;
@@ -181,8 +185,10 @@
                     ` : ''}
                 `;
 
+                bullseye.appendChild(this.modal);
+                this.backdrop.appendChild(bullseye);
                 document.body.appendChild(this.backdrop);
-                document.body.appendChild(this.modal);
+                document.body.classList.add('pf-v6-c-backdrop__open');
 
                 const closeBtn = this.modal.querySelector('.pf-v6-c-button[aria-label="Close"]');
                 const cancelBtn = this.modal.querySelector('.pf-v6-c-button.pf-m-link');
@@ -191,6 +197,7 @@
                 const close = () => {
                     this.modal.remove();
                     this.backdrop.remove();
+                    document.body.classList.remove('pf-v6-c-backdrop__open');
                     if (this.reject) this.reject(new Error('Modal cancelled'));
                 };
 
@@ -202,6 +209,7 @@
                         if (result !== false) {
                             this.modal.remove();
                             this.backdrop.remove();
+                            document.body.classList.remove('pf-v6-c-backdrop__open');
                             if (this.resolve) this.resolve(result);
                         }
                     });
@@ -217,6 +225,7 @@
             if (this.modal) {
                 this.modal.remove();
                 this.backdrop.remove();
+                document.body.classList.remove('pf-v6-c-backdrop__open');
             }
         }
     }
