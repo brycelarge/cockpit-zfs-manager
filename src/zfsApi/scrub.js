@@ -108,7 +108,7 @@ export class ScrubApi {
             const results = [];
             
             // Check for systemd timers
-            const proc = cockpit.spawn(['systemctl', 'list-timers', '--all', '--no-pager', '--output=json']);
+            const proc = cockpit.spawn(['systemctl', 'list-timers', '--all', '--no-pager', '--output=json'], { err: 'message' });
             let output = '';
 
             proc.stream((data) => {
@@ -120,33 +120,35 @@ export class ScrubApi {
                 // null/undefined/empty exit code means process completed (treat as success)
                 if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     try {
-                        const timers = output.trim().split('\n')
-                            .filter(line => line.trim())
-                            .map(line => {
-                                try {
-                                    return JSON.parse(line);
-                                } catch {
-                                    return null;
-                                }
-                            })
-                            .filter(t => t !== null)
-                            .filter(t => {
-                                // Check various possible field names for unit name
-                                const unitName = t.unit || t.UNIT || t.name || '';
-                                return unitName.includes('zfs-scrub');
-                            })
-                            .map(t => {
-                                // Normalize unit name field
-                                const unitName = t.unit || t.UNIT || t.name || '';
-                                return {
-                                    ...t,
-                                    unit: unitName,
-                                    type: 'systemd'
-                                };
-                            });
-                        
-                        console.log('Found systemd timers:', timers);
-                        results.push(...timers);
+                        if (output.trim()) {
+                            const timers = output.trim().split('\n')
+                                .filter(line => line.trim())
+                                .map(line => {
+                                    try {
+                                        return JSON.parse(line);
+                                    } catch {
+                                        return null;
+                                    }
+                                })
+                                .filter(t => t !== null)
+                                .filter(t => {
+                                    // Check various possible field names for unit name
+                                    const unitName = t.unit || t.UNIT || t.name || '';
+                                    return unitName.includes('zfs-scrub');
+                                })
+                                .map(t => {
+                                    // Normalize unit name field
+                                    const unitName = t.unit || t.UNIT || t.name || '';
+                                    return {
+                                        ...t,
+                                        unit: unitName,
+                                        type: 'systemd'
+                                    };
+                                });
+                            
+                            console.log('Found systemd timers:', timers);
+                            results.push(...timers);
+                        }
                     } catch (e) {
                         console.error('Error parsing systemd timers:', e);
                         // Continue to check cron
@@ -154,18 +156,28 @@ export class ScrubApi {
                 }
                 
                 // Always check cron as well (in case both exist)
-                const cronScrubs = await this.getCronScrubs();
-                console.log('Found cron scrubs:', cronScrubs);
-                results.push(...cronScrubs);
+                try {
+                    const cronScrubs = await this.getCronScrubs();
+                    console.log('Found cron scrubs:', cronScrubs);
+                    results.push(...cronScrubs);
+                } catch (e) {
+                    console.error('Error getting cron scrubs:', e);
+                }
                 
                 console.log('All scheduled scrubs:', results);
                 resolve(results);
             });
 
-            proc.fail(async () => {
-                // If systemd check fails, still check cron
-                const cronScrubs = await this.getCronScrubs();
-                resolve(cronScrubs);
+            proc.fail(async (error) => {
+                console.warn('systemctl list-timers failed, checking cron only:', error);
+                // If systemd check fails (e.g., DBus errors), still check cron
+                try {
+                    const cronScrubs = await this.getCronScrubs();
+                    resolve(cronScrubs);
+                } catch (e) {
+                    console.error('Error getting cron scrubs:', e);
+                    resolve([]);
+                }
             });
         });
     }
