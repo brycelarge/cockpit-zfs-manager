@@ -1,6 +1,6 @@
 # Cockpit ZFS Manager
 
-A modern Cockpit plugin for managing ZFS pools, datasets, and snapshots. Built with vanilla JavaScript (no jQuery) and PatternFly 6 styling. Compatible with Cockpit 201+.
+A modern Cockpit plugin for managing ZFS pools, datasets, and snapshots. Built with React and PatternFly 6, following the same architecture as `cockpit-machines`. Compatible with Cockpit 201+.
 
 ## Requirements
 
