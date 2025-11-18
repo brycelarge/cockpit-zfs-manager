@@ -17,13 +17,6 @@
 - [ ] Update mount points after rename
 - [ ] Note: Pool rename already exists
 
-### Snapshot Holds/Release
-- [ ] Add holds to snapshots (`zfs hold`)
-- [ ] List holds on snapshots (`zfs holds`)
-- [ ] Release holds (`zfs release`)
-- [ ] Prevent deletion of held snapshots
-- [ ] Display hold tags in snapshot list
-- [ ] Use cases: Backup retention, preventing accidental deletion
 
 ## Medium Priority Features
 
@@ -103,6 +96,16 @@
 - [ ] Alert on high error rates
 - [ ] Show error details per device
 - [ ] Historical error tracking
+
+## Busy Testing Features
+
+### Snapshot Holds/Release ✅
+- [x] Add holds to snapshots (`zfs hold`)
+- [x] List holds on snapshots (`zfs holds`)
+- [x] Release holds (`zfs release`)
+- [x] Prevent deletion of held snapshots
+- [x] Display hold tags in snapshot list
+- [x] Use cases: Backup retention, preventing accidental deletion
 
 ## Completed Features ✓
 
