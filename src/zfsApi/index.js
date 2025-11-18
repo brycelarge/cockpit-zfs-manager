@@ -426,18 +426,29 @@ export class ZfsApi {
                             name,
                             used,
                             referenced,
-                            creation
+                            creation,
+                            holds: [] // Will be populated by getSnapshotHolds
                         });
                     }
                 });
             });
 
-            proc.done((exitCode) => {
+            proc.done(async (exitCode) => {
                 // Exit code 0 means success
                 // Exit code 1 typically means no snapshots found, which is fine - return empty array
                 // null/undefined/empty exit code means process completed (treat as success)
                 // If we have snapshot data, always resolve successfully regardless of exit code
                 if (snapshots.length > 0 || exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    // Fetch holds for each snapshot
+                    for (const snapshot of snapshots) {
+                        try {
+                            const holds = await ZfsApi.getSnapshotHolds(snapshot.name);
+                            snapshot.holds = holds;
+                        } catch {
+                            // If holds can't be fetched, leave empty array
+                            snapshot.holds = [];
+                        }
+                    }
                     resolve(snapshots);
                 } else {
                     reject(new Error(`zfs list snapshots exited with code ${exitCode}`));
@@ -477,20 +488,125 @@ export class ZfsApi {
                 args.push('-f');
             }
             args.push(snapName);
-            const proc = cockpit.spawn(args);
+            const proc = cockpit.spawn(args, {
+                err: 'message'
+            });
 
-            proc.done((exitCode) => {
+            let errorOutput = '';
+            proc.stream((data) => {
+                errorOutput += data;
+            });
+
+            proc.done((exitCode, data) => {
                 // Exit code 0 means success
                 // null/undefined/empty exit code means process completed (treat as success)
                 if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
-                    reject(new Error(`zfs destroy snapshot exited with code ${exitCode}`));
+                    const errorMsg = errorOutput.trim() || data || `zfs destroy snapshot exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
                 }
             });
 
             proc.fail((error) => {
                 reject(error);
+            });
+        });
+    }
+
+    static async holdSnapshot(snapName, tag) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zfs', 'hold', tag, snapName], {
+                err: 'message'
+            });
+
+            let errorOutput = '';
+            proc.stream((data) => {
+                errorOutput += data;
+            });
+
+            proc.done((exitCode, data) => {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    resolve();
+                } else {
+                    const errorMsg = errorOutput.trim() || data || `zfs hold exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async releaseSnapshot(snapName, tag) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zfs', 'release', tag, snapName], {
+                err: 'message'
+            });
+
+            let errorOutput = '';
+            proc.stream((data) => {
+                errorOutput += data;
+            });
+
+            proc.done((exitCode, data) => {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    resolve();
+                } else {
+                    const errorMsg = errorOutput.trim() || data || `zfs release exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async getSnapshotHolds(snapName) {
+        return new Promise((resolve, reject) => {
+            const holds = [];
+            const proc = cockpit.spawn(['zfs', 'holds', '-H', snapName], {
+                err: 'message'
+            });
+
+            proc.stream((data) => {
+                const lines = data.trim().split('\n');
+                lines.forEach(line => {
+                    if (line.trim()) {
+                        const parts = line.split('\t');
+                        if (parts.length >= 2) {
+                            holds.push({
+                                tag: parts[0],
+                                timestamp: parts[1] || null
+                            });
+                        }
+                    }
+                });
+            });
+
+            proc.done((exitCode) => {
+                // Exit code 0 means success
+                // Exit code 1 typically means no holds found, which is fine - return empty array
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    resolve(holds);
+                } else {
+                    // If snapshot doesn't exist or other error, return empty array
+                    resolve([]);
+                }
+            });
+
+            proc.fail((error) => {
+                // On failure, return empty array rather than rejecting
+                resolve([]);
             });
         });
     }

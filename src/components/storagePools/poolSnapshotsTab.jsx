@@ -110,10 +110,11 @@ function PoolSnapshotsTab({ pool, onRefresh }) {
                 aria-label="Snapshots"
                 variant="compact"
                 columns={[
-                    { title: "Name", header: true, props: { width: 30 } },
-                    { title: "Used", props: { width: 20 } },
-                    { title: "Referenced", props: { width: 20 } },
-                    { title: "Creation", props: { width: 20 } },
+                    { title: "Name", header: true, props: { width: 25 } },
+                    { title: "Used", props: { width: 15 } },
+                    { title: "Referenced", props: { width: 15 } },
+                    { title: "Creation", props: { width: 15 } },
+                    { title: "Holds", props: { width: 20 } },
                     { title: "", props: { width: 10, "aria-label": "Actions" } },
                 ]}
                 emptyCaption="No snapshots found"
@@ -123,6 +124,30 @@ function PoolSnapshotsTab({ pool, onRefresh }) {
                         { title: snap.used },
                         { title: snap.referenced },
                         { title: snap.creation },
+                        { 
+                            title: snap.holds && snap.holds.length > 0 ? (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--pf-t--global--spacer--xs)' }}>
+                                    {snap.holds.map(hold => (
+                                        <span
+                                            key={hold.tag}
+                                            style={{
+                                                backgroundColor: 'var(--pf-t--global--palette--blue-50)',
+                                                color: 'var(--pf-t--global--palette--blue-700)',
+                                                padding: '2px 8px',
+                                                borderRadius: '4px',
+                                                fontSize: 'var(--pf-t--global--font--size--sm)',
+                                                fontWeight: 'bold'
+                                            }}
+                                            title={`Hold tag: ${hold.tag}${hold.timestamp ? ` (${hold.timestamp})` : ''}`}
+                                        >
+                                            {hold.tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <span style={{ color: 'var(--pf-t--global--text--color--muted)' }}>-</span>
+                            )
+                        },
                         { title: <SnapshotActions snapshot={snap} pool={pool} onRefresh={handleLocalRefresh} /> },
                     ],
                     key: snap.name,
