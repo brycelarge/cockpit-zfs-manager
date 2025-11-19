@@ -20,12 +20,6 @@
 - [ ] Use in replication (incremental send from bookmark)
 - [ ] Use cases: Lightweight snapshot references, incremental replication
 
-### Pool Upgrade
-- [ ] Display current pool version (`zpool get version`)
-- [ ] Show available upgrade versions
-- [ ] Upgrade pool version (`zpool upgrade`)
-- [ ] Upgrade all pools at once
-- [ ] Warning about irreversible upgrades
 
 ### Replication Progress Tracking
 - [ ] Show progress for `zfs send` operations
@@ -106,6 +100,13 @@
 - [x] Handle rename conflicts
 - [x] Update mount points after rename (automatic)
 - [x] Note: Pool rename already exists
+
+### Pool Upgrade ✅
+- [x] Display current pool version (`zpool get version`)
+- [x] Show available upgrade versions
+- [x] Upgrade pool version (`zpool upgrade`)
+- [x] Upgrade all pools at once
+- [x] Warning about irreversible upgrades
 
 ## Completed Features ✓
 

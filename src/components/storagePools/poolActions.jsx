@@ -11,6 +11,7 @@ import DeletePoolDialog from './deletePoolDialog.jsx';
 import PoolPropertiesDialog from './poolPropertiesDialog.jsx';
 import ExpandPoolDialog from './expandPoolDialog.jsx';
 import ReplaceDiskDialog from './replaceDiskDialog.jsx';
+import UpgradePoolDialog from './upgradePoolDialog.jsx';
 
 function PoolActions({ pool, onRefresh }) {
     const Dialogs = useDialogs();
@@ -51,6 +52,13 @@ function PoolActions({ pool, onRefresh }) {
             onClick={() => Dialogs.show(<ExportPoolDialog pool={pool} onRefresh={onRefresh} />)}
         >
             Export Pool
+        </DropdownItem>,
+        <DropdownItem
+            key={`${pool.name}-upgrade`}
+            id={`${pool.name}-upgrade`}
+            onClick={() => Dialogs.show(<UpgradePoolDialog pool={pool} onRefresh={onRefresh} />)}
+        >
+            Upgrade Pool
         </DropdownItem>,
         <Divider key={`${pool.name}-separator-2`} />,
         <DropdownItem

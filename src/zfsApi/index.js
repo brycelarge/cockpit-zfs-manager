@@ -153,6 +153,136 @@ export class ZfsApi {
         });
     }
 
+    static async getPoolVersion(poolName) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zpool', 'get', '-H', '-o', 'value', 'version', poolName], {
+                err: 'message'
+            });
+
+            let output = '';
+            proc.stream((data) => {
+                output += data;
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    const version = output.trim();
+                    resolve(version ? parseInt(version, 10) : null);
+                } else {
+                    const errorMsg = output.trim() || data || `zpool get version exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async getAvailableUpgradeVersions() {
+        return new Promise((resolve, reject) => {
+            const versions = [];
+            const proc = cockpit.spawn(['zpool', 'upgrade', '-v'], {
+                err: 'message'
+            });
+
+            let output = '';
+            proc.stream((data) => {
+                output += data;
+            });
+
+            proc.done((exitCode, data) => {
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    // Parse output to extract version numbers and descriptions
+                    const lines = output.trim().split('\n');
+                    let currentVersion = null;
+                    
+                    lines.forEach(line => {
+                        const trimmed = line.trim();
+                        if (!trimmed || trimmed.startsWith('This system')) {
+                            return;
+                        }
+                        
+                        // Match version lines like "28	zpool version 28"
+                        const versionMatch = trimmed.match(/^(\d+)\s+(.+)$/);
+                        if (versionMatch) {
+                            versions.push({
+                                version: parseInt(versionMatch[1], 10),
+                                description: versionMatch[2].trim()
+                            });
+                        }
+                    });
+                    
+                    resolve(versions);
+                } else {
+                    const errorMsg = output.trim() || data || `zpool upgrade -v exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async upgradePool(poolName) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zpool', 'upgrade', poolName], {
+                err: 'message'
+            });
+
+            let errorOutput = '';
+            proc.stream((data) => {
+                errorOutput += data;
+            });
+
+            proc.done((exitCode, data) => {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    resolve();
+                } else {
+                    const errorMsg = errorOutput.trim() || data || `zpool upgrade exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async upgradeAllPools() {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zpool', 'upgrade', '-a'], {
+                err: 'message'
+            });
+
+            let errorOutput = '';
+            proc.stream((data) => {
+                errorOutput += data;
+            });
+
+            proc.done((exitCode, data) => {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    resolve();
+                } else {
+                    const errorMsg = errorOutput.trim() || data || `zpool upgrade -a exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
     static async destroyPool(poolName, force = false) {
         return new Promise((resolve, reject) => {
             const args = ['zpool', 'destroy'];

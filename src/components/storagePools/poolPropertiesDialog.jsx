@@ -31,8 +31,16 @@ function PoolPropertiesDialog({ pool, onRefresh }) {
     const loadProperties = async () => {
         setLoading(true);
         try {
-            const props = await ZfsApi.getPoolProperties(pool.name);
+            const [props, version] = await Promise.all([
+                ZfsApi.getPoolProperties(pool.name),
+                ZfsApi.getPoolVersion(pool.name).catch(() => null)
+            ]);
             setProperties(props);
+            
+            // Store version in properties for display
+            if (version !== null) {
+                props.version = { value: version.toString() };
+            }
             
             // Initialize form values with current property values
             setFormValues({
@@ -148,6 +156,21 @@ function PoolPropertiesDialog({ pool, onRefresh }) {
                             {...(error.dialogErrorDetail && { dialogErrorDetail: error.dialogErrorDetail })}
                         />
                     )}
+
+                    <FormGroup
+                        label="Pool Version"
+                        fieldId="version"
+                    >
+                        <TextInput
+                            id="version"
+                            value={properties.version?.value || 'Unknown'}
+                            isReadOnly
+                            style={{ backgroundColor: 'var(--pf-t--global--palette--black-150)' }}
+                        />
+                        <div style={{ marginTop: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--muted)' }}>
+                            Use "Upgrade Pool" from the actions menu to upgrade the pool version.
+                        </div>
+                    </FormGroup>
 
                     <FormGroup
                         label="Comment"

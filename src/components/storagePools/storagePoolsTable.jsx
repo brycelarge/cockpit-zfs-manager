@@ -19,6 +19,7 @@ import ScrubTab from './scrubTab.jsx';
 import DisksTab from './disksTab.jsx';
 import PoolZvolsTab from './poolZvolsTab.jsx';
 import UnlockFileSystemsDialog from './unlockFileSystemsDialog.jsx';
+import UpgradeAllPoolsDialog from './upgradeAllPoolsDialog.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
 
 function StoragePoolsTableContent({ pools, loading, onRefresh }) {
@@ -39,6 +40,10 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
         Dialogs.show(<UnlockFileSystemsDialog pools={pools} onRefresh={onRefresh} />);
     };
 
+    const handleUpgradeAllPools = () => {
+        Dialogs.show(<UpgradeAllPoolsDialog pools={pools} onRefresh={onRefresh} />);
+    };
+
     const actions = (
         <>
             <Button variant="secondary" onClick={() => setCreateDialogOpen(true)}>
@@ -49,6 +54,9 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
             </Button>
             <Button variant="secondary" onClick={handleUnlockFileSystems}>
                 Unlock File Systems
+            </Button>
+            <Button variant="secondary" onClick={handleUpgradeAllPools}>
+                Upgrade All Pools
             </Button>
             <Button variant="secondary" onClick={onRefresh}>
                 Refresh
