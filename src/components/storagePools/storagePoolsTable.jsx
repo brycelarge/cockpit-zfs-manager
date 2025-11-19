@@ -17,6 +17,7 @@ import PerformanceStatsTab from './performanceStatsTab.jsx';
 import SanoidTab from './sanoidTab.jsx';
 import ScrubTab from './scrubTab.jsx';
 import DisksTab from './disksTab.jsx';
+import PoolZvolsTab from './poolZvolsTab.jsx';
 import UnlockFileSystemsDialog from './unlockFileSystemsDialog.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
 
@@ -94,6 +95,12 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                                 renderer: PoolFileSystemsTab,
                                 data: { pool, onRefresh },
                                 id: `${pool.name}-filesystems`
+                            },
+                            {
+                                name: "ZVOLs",
+                                renderer: PoolZvolsTab,
+                                data: { pool, onRefresh },
+                                id: `${pool.name}-zvols`
                             },
                             {
                                 name: "Snapshots",

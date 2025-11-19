@@ -2,14 +2,6 @@
 
 ## High Priority Features
 
-### ZVOL (Block Volumes) Management
-- [ ] Create ZVOL volumes (`zfs create -V`)
-- [ ] List ZVOL volumes separately from file systems
-- [ ] Display volume size and usage
-- [ ] Delete ZVOL volumes
-- [ ] Configure volume properties (volsize, volblocksize, etc.)
-- [ ] Use cases: VMs, databases, block storage
-
 ### Dataset Rename
 - [ ] Rename file systems (`zfs rename`)
 - [ ] Rename ZVOL volumes
@@ -106,6 +98,14 @@
 - [x] Prevent deletion of held snapshots
 - [x] Display hold tags in snapshot list
 - [x] Use cases: Backup retention, preventing accidental deletion
+
+### ZVOL (Block Volumes) Management ✅
+- [x] Create ZVOL volumes (`zfs create -V`)
+- [x] List ZVOL volumes separately from file systems
+- [x] Display volume size and usage
+- [x] Delete ZVOL volumes
+- [x] Configure volume properties (volsize, volblocksize, etc.)
+- [x] Use cases: VMs, databases, block storage
 
 ## Completed Features ✓
 
