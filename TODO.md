@@ -2,13 +2,6 @@
 
 ## High Priority Features
 
-### Dataset Rename
-- [ ] Rename file systems (`zfs rename`)
-- [ ] Rename ZVOL volumes
-- [ ] Handle rename conflicts
-- [ ] Update mount points after rename
-- [ ] Note: Pool rename already exists
-
 
 ## Medium Priority Features
 
@@ -106,6 +99,13 @@
 - [x] Delete ZVOL volumes
 - [x] Configure volume properties (volsize, volblocksize, etc.)
 - [x] Use cases: VMs, databases, block storage
+
+### Dataset Rename ✅
+- [x] Rename file systems (`zfs rename`)
+- [x] Rename ZVOL volumes
+- [x] Handle rename conflicts
+- [x] Update mount points after rename (automatic)
+- [x] Note: Pool rename already exists
 
 ## Completed Features ✓
 

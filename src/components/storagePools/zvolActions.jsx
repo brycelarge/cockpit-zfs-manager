@@ -7,6 +7,7 @@ import { KebabDropdown } from 'cockpit-components-dropdown.jsx';
 import { useDialogs } from 'dialogs.jsx';
 import DeleteZvolDialog from './deleteZvolDialog.jsx';
 import ZvolPropertiesDialog from './zvolPropertiesDialog.jsx';
+import RenameDatasetDialog from './renameDatasetDialog.jsx';
 
 function ZvolActions({ zvol, pool, onRefresh }) {
     const Dialogs = useDialogs();
@@ -18,6 +19,13 @@ function ZvolActions({ zvol, pool, onRefresh }) {
             onClick={() => Dialogs.show(<ZvolPropertiesDialog zvol={zvol} onRefresh={onRefresh} />)}
         >
             Properties
+        </DropdownItem>,
+        <DropdownItem
+            key={`${zvol.name}-rename`}
+            id={`${zvol.name}-rename`}
+            onClick={() => Dialogs.show(<RenameDatasetDialog dataset={zvol} pool={pool} onRefresh={onRefresh} />)}
+        >
+            Rename
         </DropdownItem>,
         <Divider key={`${zvol.name}-separator-1`} />,
         <DropdownItem

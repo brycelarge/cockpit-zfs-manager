@@ -99,15 +99,51 @@ export class ZfsApi {
 
     static async renamePool(oldName, newName) {
         return new Promise((resolve, reject) => {
-            const proc = cockpit.spawn(['zpool', 'rename', oldName, newName]);
+            const proc = cockpit.spawn(['zpool', 'rename', oldName, newName], {
+                err: 'message'
+            });
 
-            proc.done((exitCode) => {
+            let errorOutput = '';
+            proc.stream((data) => {
+                errorOutput += data;
+            });
+
+            proc.done((exitCode, data) => {
                 // Exit code 0 means success
                 // null/undefined/empty exit code means process completed (treat as success)
                 if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     resolve();
                 } else {
-                    reject(new Error(`zpool rename exited with code ${exitCode}`));
+                    const errorMsg = errorOutput.trim() || data || `zpool rename exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
+                }
+            });
+
+            proc.fail((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    static async renameDataset(oldName, newName) {
+        return new Promise((resolve, reject) => {
+            const proc = cockpit.spawn(['zfs', 'rename', oldName, newName], {
+                err: 'message'
+            });
+
+            let errorOutput = '';
+            proc.stream((data) => {
+                errorOutput += data;
+            });
+
+            proc.done((exitCode, data) => {
+                // Exit code 0 means success
+                // null/undefined/empty exit code means process completed (treat as success)
+                if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                    resolve();
+                } else {
+                    const errorMsg = errorOutput.trim() || data || `zfs rename exited with code ${exitCode}`;
+                    reject(new Error(errorMsg));
                 }
             });
 

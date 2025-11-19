@@ -11,6 +11,7 @@ import CreateSnapshotDialog from './createSnapshotDialog.jsx';
 import DatasetPropertiesDialog from './datasetPropertiesDialog.jsx';
 import MountPointDialog from './mountPointDialog.jsx';
 import SharesDialog from './sharesDialog.jsx';
+import RenameDatasetDialog from './renameDatasetDialog.jsx';
 
 function FileSystemActions({ filesystem, pool, onRefresh }) {
     const Dialogs = useDialogs();
@@ -51,6 +52,13 @@ function FileSystemActions({ filesystem, pool, onRefresh }) {
             onClick={() => Dialogs.show(<CloneFileSystemDialog filesystem={filesystem} pool={pool} onRefresh={onRefresh} />)}
         >
             Clone
+        </DropdownItem>,
+        <DropdownItem
+            key={`${filesystem.name}-rename`}
+            id={`${filesystem.name}-rename`}
+            onClick={() => Dialogs.show(<RenameDatasetDialog dataset={filesystem} pool={pool} onRefresh={onRefresh} />)}
+        >
+            Rename
         </DropdownItem>,
         <Divider key={`${filesystem.name}-separator-2`} />,
         <DropdownItem
