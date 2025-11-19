@@ -21,12 +21,6 @@
 - [ ] Use cases: Lightweight snapshot references, incremental replication
 
 
-### Replication Progress Tracking
-- [ ] Show progress for `zfs send` operations
-- [ ] Show progress for `zfs receive` operations
-- [ ] Display transfer speed and ETA
-- [ ] Cancel in-progress replication
-- [ ] Resume interrupted replication
 
 ## Low Priority Features
 
@@ -107,6 +101,14 @@
 - [x] Upgrade pool version (`zpool upgrade`)
 - [x] Upgrade all pools at once
 - [x] Warning about irreversible upgrades
+
+### Replication Progress Tracking ✅
+- [x] Show progress for `zfs send` operations
+- [x] Show progress for `zfs receive` operations
+- [x] Display transfer speed and ETA
+- [x] Cancel in-progress replication
+- [x] Pool-to-pool replication support
+- [x] Select destination pool from known pools list
 
 ## Completed Features ✓
 

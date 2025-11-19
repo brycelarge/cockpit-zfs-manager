@@ -1243,6 +1243,124 @@ export class ZfsApi {
         });
     }
 
+    static async sendSnapshotWithProgress(snapshotName, destination, options = {}, progressCallback) {
+        return new Promise((resolve, reject) => {
+            const args = ['zfs', 'send'];
+            
+            if (options.recursive) {
+                args.push('-R');
+            }
+            if (options.incremental && options.fromSnapshot) {
+                args.push('-i', options.fromSnapshot);
+            }
+            if (options.properties) {
+                args.push('-p');
+            }
+            if (options.replication) {
+                args.push('-R');
+            }
+            
+            args.push(snapshotName);
+            
+            // Check if pv (pipe viewer) is available for progress
+            const checkPv = cockpit.spawn(['which', 'pv'], { err: 'message' });
+            let pvAvailable = false;
+            let pvPath = 'pv';
+            
+            checkPv.done((exitCode) => {
+                pvAvailable = (exitCode === 0);
+                
+                // Build command with or without pv
+                let cmd;
+                if (options.toPool) {
+                    // Pool-to-pool replication: pipe zfs send directly to zfs receive
+                    if (pvAvailable && progressCallback) {
+                        cmd = `${args.join(' ')} | ${pvPath} -n -f -i 1 | zfs receive ${options.targetPool}`;
+                    } else {
+                        cmd = `${args.join(' ')} | zfs receive ${options.targetPool}`;
+                    }
+                } else if (pvAvailable && progressCallback) {
+                    // Use pv for progress tracking
+                    if (destination.startsWith('ssh://') || destination.includes('@')) {
+                        const [userHost, remotePath] = destination.replace('ssh://', '').split(':');
+                        const [user, host] = userHost.split('@');
+                        const sshArgs = `ssh ${user ? `${user}@${host}` : host} "zfs receive ${remotePath}"`;
+                        cmd = `${args.join(' ')} | ${pvPath} -n -f -i 1 | ${sshArgs}`;
+                    } else {
+                        cmd = `${args.join(' ')} | ${pvPath} -n -f -i 1 > ${destination}`;
+                    }
+                } else {
+                    // No progress tracking
+                    if (destination.startsWith('ssh://') || destination.includes('@')) {
+                        const [userHost, remotePath] = destination.replace('ssh://', '').split(':');
+                        const [user, host] = userHost.split('@');
+                        const sshArgs = ['ssh', user ? `${user}@${host}` : host, `zfs receive ${remotePath}`];
+                        cmd = `${args.join(' ')} | ${sshArgs.join(' ')}`;
+                    } else {
+                        cmd = `${args.join(' ')} > ${destination}`;
+                    }
+                }
+                
+                const proc = cockpit.spawn(['sh', '-c', cmd], {
+                    err: 'message'
+                });
+                
+                let lastProgress = { bytes: 0, speed: 0, time: 0 };
+                const startTime = Date.now();
+                
+                if (pvAvailable && progressCallback) {
+                    // Parse pv output for progress
+                    proc.stream((data) => {
+                        const lines = data.toString().split('\n');
+                        lines.forEach(line => {
+                            // pv outputs progress in format: bytes
+                            const match = line.match(/^(\d+)$/);
+                            if (match) {
+                                const bytes = parseInt(match[1], 10);
+                                const elapsed = (Date.now() - startTime) / 1000; // seconds
+                                const speed = elapsed > 0 ? bytes / elapsed : 0;
+                                const remaining = speed > 0 ? (options.estimatedSize ? (options.estimatedSize - bytes) / speed : null) : null;
+                                
+                                lastProgress = {
+                                    bytes,
+                                    speed,
+                                    elapsed,
+                                    remaining,
+                                    percent: options.estimatedSize ? (bytes / options.estimatedSize * 100) : null
+                                };
+                                
+                                if (progressCallback) {
+                                    progressCallback(lastProgress);
+                                }
+                            }
+                        });
+                    });
+                }
+                
+                proc.done((exitCode, data) => {
+                    if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                        if (progressCallback) {
+                            progressCallback({ ...lastProgress, complete: true });
+                        }
+                        resolve();
+                    } else {
+                        const errorMsg = data || `zfs send exited with code ${exitCode}`;
+                        reject(new Error(errorMsg));
+                    }
+                });
+                
+                proc.fail((error) => {
+                    reject(error);
+                });
+            });
+            
+            checkPv.fail(() => {
+                // pv not available, proceed without progress
+                pvAvailable = false;
+            });
+        });
+    }
+
     static async receiveSnapshot(poolName, source, options = {}) {
         return new Promise((resolve, reject) => {
             const args = ['zfs', 'receive'];
@@ -1288,6 +1406,122 @@ export class ZfsApi {
 
             proc.fail((error) => {
                 reject(error);
+            });
+        });
+    }
+
+    static async receiveSnapshotWithProgress(poolName, source, options = {}, progressCallback) {
+        return new Promise((resolve, reject) => {
+            const args = ['zfs', 'receive'];
+            
+            if (options.force) {
+                args.push('-F');
+            }
+            if (options.dryRun) {
+                args.push('-n');
+            }
+            if (options.verbose) {
+                args.push('-v');
+            }
+            
+            args.push(poolName);
+            
+            // Check if pv (pipe viewer) is available for progress
+            const checkPv = cockpit.spawn(['which', 'pv'], { err: 'message' });
+            let pvAvailable = false;
+            let pvPath = 'pv';
+            
+            checkPv.done((exitCode) => {
+                pvAvailable = (exitCode === 0);
+                
+                // Build command with or without pv
+                let cmd;
+                if (options.fromPool) {
+                    // Pool-to-pool replication: pipe zfs send directly to zfs receive
+                    const sourceSnapshot = options.sourceSnapshot || source;
+                    if (pvAvailable && progressCallback) {
+                        cmd = `zfs send ${sourceSnapshot} | ${pvPath} -n -f -i 1 | ${args.join(' ')}`;
+                    } else {
+                        cmd = `zfs send ${sourceSnapshot} | ${args.join(' ')}`;
+                    }
+                } else if (pvAvailable && progressCallback) {
+                    // Use pv for progress tracking
+                    if (source.startsWith('ssh://') || source.includes('@')) {
+                        const [userHost, remoteSnapshot] = source.replace('ssh://', '').split(':');
+                        const [user, host] = userHost.split('@');
+                        const sshCmd = `ssh ${user ? `${user}@${host}` : host} "zfs send ${remoteSnapshot}"`;
+                        cmd = `${sshCmd} | ${pvPath} -n -f -i 1 | ${args.join(' ')}`;
+                    } else {
+                        cmd = `cat ${source} | ${pvPath} -n -f -i 1 | ${args.join(' ')}`;
+                    }
+                } else {
+                    // No progress tracking
+                    if (source.startsWith('ssh://') || source.includes('@')) {
+                        const [userHost, remoteSnapshot] = source.replace('ssh://', '').split(':');
+                        const [user, host] = userHost.split('@');
+                        const sshCmd = `ssh ${user ? `${user}@${host}` : host} "zfs send ${remoteSnapshot}"`;
+                        cmd = `${sshCmd} | ${args.join(' ')}`;
+                    } else {
+                        cmd = `cat ${source} | ${args.join(' ')}`;
+                    }
+                }
+                
+                const proc = cockpit.spawn(['sh', '-c', cmd], {
+                    err: 'message'
+                });
+                
+                let lastProgress = { bytes: 0, speed: 0, time: 0 };
+                const startTime = Date.now();
+                
+                if (pvAvailable && progressCallback) {
+                    // Parse pv output for progress
+                    proc.stream((data) => {
+                        const lines = data.toString().split('\n');
+                        lines.forEach(line => {
+                            // pv outputs progress in format: bytes
+                            const match = line.match(/^(\d+)$/);
+                            if (match) {
+                                const bytes = parseInt(match[1], 10);
+                                const elapsed = (Date.now() - startTime) / 1000; // seconds
+                                const speed = elapsed > 0 ? bytes / elapsed : 0;
+                                const remaining = speed > 0 ? (options.estimatedSize ? (options.estimatedSize - bytes) / speed : null) : null;
+                                
+                                lastProgress = {
+                                    bytes,
+                                    speed,
+                                    elapsed,
+                                    remaining,
+                                    percent: options.estimatedSize ? (bytes / options.estimatedSize * 100) : null
+                                };
+                                
+                                if (progressCallback) {
+                                    progressCallback(lastProgress);
+                                }
+                            }
+                        });
+                    });
+                }
+                
+                proc.done((exitCode, data) => {
+                    if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
+                        if (progressCallback) {
+                            progressCallback({ ...lastProgress, complete: true });
+                        }
+                        resolve();
+                    } else {
+                        const errorMsg = data || `zfs receive exited with code ${exitCode}`;
+                        reject(new Error(errorMsg));
+                    }
+                });
+                
+                proc.fail((error) => {
+                    reject(error);
+                });
+            });
+            
+            checkPv.fail(() => {
+                // pv not available, proceed without progress
+                pvAvailable = false;
             });
         });
     }

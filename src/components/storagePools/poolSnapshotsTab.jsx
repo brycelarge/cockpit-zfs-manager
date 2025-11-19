@@ -12,7 +12,7 @@ import { ZfsApi } from '../../zfsApi/index.js';
 import CreateSnapshotDialog from './createSnapshotDialog.jsx';
 import SnapshotActions from './snapshotActions.jsx';
 
-function PoolSnapshotsTab({ pool, onRefresh }) {
+function PoolSnapshotsTab({ pool, pools = [], onRefresh }) {
     const Dialogs = useDialogs();
     const [snapshots, setSnapshots] = useState([]);
     const [filesystems, setFilesystems] = useState([]);
@@ -148,7 +148,7 @@ function PoolSnapshotsTab({ pool, onRefresh }) {
                                 <span style={{ color: 'var(--pf-t--global--text--color--muted)' }}>-</span>
                             )
                         },
-                        { title: <SnapshotActions snapshot={snap} pool={pool} onRefresh={handleLocalRefresh} /> },
+                        { title: <SnapshotActions snapshot={snap} pool={pool} pools={pools} onRefresh={handleLocalRefresh} /> },
                     ],
                     key: snap.name,
                 }))}

@@ -113,7 +113,7 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                             {
                                 name: "Snapshots",
                                 renderer: PoolSnapshotsTab,
-                                data: { pool, onRefresh },
+                                data: { pool, pools, onRefresh },
                                 id: `${pool.name}-snapshots`
                             },
                             {

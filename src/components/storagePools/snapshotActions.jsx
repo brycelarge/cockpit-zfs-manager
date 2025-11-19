@@ -12,7 +12,7 @@ import ReplicationDialog from './replicationDialog.jsx';
 import HoldSnapshotDialog from './holdSnapshotDialog.jsx';
 import ReleaseSnapshotDialog from './releaseSnapshotDialog.jsx';
 
-function SnapshotActions({ snapshot, pool, onRefresh }) {
+function SnapshotActions({ snapshot, pool, pools = [], onRefresh }) {
     const Dialogs = useDialogs();
 
     const hasHolds = snapshot.holds && snapshot.holds.length > 0;
@@ -21,7 +21,7 @@ function SnapshotActions({ snapshot, pool, onRefresh }) {
         <DropdownItem
             key={`${snapshot.name}-replicate`}
             id={`${snapshot.name}-replicate`}
-            onClick={() => Dialogs.show(<ReplicationDialog snapshot={snapshot} pool={pool} onRefresh={onRefresh} />)}
+            onClick={() => Dialogs.show(<ReplicationDialog snapshot={snapshot} pool={pool} pools={pools} onRefresh={onRefresh} />)}
         >
             Replicate
         </DropdownItem>,
