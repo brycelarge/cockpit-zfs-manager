@@ -1,10 +1,12 @@
+import { formatBytes } from '../utils/size.js';
+
 const cockpit = window.cockpit;
 
 export class ZfsApi {
     static async listPools() {
         return new Promise(async (resolve, reject) => {
             const pools = [];
-            const proc = cockpit.spawn(['zpool', 'list', '-H', '-o', 'name,size,allocated,free,fragmentation,health'], {
+            const proc = cockpit.spawn(['zpool', 'list', '-Hp', '-o', 'name,size,allocated,free,frag,cap,health'], {
                 err: 'message'
             });
 
@@ -12,14 +14,27 @@ export class ZfsApi {
                 const lines = data.trim().split('\n');
                 lines.forEach(line => {
                     if (line.trim()) {
-                        const [name, size, allocated, free, fragmentation, health] = line.split('\t');
+                        const [name, sizeRaw, allocatedRaw, freeRaw, fragmentationRaw, capacityRaw, health] = line.split('\t');
+
+                        const sizeBytes = Number(sizeRaw) || 0;
+                        const allocatedBytes = Number(allocatedRaw) || 0;
+                        const freeBytes = Number(freeRaw) || 0;
+                        const fragmentationPercent = fragmentationRaw !== undefined && fragmentationRaw !== '' ? Number(fragmentationRaw) : null;
+                        const capacityPercent = capacityRaw !== undefined && capacityRaw !== '' ? Number(capacityRaw) : null;
+
                         pools.push({
                             name,
-                            size,
-                            allocated,
-                            free,
-                            fragmentation,
-                            health
+                            size: formatBytes(sizeBytes),
+                            sizeBytes,
+                            allocated: formatBytes(allocatedBytes),
+                            allocatedBytes,
+                            free: formatBytes(freeBytes),
+                            freeBytes,
+                            fragmentation: fragmentationPercent !== null && !Number.isNaN(fragmentationPercent) ? `${fragmentationPercent}%` : '-',
+                            fragmentationPercent,
+                            capacity: capacityPercent !== null && !Number.isNaN(capacityPercent) ? `${capacityPercent}%` : '-',
+                            capacityPercent,
+                            health: health || 'UNKNOWN'
                         });
                     }
                 });

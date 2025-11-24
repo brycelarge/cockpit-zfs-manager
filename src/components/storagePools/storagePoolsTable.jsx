@@ -150,9 +150,15 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                         ];
 
                         // Calculate usage percentage for pool
-                        const poolSizeBytes = parseSizeToBytes(pool.size);
-                        const poolAllocatedBytes = parseSizeToBytes(pool.allocated);
-                        const poolUsagePercent = poolSizeBytes > 0 ? ((poolAllocatedBytes / poolSizeBytes) * 100).toFixed(1) : '0.0';
+                        const poolSizeBytes = pool.sizeBytes ?? parseSizeToBytes(pool.size);
+                        const poolAllocatedBytes = pool.allocatedBytes ?? parseSizeToBytes(pool.allocated);
+                        const inferredUsagePercent = poolSizeBytes > 0 ? (poolAllocatedBytes / poolSizeBytes) * 100 : 0;
+                        const poolUsagePercent = typeof pool.capacityPercent === 'number' && !Number.isNaN(pool.capacityPercent)
+                            ? pool.capacityPercent
+                            : inferredUsagePercent;
+                        const usageDisplay = typeof pool.capacity === 'string' && pool.capacity !== '-'
+                            ? pool.capacity
+                            : `${poolUsagePercent.toFixed(1)}%`;
 
                         // Format vdev type for display
                         const formatVdevType = (type) => {
@@ -211,12 +217,12 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                                     title: (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pf-t--global--spacer--xs)' }}>
                                             <div style={{ width: '80px', height: '16px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
-                                                {parseFloat(poolUsagePercent) > 0 ? (
+                                                {poolUsagePercent > 0 ? (
                                                     <div
                                                         style={{
                                                             height: '100%',
-                                                            width: `${Math.min(Math.max(parseFloat(poolUsagePercent) || 0, 0), 100)}%`,
-                                                            backgroundColor: parseFloat(poolUsagePercent) > 90 ? '#c9190b' : parseFloat(poolUsagePercent) > 75 ? '#f0ab00' : '#3e8635',
+                                                            width: `${Math.min(Math.max(poolUsagePercent || 0, 0), 100)}%`,
+                                                            backgroundColor: poolUsagePercent > 90 ? '#c9190b' : poolUsagePercent > 75 ? '#f0ab00' : '#3e8635',
                                                             transition: 'width 0.3s ease',
                                                             minWidth: '2px'
                                                         }}
@@ -232,7 +238,7 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                                                     />
                                                 )}
                                             </div>
-                                            <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>{poolUsagePercent}%</span>
+                                            <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>{usageDisplay}</span>
                                         </div>
                                     )
                                 },

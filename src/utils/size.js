@@ -47,9 +47,9 @@ export function formatBytes(bytes, decimals = 1) {
         return `${bytes} B`;
     }
 
-    const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB'];
+    const units = ['B', 'K', 'M', 'G', 'T', 'P', 'E'];
     const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
     const value = bytes / (1024 ** exponent);
-    return `${value.toFixed(decimals)} ${units[exponent]}`;
+    return `${value.toFixed(decimals)}${units[exponent]}`;
 }
 
