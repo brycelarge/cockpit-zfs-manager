@@ -6,6 +6,7 @@ import { Alert } from "@patternfly/react-core/dist/esm/components/Alert";
 import { DescriptionList, DescriptionListGroup, DescriptionListTerm, DescriptionListDescription } from "@patternfly/react-core/dist/esm/components/DescriptionList";
 
 import { ZfsApi } from '../zfsApi/index.js';
+import { parseSizeToBytes, formatBytes } from '../utils/size.js';
 
 function Dashboard({ pools, loading }) {
     const [stats, setStats] = useState(null);
@@ -33,9 +34,9 @@ function Dashboard({ pools, loading }) {
 
             for (const pool of pools) {
                 // Parse size (e.g., "7.27T" -> bytes)
-                const sizeBytes = parseSize(pool.size);
-                const usedBytes = parseSize(pool.allocated);
-                const freeBytes = parseSize(pool.free);
+                const sizeBytes = parseSizeToBytes(pool.size);
+                const usedBytes = parseSizeToBytes(pool.allocated);
+                const freeBytes = parseSizeToBytes(pool.free);
 
                 totalSize += sizeBytes;
                 totalUsed += usedBytes;
@@ -86,31 +87,6 @@ function Dashboard({ pools, loading }) {
         } finally {
             setLoadingStats(false);
         }
-    };
-
-    const parseSize = (sizeStr) => {
-        if (!sizeStr || sizeStr === '-') return 0;
-        const match = sizeStr.match(/^([\d.]+)\s*([KMGT]i?B?)$/i);
-        if (!match) {
-            const numMatch = sizeStr.match(/^([\d.]+)$/);
-            if (numMatch) return parseFloat(numMatch[1]);
-            return 0;
-        }
-        const value = parseFloat(match[1]);
-        const unit = match[2].toUpperCase().replace(/I?B?$/, '');
-        const multipliers = { '': 1, 'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3, 'T': 1024 ** 4 };
-        return value * (multipliers[unit] || 1);
-    };
-
-    const formatBytes = (bytes) => {
-        const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
-        let size = bytes;
-        let unitIndex = 0;
-        while (size >= 1024 && unitIndex < units.length - 1) {
-            size /= 1024;
-            unitIndex++;
-        }
-        return `${size.toFixed(2)} ${units[unitIndex]}`;
     };
 
     if (loading || loadingStats) {

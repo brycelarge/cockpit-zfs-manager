@@ -21,6 +21,7 @@ import PoolZvolsTab from './poolZvolsTab.jsx';
 import UnlockFileSystemsDialog from './unlockFileSystemsDialog.jsx';
 import UpgradeAllPoolsDialog from './upgradeAllPoolsDialog.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
+import { parseSizeToBytes } from '../../utils/size.js';
 
 function StoragePoolsTableContent({ pools, loading, onRefresh }) {
     const Dialogs = useDialogs();
@@ -149,24 +150,8 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                         ];
 
                         // Calculate usage percentage for pool
-                        const parseSize = (sizeStr) => {
-                            if (!sizeStr || sizeStr === '-') return 0;
-                            // Handle formats like "4.8T", "218.6G", "4.8 TiB", "218.6 GiB", etc.
-                            const match = sizeStr.match(/^([\d.]+)\s*([KMGT]i?B?)$/i);
-                            if (!match) {
-                                // Try without unit (just number)
-                                const numMatch = sizeStr.match(/^([\d.]+)$/);
-                                if (numMatch) return parseFloat(numMatch[1]);
-                                return 0;
-                            }
-                            const value = parseFloat(match[1]);
-                            const unit = match[2].toUpperCase().replace(/I?B?$/, ''); // Remove 'iB' or 'B', keep just K/M/G/T
-                            const multipliers = { '': 1, 'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3, 'T': 1024 ** 4 };
-                            return value * (multipliers[unit] || 1);
-                        };
-
-                        const poolSizeBytes = parseSize(pool.size);
-                        const poolAllocatedBytes = parseSize(pool.allocated);
+                        const poolSizeBytes = parseSizeToBytes(pool.size);
+                        const poolAllocatedBytes = parseSizeToBytes(pool.allocated);
                         const poolUsagePercent = poolSizeBytes > 0 ? ((poolAllocatedBytes / poolSizeBytes) * 100).toFixed(1) : '0.0';
 
                         // Format vdev type for display

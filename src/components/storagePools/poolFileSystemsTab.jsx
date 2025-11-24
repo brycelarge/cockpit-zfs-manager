@@ -7,6 +7,7 @@ import { DescriptionList, DescriptionListGroup, DescriptionListTerm, Description
 
 import { useDialogs } from 'dialogs.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
+import { parseSizeToBytes } from '../../utils/size.js';
 import CreateFileSystemDialog from './createFileSystemDialog.jsx';
 import FileSystemActions from './fileSystemActions.jsx';
 
@@ -37,35 +38,19 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
         onRefresh();
     };
 
-    const parseSize = (sizeStr) => {
-        if (!sizeStr || sizeStr === '-') return 0;
-        // Handle formats like "4.8T", "218.6G", "4.8 TiB", "218.6 GiB", etc.
-        const match = sizeStr.match(/^([\d.]+)\s*([KMGT]i?B?)$/i);
-        if (!match) {
-            // Try without unit (just number)
-            const numMatch = sizeStr.match(/^([\d.]+)$/);
-            if (numMatch) return parseFloat(numMatch[1]);
-            return 0;
-        }
-        const value = parseFloat(match[1]);
-        const unit = match[2].toUpperCase().replace(/I?B?$/, ''); // Remove 'iB' or 'B', keep just K/M/G/T
-        const multipliers = { '': 1, 'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3, 'T': 1024 ** 4 };
-        return value * (multipliers[unit] || 1);
-    };
-
     const calculateUsagePercent = (used, quota, available) => {
         // If quota is set, calculate usage based on quota
         if (quota && quota !== '-' && quota !== 'none') {
-            const usedBytes = parseSize(used);
-            const quotaBytes = parseSize(quota);
+            const usedBytes = parseSizeToBytes(used);
+            const quotaBytes = parseSizeToBytes(quota);
             if (quotaBytes === 0) return null;
             const percent = ((usedBytes / quotaBytes) * 100).toFixed(1);
             return percent;
         }
         // Otherwise, calculate usage based on used / (used + available)
         if (available && available !== '-') {
-            const usedBytes = parseSize(used);
-            const availableBytes = parseSize(available);
+            const usedBytes = parseSizeToBytes(used);
+            const availableBytes = parseSizeToBytes(available);
             const totalBytes = usedBytes + availableBytes;
             if (totalBytes === 0) return null;
             const percent = ((usedBytes / totalBytes) * 100).toFixed(1);
@@ -73,7 +58,7 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
         }
         // If we have used but no available/quota, try to calculate from used alone
         if (used && used !== '-') {
-            const usedBytes = parseSize(used);
+            const usedBytes = parseSizeToBytes(used);
             if (usedBytes > 0) {
                 // Can't calculate percentage without total, but at least show something
                 return null;
@@ -144,8 +129,8 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
             let usagePercent = calculateUsagePercent(node.used, node.quota, node.available);
             // Fallback: if calculation returned null but we have used and available, try direct calculation
             if (usagePercent === null && node.used && node.used !== '-' && node.available && node.available !== '-') {
-                const usedBytes = parseSize(node.used);
-                const availableBytes = parseSize(node.available);
+                const usedBytes = parseSizeToBytes(node.used);
+                const availableBytes = parseSizeToBytes(node.available);
                 if (usedBytes >= 0 && availableBytes >= 0) {
                     const totalBytes = usedBytes + availableBytes;
                     if (totalBytes > 0) {
