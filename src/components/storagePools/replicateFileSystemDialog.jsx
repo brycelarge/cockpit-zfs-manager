@@ -70,15 +70,20 @@ function ReplicateFileSystemDialog({ pool, filesystem, pools, onRefresh }) {
                 creation: 'Just now'
             };
 
-            // Open Replication Dialog
-            Dialogs.show(
-                <ReplicationDialog
-                    snapshot={snapshotObj}
-                    pool={pool}
-                    pools={pools}
-                    onRefresh={onRefresh}
-                />
-            );
+            // Close current dialog first to avoid conflict
+            Dialogs.close();
+
+            // Open Replication Dialog after a brief delay to ensure previous one is fully closed
+            setTimeout(() => {
+                Dialogs.show(
+                    <ReplicationDialog
+                        snapshot={snapshotObj}
+                        pool={pool}
+                        pools={pools}
+                        onRefresh={onRefresh}
+                    />
+                );
+            }, 100);
         } catch (exc) {
             setError({
                 dialogError: 'Failed to create snapshot',
