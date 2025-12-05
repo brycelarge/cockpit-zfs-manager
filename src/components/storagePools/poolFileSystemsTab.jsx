@@ -11,7 +11,7 @@ import { parseSizeToBytes } from '../../utils/size.js';
 import CreateFileSystemDialog from './createFileSystemDialog.jsx';
 import FileSystemActions from './fileSystemActions.jsx';
 
-function PoolFileSystemsTab({ pool, onRefresh }) {
+function PoolFileSystemsTab({ pool, pools, onRefresh }) {
     const Dialogs = useDialogs();
     const [filesystems, setFilesystems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -121,7 +121,7 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
     // Render tree nodes recursively
     const renderTreeNodes = (nodes, level = 0) => {
         const rows = [];
-        
+
             nodes.forEach(node => {
             const isExpanded = expandedNodes.has(node.name);
             const hasChildren = node.children.length > 0;
@@ -236,7 +236,7 @@ function PoolFileSystemsTab({ pool, onRefresh }) {
                         ) : '-'
                     },
                     { title: node.mountpoint || '-' },
-                    { title: <FileSystemActions filesystem={node} pool={pool} onRefresh={handleRefresh} /> },
+                    { title: <FileSystemActions filesystem={node} pool={pool} pools={pools} onRefresh={handleRefresh} /> },
                 ],
                 key: node.name,
                 expandedContent: (

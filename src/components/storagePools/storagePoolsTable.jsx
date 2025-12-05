@@ -108,7 +108,7 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                             {
                                 name: "File Systems",
                                 renderer: PoolFileSystemsTab,
-                                data: { pool, onRefresh },
+                                data: { pool, pools, onRefresh },
                                 id: `${pool.name}-filesystems`
                             },
                             {

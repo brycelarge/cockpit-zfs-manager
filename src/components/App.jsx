@@ -5,6 +5,7 @@ import { Tabs, Tab, TabTitleText } from "@patternfly/react-core/dist/esm/compone
 
 import { ZfsApi } from '../zfsApi/index.js';
 import StoragePoolsTable from './storagePools/storagePoolsTable.jsx';
+import ReplicationTasksTable from './replication/replicationTasksTable.jsx';
 import Dashboard from './dashboard.jsx';
 
 function App() {
@@ -43,6 +44,11 @@ function App() {
                             loading={loading}
                             onRefresh={refreshPools}
                         />
+                    </Tab>
+                    <Tab eventKey={2} title={<TabTitleText>Replication</TabTitleText>}>
+                        <div style={{ marginTop: 'var(--pf-t--global--spacer--lg)' }}>
+                            <ReplicationTasksTable pools={pools} />
+                        </div>
                     </Tab>
                 </Tabs>
             </PageSection>

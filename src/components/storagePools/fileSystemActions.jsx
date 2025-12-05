@@ -6,6 +6,7 @@ import { KebabDropdown } from 'cockpit-components-dropdown.jsx';
 
 import { useDialogs } from 'dialogs.jsx';
 import CloneFileSystemDialog from './cloneFileSystemDialog.jsx';
+import ReplicateFileSystemDialog from './replicateFileSystemDialog.jsx';
 import DeleteFileSystemDialog from './deleteFileSystemDialog.jsx';
 import CreateSnapshotDialog from './createSnapshotDialog.jsx';
 import DatasetPropertiesDialog from './datasetPropertiesDialog.jsx';
@@ -13,7 +14,7 @@ import MountPointDialog from './mountPointDialog.jsx';
 import SharesDialog from './sharesDialog.jsx';
 import RenameDatasetDialog from './renameDatasetDialog.jsx';
 
-function FileSystemActions({ filesystem, pool, onRefresh }) {
+function FileSystemActions({ filesystem, pool, pools, onRefresh }) {
     const Dialogs = useDialogs();
 
     const dropdownItems = [
@@ -52,6 +53,13 @@ function FileSystemActions({ filesystem, pool, onRefresh }) {
             onClick={() => Dialogs.show(<CloneFileSystemDialog filesystem={filesystem} pool={pool} onRefresh={onRefresh} />)}
         >
             Clone
+        </DropdownItem>,
+        <DropdownItem
+            key={`${filesystem.name}-replicate`}
+            id={`${filesystem.name}-replicate`}
+            onClick={() => Dialogs.show(<ReplicateFileSystemDialog filesystem={filesystem} pool={pool} pools={pools} onRefresh={onRefresh} />)}
+        >
+            Replicate
         </DropdownItem>,
         <DropdownItem
             key={`${filesystem.name}-rename`}
