@@ -90,6 +90,20 @@ ssh user@server "sudo cp -r /tmp/dist /usr/share/cockpit/zfs-manager"
    - Schedule ZFS scrubs for disk health
    - Export and destroy pools (with name confirmation)
 
+## Screenshots
+
+### Dashboard Overview
+![Dashboard Overview](screenshots/dashboard.png)
+*Real-time read/write throughput graphs, system health overview, storage capacity breakdown per pool, and ARC memory statistics.*
+
+### Storage Pools & File Systems
+![Storage Pools](screenshots/storage_pools.png)
+*List of storage pools with health status, usage bars, and expandable file system hierarchy.*
+
+### Disk Management & SMART Data
+![Disks Tab](screenshots/disks_tab.png)
+*Physical disk details including serial numbers, temperatures, and SMART health status.*
+
 ## Features
 
 ### Dashboard Overview
@@ -106,6 +120,7 @@ ssh user@server "sudo cp -r /tmp/dist /usr/share/cockpit/zfs-manager"
 - Create new storage pools with VDEV types:
   - Stripe (no redundancy)
   - Mirror (2+ devices)
+  - RAID 10 (Stripe of Mirrors)
   - RAID-Z (single parity)
   - RAID-Z2 (double parity)
   - RAID-Z3 (triple parity)
@@ -137,6 +152,7 @@ ssh user@server "sudo cp -r /tmp/dist /usr/share/cockpit/zfs-manager"
   - Deduplication toggle
   - Quota and reservation settings
 - Clone file systems
+- Replicate file systems (auto-snapshot + send)
 - Destroy file systems (with name confirmation)
 - Configure dataset properties:
   - General: compression, deduplication, atime, sync, recordsize, readonly, exec, setuid
