@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@patternfly/react-core/dist/esm/components/Modal';
 import { Form, FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
