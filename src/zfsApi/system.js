@@ -174,6 +174,7 @@ async function getPoolIoStats() {
                 });
 
                 // console.log('ZFS IO Stats:', { raw: output, parsed: { read: readBytes, write: writeBytes } });
+                console.log('ZFS IO Debug:', { lines: currentLines, read: readBytes, write: writeBytes });
                 resolve({ read: readBytes, write: writeBytes });
             } else {
                 resolve({ read: 0, write: 0 });
