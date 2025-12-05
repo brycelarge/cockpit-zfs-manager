@@ -1733,6 +1733,11 @@ export class ZfsApi {
                         metadata: 0,
                         dnode: 0,
                         dbuf: 0,
+                        hits: 0,
+                        misses: 0,
+                        l2_size: 0,
+                        l2_hits: 0,
+                        l2_misses: 0,
                         available: false
                     };
 
@@ -1747,24 +1752,17 @@ export class ZfsApi {
                             const value = parseInt(parts[2], 10);
 
                             switch (name) {
-                                case 'size':
-                                    stats.size = value;
-                                    break;
-                                case 'c_max':
-                                    stats.max = value;
-                                    break;
-                                case 'c_min':
-                                    stats.min = value;
-                                    break;
-                                case 'metadata_size':
-                                    stats.metadata = value;
-                                    break;
-                                case 'dnode_size':
-                                    stats.dnode = value;
-                                    break;
-                                case 'dbuf_size':
-                                    stats.dbuf = value;
-                                    break;
+                                case 'size': stats.size = value; break;
+                                case 'c_max': stats.max = value; break;
+                                case 'c_min': stats.min = value; break;
+                                case 'metadata_size': stats.metadata = value; break;
+                                case 'dnode_size': stats.dnode = value; break;
+                                case 'dbuf_size': stats.dbuf = value; break;
+                                case 'hits': stats.hits = value; break;
+                                case 'misses': stats.misses = value; break;
+                                case 'l2_size': stats.l2_size = value; break;
+                                case 'l2_hits': stats.l2_hits = value; break;
+                                case 'l2_misses': stats.l2_misses = value; break;
                             }
                         }
                     }

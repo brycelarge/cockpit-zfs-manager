@@ -227,7 +227,7 @@ function Dashboard({ pools, loading }) {
                                     <DescriptionListTerm>Usage</DescriptionListTerm>
                                     <DescriptionListDescription>
                                         {(() => {
-                                            const arcUsagePercent = stats.arcStats.max > 0 
+                                            const arcUsagePercent = stats.arcStats.max > 0
                                                 ? ((stats.arcStats.size / stats.arcStats.max) * 100).toFixed(1)
                                                 : '0.0';
                                             return (
@@ -266,6 +266,37 @@ function Dashboard({ pools, loading }) {
                                     <DescriptionListTerm>Metadata Cache</DescriptionListTerm>
                                     <DescriptionListDescription>{formatBytes(stats.arcStats.metadata)}</DescriptionListDescription>
                                 </DescriptionListGroup>
+                            )}
+                            <DescriptionListGroup>
+                                <DescriptionListTerm>Hit Ratio</DescriptionListTerm>
+                                <DescriptionListDescription>
+                                    {(() => {
+                                        const total = stats.arcStats.hits + stats.arcStats.misses;
+                                        const ratio = total > 0 ? ((stats.arcStats.hits / total) * 100).toFixed(1) : '0.0';
+                                        const color = parseFloat(ratio) > 90 ? '#3e8635' : parseFloat(ratio) > 80 ? '#f0ab00' : '#c9190b';
+                                        return (
+                                            <span style={{ color, fontWeight: 'bold' }}>{ratio}%</span>
+                                        );
+                                    })()}
+                                </DescriptionListDescription>
+                            </DescriptionListGroup>
+                            {stats.arcStats.l2_size > 0 && (
+                                <>
+                                    <DescriptionListGroup>
+                                        <DescriptionListTerm>L2ARC Size</DescriptionListTerm>
+                                        <DescriptionListDescription>{formatBytes(stats.arcStats.l2_size)}</DescriptionListDescription>
+                                    </DescriptionListGroup>
+                                    <DescriptionListGroup>
+                                        <DescriptionListTerm>L2ARC Hit Ratio</DescriptionListTerm>
+                                        <DescriptionListDescription>
+                                            {(() => {
+                                                const total = stats.arcStats.l2_hits + stats.arcStats.l2_misses;
+                                                const ratio = total > 0 ? ((stats.arcStats.l2_hits / total) * 100).toFixed(1) : '0.0';
+                                                return <span>{ratio}%</span>;
+                                            })()}
+                                        </DescriptionListDescription>
+                                    </DescriptionListGroup>
+                                </>
                             )}
                         </DescriptionList>
                     </CardBody>
