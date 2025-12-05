@@ -1,24 +1,39 @@
 import React from 'react';
 
-const SimpleLineChart = ({ data, title, color = '#0066cc', height = 150, yLabel = '%', subTitle }) => {
+const SimpleLineChart = ({ data, title, color = '#0066cc', height = 150, yLabel = '%', subTitle, yMax = null }) => {
     // Ensure we have data, default to zeros if not
     const safeData = (data && data.length > 0) ? data : Array(60).fill(0);
     const currentValue = safeData[safeData.length - 1];
 
+    // Determine max Y value for scaling
+    let effectiveMax = yMax;
+    if (effectiveMax === null) {
+        const maxVal = Math.max(...safeData);
+        // Auto-scale: at least 10, or 1.1x the max value for headroom
+        effectiveMax = Math.max(maxVal * 1.1, 10);
+    }
+
+    const viewHeight = 100;
     const width = 100;
-    const maxY = 100;
 
     // Construct SVG path
     const points = safeData.map((val, i) => {
         const x = (i / (safeData.length - 1)) * width;
-        // Clamp value between 0 and 100
-        const clampedVal = Math.max(0, Math.min(100, val));
-        const y = maxY - clampedVal;
+        // Normalize value to viewHeight
+        const normalizedVal = (val / effectiveMax) * viewHeight;
+        const clampedVal = Math.max(0, Math.min(viewHeight, normalizedVal));
+        const y = viewHeight - clampedVal;
         return `${x},${y}`;
     }).join(' ');
 
     // Area path (closed loop)
-    const areaPath = `M0,${maxY} ${points} L${width},${maxY} Z`;
+    const areaPath = `M0,${viewHeight} ${points} L${width},${viewHeight} Z`;
+
+    // Helper for axis labels
+    const formatAxisLabel = (val) => {
+        if (val >= 1000) return (val / 1000).toFixed(1) + 'k';
+        return val.toFixed(0);
+    };
 
     return (
         <div className="chart-container" style={{ width: '100%', marginBottom: '1rem' }}>
@@ -34,15 +49,14 @@ const SimpleLineChart = ({ data, title, color = '#0066cc', height = 150, yLabel 
             <div style={{
                 height: `${height}px`,
                 width: '100%',
-                border: '1px solid var(--pf-t--global--border--color--default)',
-                backgroundColor: 'var(--pf-t--global--background--color--100)',
+                backgroundColor: 'transparent',
                 position: 'relative',
                 borderRadius: 'var(--pf-t--global--border--radius--small)'
             }}>
                 <svg
-                    viewBox={`0 0 ${width} ${maxY}`}
+                    viewBox={`0 0 ${width} ${viewHeight}`}
                     preserveAspectRatio="none"
-                    style={{ width: '100%', height: '100%', display: 'block' }}
+                    style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}
                 >
                     {/* Grid lines */}
                     <line x1="0" y1="0" x2="100" y2="0" stroke="var(--pf-t--global--border--color--default)" strokeWidth="0.5" vectorEffect="non-scaling-stroke" opacity="0.5" />
@@ -82,11 +96,11 @@ const SimpleLineChart = ({ data, title, color = '#0066cc', height = 150, yLabel 
                     fontSize: '10px',
                     color: 'var(--pf-t--global--text--color--subtle)'
                 }}>
-                    <span>100%</span>
+                    <span>{formatAxisLabel(effectiveMax)}{yLabel.trim()}</span>
                     <span></span>
-                    <span>50%</span>
+                    <span>{formatAxisLabel(effectiveMax / 2)}{yLabel.trim()}</span>
                     <span></span>
-                    <span>0%</span>
+                    <span>0{yLabel.trim()}</span>
                 </div>
             </div>
         </div>

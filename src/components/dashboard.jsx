@@ -160,6 +160,7 @@ function Dashboard({ pools, loading }) {
                         subTitle="% of Total RAM"
                         color="#3e8635"
                         height={150}
+                        yMax={100}
                     />
                 </div>
             </div>
