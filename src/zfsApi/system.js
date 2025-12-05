@@ -124,6 +124,7 @@ function parseArcSize(data) {
 }
 
 async function getPoolIoStats() {
+    console.log('getPoolIoStats called');
     return new Promise((resolve) => {
         // Run iostat twice to get current usage (first output is avg since boot)
         // Use -p for parsable (exact bytes) output, -H for script mode (no headers)
@@ -139,12 +140,8 @@ async function getPoolIoStats() {
             if (exitCode === 0) {
                 const lines = output.trim().split('\n').filter(l => l.trim().length > 0);
 
-                // We requested 2 iterations. We expect P lines for the first iteration (avg)
-                // and P lines for the second iteration (current).
-                // Total lines should be 2 * P.
-                // We want to sum stats from the second iteration (the last P lines).
-
                 if (lines.length === 0) {
+                    console.warn('getPoolIoStats: No output from zpool iostat');
                     resolve({ read: 0, write: 0 });
                     return;
                 }
@@ -173,15 +170,16 @@ async function getPoolIoStats() {
                     }
                 });
 
-                // console.log('ZFS IO Stats:', { raw: output, parsed: { read: readBytes, write: writeBytes } });
                 console.log('ZFS IO Debug:', { lines: currentLines, read: readBytes, write: writeBytes });
                 resolve({ read: readBytes, write: writeBytes });
             } else {
+                console.error('getPoolIoStats: zpool iostat exited with code', exitCode);
                 resolve({ read: 0, write: 0 });
             }
         });
 
-        proc.fail(() => {
+        proc.fail((err) => {
+            console.error('getPoolIoStats: spawn failed', err);
             resolve({ read: 0, write: 0 });
         });
     });
