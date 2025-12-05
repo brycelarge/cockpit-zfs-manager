@@ -137,7 +137,7 @@ async function getPoolIoStats() {
         });
 
         proc.done((exitCode) => {
-            if (exitCode === 0) {
+            if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                 const lines = output.trim().split('\n').filter(l => l.trim().length > 0);
 
                 if (lines.length === 0) {
