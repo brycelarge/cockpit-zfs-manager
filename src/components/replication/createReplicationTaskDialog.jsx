@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@patternfly/react-core/dist/esm/components/Modal';
 import { Form, FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
@@ -141,7 +141,12 @@ function CreateReplicationTaskDialog({ pools, onRefresh }) {
                     </FormGroup>
 
                     {destinationType === 'local' ? (
-                        <FormGroup label="Destination Pool" fieldId="dest-pool" isRequired>
+                        <FormGroup
+                            label="Destination Pool"
+                            fieldId="dest-pool"
+                            isRequired
+                            helperText={sourceDataset ? `Will create ${destinationPool}/${sourceDataset.split('/').pop()}` : "Select a pool to replicate to"}
+                        >
                             <FormSelect value={destinationPool} onChange={(_, val) => setDestinationPool(val)} id="dest-pool">
                                 <FormSelectOption value="" label="Select Pool" isDisabled />
                                 {pools.filter(p => p.name !== sourcePool).map(p => <FormSelectOption key={p.name} value={p.name} label={p.name} />)}
