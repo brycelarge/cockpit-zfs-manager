@@ -126,7 +126,9 @@ function parseArcSize(data) {
 async function getPoolIoStats() {
     return new Promise((resolve) => {
         // Run iostat twice to get current usage (first output is avg since boot)
-        const proc = cockpit.spawn(['zpool', 'iostat', '-H', '1', '2'], { err: 'message' });
+        // Use -p for parsable (exact bytes) output, -H for script mode (no headers)
+        // -y (if available) would omit the first report, but 1 2 is safer for compatibility
+        const proc = cockpit.spawn(['zpool', 'iostat', '-H', '-p', '1', '2'], { err: 'message' });
         let output = '';
 
         proc.stream((data) => {
@@ -135,35 +137,33 @@ async function getPoolIoStats() {
 
         proc.done((exitCode) => {
             if (exitCode === 0) {
-                const lines = output.trim().split('\n');
-                // We expect lines for each pool, repeated twice.
-                // Example with 1 pool: 2 lines.
-                // Example with 2 pools: 4 lines.
-                // We want the last N lines where N is number of pools.
-                // Actually, we just want to sum the last block.
+                const lines = output.trim().split('\n').filter(l => l.trim().length > 0);
 
-                // Identify the break between first and second report?
-                // zpool iostat -H just outputs lines.
-                // If we have P pools, we get 2*P lines.
-                // We want the last P lines.
-                // But we don't know P easily here without listing.
-                // However, we can just sum the LAST half of lines.
+                // We expect sets of lines. With -p -H 1 2:
+                // Set 1: Avg since boot (one line per pool)
+                // Set 2: Avg for last 1 second (one line per pool)
+                // We want the second set.
 
-                const allLines = lines.filter(l => l.trim().length > 0);
-                const half = Math.floor(allLines.length / 2);
-                const currentLines = allLines.slice(half); // Take the second set
+                if (lines.length < 2) {
+                    resolve({ read: 0, write: 0 });
+                    return;
+                }
+
+                const half = Math.floor(lines.length / 2);
+                const currentLines = lines.slice(half);
 
                 let readBytes = 0;
                 let writeBytes = 0;
 
                 currentLines.forEach(line => {
                     const parts = line.trim().split(/\s+/);
-                    // zpool iostat -H output:
-                    // pool_name  alloc  free  read_ops  write_ops  read_bw  write_bw
-                    // parts indices: 0, 1, 2, 3, 4, 5, 6
+                    // With -p: pool_name alloc free read_ops write_ops read_bytes write_bytes
+                    // indices: 0         1     2    3         4         5          6
                     if (parts.length >= 7) {
-                        readBytes += parseBandwidth(parts[5]);
-                        writeBytes += parseBandwidth(parts[6]);
+                        const rb = parseInt(parts[5], 10);
+                        const wb = parseInt(parts[6], 10);
+                        if (!isNaN(rb)) readBytes += rb;
+                        if (!isNaN(wb)) writeBytes += wb;
                     }
                 });
 
