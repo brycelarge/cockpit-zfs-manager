@@ -13,8 +13,8 @@ import { parseSizeToBytes, formatBytes } from '../utils/size.js';
 function Dashboard({ pools, loading }) {
     const [stats, setStats] = useState(null);
     const [loadingStats, setLoadingStats] = useState(true);
-    const [ioHistory, setIoHistory] = useState(Array(60).fill(0));
-    const [arcHistory, setArcHistory] = useState(Array(60).fill(0));
+    const [readHistory, setReadHistory] = useState(Array(60).fill(0));
+    const [writeHistory, setWriteHistory] = useState(Array(60).fill(0));
 
     useEffect(() => {
         let mounted = true;
@@ -27,17 +27,16 @@ function Dashboard({ pools, loading }) {
 
                 if (!mounted) return;
 
-                // Update ARC History
-                setArcHistory(prev => {
-                    const newHistory = [...prev.slice(1), zfsStats.memory.percent];
+                const readMb = zfsStats.io.read / (1024 * 1024);
+                const writeMb = zfsStats.io.write / (1024 * 1024);
+
+                setReadHistory(prev => {
+                    const newHistory = [...prev.slice(1), readMb];
                     return newHistory;
                 });
 
-                // Update IO History (Total throughput in MB/s)
-                const totalMb = zfsStats.io.total / (1024 * 1024);
-
-                setIoHistory(prev => {
-                    const newHistory = [...prev.slice(1), totalMb];
+                setWriteHistory(prev => {
+                    const newHistory = [...prev.slice(1), writeMb];
                     return newHistory;
                 });
             } catch (error) {
@@ -156,9 +155,9 @@ function Dashboard({ pools, loading }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--pf-t--global--spacer--md)', marginBottom: 'var(--pf-t--global--spacer--md)' }}>
                 <div>
                     <SimpleLineChart
-                        data={ioHistory}
-                        title="Total Throughput"
-                        subTitle="Read + Write"
+                        data={readHistory}
+                        title="Read Throughput"
+                        subTitle="Disk Reads"
                         color="#0066cc"
                         height={150}
                         yLabel=" MB/s"
@@ -166,12 +165,12 @@ function Dashboard({ pools, loading }) {
                 </div>
                 <div>
                     <SimpleLineChart
-                        data={arcHistory}
-                        title="ARC Memory"
-                        subTitle="% of Total RAM"
+                        data={writeHistory}
+                        title="Write Throughput"
+                        subTitle="Disk Writes"
                         color="#3e8635"
                         height={150}
-                        yMax={100}
+                        yLabel=" MB/s"
                     />
                 </div>
             </div>

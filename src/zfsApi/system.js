@@ -124,7 +124,6 @@ function parseArcSize(data) {
 }
 
 async function getPoolIoStats() {
-    console.log('getPoolIoStats called');
     return new Promise((resolve) => {
         // Run iostat twice to get current usage (first output is avg since boot)
         // Use -p for parsable (exact bytes) output, -H for script mode (no headers)
@@ -164,7 +163,6 @@ async function getPoolIoStats() {
                     }
                 });
 
-                console.log('ZFS IO Debug:', { lines: currentLines, read: readBytes, write: writeBytes });
                 resolve({ read: readBytes, write: writeBytes });
             } else {
                 console.warn('getPoolIoStats: No output from zpool iostat. Exit code:', exitCode);
