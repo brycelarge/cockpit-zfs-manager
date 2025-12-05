@@ -159,16 +159,21 @@ async function getPoolIoStats() {
 
                 currentLines.forEach(line => {
                     const parts = line.trim().split(/\s+/);
-                    // With -p: pool_name alloc free read_ops write_ops read_bytes write_bytes
-                    // indices: 0         1     2    3         4         5          6
+                    // Expected: pool_name alloc free read_ops write_ops read_bytes write_bytes
+                    // We take the last two columns for bandwidth to be robust
                     if (parts.length >= 7) {
-                        const rb = parseBandwidth(parts[5]);
-                        const wb = parseBandwidth(parts[6]);
+                        const rbStr = parts[parts.length - 2];
+                        const wbStr = parts[parts.length - 1];
+
+                        const rb = parseBandwidth(rbStr);
+                        const wb = parseBandwidth(wbStr);
+
                         if (!isNaN(rb)) readBytes += rb;
                         if (!isNaN(wb)) writeBytes += wb;
                     }
                 });
 
+                // console.log('ZFS IO Stats:', { raw: output, parsed: { read: readBytes, write: writeBytes } });
                 resolve({ read: readBytes, write: writeBytes });
             } else {
                 resolve({ read: 0, write: 0 });
