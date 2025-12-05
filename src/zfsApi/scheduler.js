@@ -18,9 +18,12 @@ export class SchedulerApi {
                 if (exitCode === 0 || exitCode === 1) {
                     const tasks = [];
                     const lines = output.trim().split('\n');
+                    console.log('SchedulerApi: Raw crontab output:', output);
 
                     lines.forEach((line, index) => {
+                        console.log('SchedulerApi: Processing line:', line, 'matches marker:', line.includes(SchedulerApi.MARKER));
                         if (line.includes(SchedulerApi.MARKER)) {
+                            console.log('SchedulerApi: Found managed line:', line);
                             // Format: schedule command # MARKER id=...
                             // Example: 0 * * * * syncoid rpool/data user@host:pool/backup # COCKPIT-ZFS-MANAGER-REPLICATION id=12345
 
