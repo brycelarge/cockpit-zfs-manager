@@ -15,7 +15,6 @@ function SanoidTab({ pool }) {
     const [configContent, setConfigContent] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState({});
-    const [sanoidSnapshots, setSanoidSnapshots] = useState([]);
     const [isConfigured, setIsConfigured] = useState(false);
 
     useEffect(() => {
@@ -41,10 +40,6 @@ function SanoidTab({ pool }) {
                     const regex = new RegExp(`^\\[${pool.name}\\]`, 'm');
                     setIsConfigured(regex.test(content));
                 }
-
-                // Get sanoid snapshots for this pool
-                const snaps = await SanoidApi.getSnapshotsForDataset(pool.name);
-                setSanoidSnapshots(snaps);
             }
         } catch (exc) {
             setError({
@@ -132,16 +127,6 @@ function SanoidTab({ pool }) {
             {isConfigured && (
                 <Alert variant="success" title={`Pool "${pool.name}" is configured`} style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
                     <p>This pool is configured in Sanoid. Automatic snapshots should be created according to your schedule.</p>
-                </Alert>
-            )}
-
-            {sanoidSnapshots.length > 0 ? (
-                <Alert variant="info" title={`${sanoidSnapshots.length} sanoid-managed snapshots found`} style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
-                    <p>Sanoid has created {sanoidSnapshots.length} automatic snapshots for this pool.</p>
-                </Alert>
-            ) : (
-                <Alert variant="info" title="No sanoid snapshots found" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
-                    <p>No snapshots created by Sanoid were found for this pool.</p>
                 </Alert>
             )}
 
