@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
-import { EmptyState, EmptyStateIcon, EmptyStateBody, EmptyStateHeader, EmptyStateFooter } from '@patternfly/react-core/dist/esm/components/EmptyState';
+import { EmptyState, EmptyStateIcon, EmptyStateBody, EmptyStateHeader, EmptyStateFooter } from '@patternfly/react-core';
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
 import { ReplicatorIcon } from '@patternfly/react-icons';
 
