@@ -76,7 +76,6 @@ const SimpleLineChart = ({ data, title, color = '#0066cc', height = 150, yLabel 
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    flexDirection: 'column',
                     justifyContent: 'space-between',
                     paddingLeft: '4px',
                     pointerEvents: 'none',
