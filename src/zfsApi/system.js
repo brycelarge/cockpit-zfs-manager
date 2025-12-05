@@ -137,15 +137,9 @@ async function getPoolIoStats() {
         });
 
         proc.done((exitCode) => {
-            if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
-                const lines = output.trim().split('\n').filter(l => l.trim().length > 0);
+            const lines = output.trim().split('\n').filter(l => l.trim().length > 0);
 
-                if (lines.length === 0) {
-                    console.warn('getPoolIoStats: No output from zpool iostat');
-                    resolve({ read: 0, write: 0 });
-                    return;
-                }
-
+            if (lines.length > 0) {
                 // Assuming even number of lines since we asked for 2 intervals
                 // If odd (unexpected), floor ensures we might miss one but safer than taking from first set
                 const half = Math.floor(lines.length / 2);
@@ -173,7 +167,7 @@ async function getPoolIoStats() {
                 console.log('ZFS IO Debug:', { lines: currentLines, read: readBytes, write: writeBytes });
                 resolve({ read: readBytes, write: writeBytes });
             } else {
-                console.error('getPoolIoStats: zpool iostat exited with code', exitCode);
+                console.warn('getPoolIoStats: No output from zpool iostat. Exit code:', exitCode);
                 resolve({ read: 0, write: 0 });
             }
         });
