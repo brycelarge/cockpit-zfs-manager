@@ -118,10 +118,14 @@ export class DisksApi {
                             let devicePath = deviceName;
                             let deviceShortName = deviceName;
 
-                            // Normalize device path to include /dev/ if it's a simple name
+                            // Normalize device path to include /dev/ or /dev/disk/by-id/ if it's a simple name
                             // and doesn't already have a path separator
                             if (!deviceName.includes('/') && !deviceName.startsWith('/')) {
-                                devicePath = `/dev/${deviceName}`;
+                                if (deviceName.match(/^(nvme-eui\.|wwn-|scsi-|ata-|usb-|mmc-)/)) {
+                                    devicePath = `/dev/disk/by-id/${deviceName}`;
+                                } else {
+                                    devicePath = `/dev/${deviceName}`;
+                                }
                                 deviceShortName = deviceName;
                             } else if (deviceName.startsWith('/dev/')) {
                                 deviceShortName = deviceName.replace('/dev/', '');
