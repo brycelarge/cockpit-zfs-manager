@@ -177,7 +177,7 @@ function Dashboard({ pools, loading }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--pf-t--global--spacer--md)' }}>
                 <Card>
-                    <CardTitle>Storage Pools</CardTitle>
+                    <CardTitle>Overview</CardTitle>
                     <CardBody>
                         <DescriptionList isHorizontal>
                             <DescriptionListGroup>
@@ -185,27 +185,23 @@ function Dashboard({ pools, loading }) {
                                 <DescriptionListDescription>{stats.totalPools}</DescriptionListDescription>
                             </DescriptionListGroup>
                             <DescriptionListGroup>
-                                <DescriptionListTerm>Healthy</DescriptionListTerm>
+                                <DescriptionListTerm>Pool Health</DescriptionListTerm>
                                 <DescriptionListDescription>
-                                    <span style={{ color: '#3e8635', fontWeight: 'bold' }}>{stats.healthyPools}</span>
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <span style={{ color: '#3e8635' }}>{stats.healthyPools} Healthy</span>
+                                        {stats.degradedPools > 0 && <span style={{ color: '#f0ab00', fontWeight: 'bold' }}>{stats.degradedPools} Degraded</span>}
+                                        {stats.faultedPools > 0 && <span style={{ color: '#c9190b', fontWeight: 'bold' }}>{stats.faultedPools} Faulted</span>}
+                                    </div>
                                 </DescriptionListDescription>
                             </DescriptionListGroup>
-                            {stats.degradedPools > 0 && (
-                                <DescriptionListGroup>
-                                    <DescriptionListTerm>Degraded</DescriptionListTerm>
-                                    <DescriptionListDescription>
-                                        <span style={{ color: '#f0ab00', fontWeight: 'bold' }}>{stats.degradedPools}</span>
-                                    </DescriptionListDescription>
-                                </DescriptionListGroup>
-                            )}
-                            {stats.faultedPools > 0 && (
-                                <DescriptionListGroup>
-                                    <DescriptionListTerm>Faulted</DescriptionListTerm>
-                                    <DescriptionListDescription>
-                                        <span style={{ color: '#c9190b', fontWeight: 'bold' }}>{stats.faultedPools}</span>
-                                    </DescriptionListDescription>
-                                </DescriptionListGroup>
-                            )}
+                            <DescriptionListGroup>
+                                <DescriptionListTerm>File Systems</DescriptionListTerm>
+                                <DescriptionListDescription>{stats.totalFilesystems}</DescriptionListDescription>
+                            </DescriptionListGroup>
+                            <DescriptionListGroup>
+                                <DescriptionListTerm>Snapshots</DescriptionListTerm>
+                                <DescriptionListDescription>{stats.totalSnapshots}</DescriptionListDescription>
+                            </DescriptionListGroup>
                         </DescriptionList>
                     </CardBody>
                 </Card>
@@ -298,22 +294,6 @@ function Dashboard({ pools, loading }) {
                             </div>
                         </>
                     )}
-                </CardBody>
-            </Card>
-
-            <Card>
-                <CardTitle>Resources</CardTitle>
-                <CardBody>
-                    <DescriptionList isHorizontal>
-                        <DescriptionListGroup>
-                            <DescriptionListTerm>File Systems</DescriptionListTerm>
-                            <DescriptionListDescription>{stats.totalFilesystems}</DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                            <DescriptionListTerm>Snapshots</DescriptionListTerm>
-                            <DescriptionListDescription>{stats.totalSnapshots}</DescriptionListDescription>
-                        </DescriptionListGroup>
-                    </DescriptionList>
                 </CardBody>
             </Card>
 
