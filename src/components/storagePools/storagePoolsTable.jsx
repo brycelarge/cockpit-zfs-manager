@@ -20,12 +20,14 @@ import DisksTab from './disksTab.jsx';
 import PoolZvolsTab from './poolZvolsTab.jsx';
 import UnlockFileSystemsDialog from './unlockFileSystemsDialog.jsx';
 import UpgradeAllPoolsDialog from './upgradeAllPoolsDialog.jsx';
+import SanoidConfigDialog from './sanoidConfigDialog.jsx';
 import { ZfsApi } from '../../zfsApi/index.js';
 import { parseSizeToBytes } from '../../utils/size.js';
 
 function StoragePoolsTableContent({ pools, loading, onRefresh }) {
     const Dialogs = useDialogs();
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [sanoidDialogOpen, setSanoidDialogOpen] = useState(false);
 
     const handleCreatePool = async (poolData) => {
         await ZfsApi.createPool(poolData.name, poolData.devices, poolData.vdevType, poolData.force || false, poolData.ashift);
@@ -58,6 +60,9 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
             </Button>
             <Button variant="secondary" onClick={handleUpgradeAllPools}>
                 Upgrade All Pools
+            </Button>
+            <Button variant="secondary" onClick={() => setSanoidDialogOpen(true)}>
+                Configure Sanoid
             </Button>
             <Button variant="secondary" onClick={onRefresh}>
                 Refresh
@@ -256,6 +261,10 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                 isOpen={createDialogOpen}
                 onClose={() => setCreateDialogOpen(false)}
                 onCreate={handleCreatePool}
+            />
+            <SanoidConfigDialog
+                isOpen={sanoidDialogOpen}
+                onClose={() => setSanoidDialogOpen(false)}
             />
         </>
     );
