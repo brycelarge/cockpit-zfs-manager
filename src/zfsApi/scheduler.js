@@ -107,11 +107,21 @@ export class SchedulerApi {
 
                 // Write back
                 const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
+                let writeError = '';
+
+                writeProc.stream((data) => {
+                    // crontab might output warnings to stdout/stderr
+                    writeError += data;
+                });
+
                 writeProc.input(newContent);
 
                 writeProc.done((writeExitCode) => {
-                    if (writeExitCode === 0) resolve();
-                    else reject(new Error(`Failed to write crontab (code ${writeExitCode})`));
+                    if (writeExitCode === 0 || writeExitCode == null || writeExitCode === '') {
+                        resolve();
+                    } else {
+                        reject(new Error(`Failed to write crontab (code ${writeExitCode}): ${writeError}`));
+                    }
                 });
 
                 writeProc.fail(err => reject(err));
@@ -123,8 +133,17 @@ export class SchedulerApi {
                 const newContent = newLines.join('\n') + '\n';
 
                 const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
+                let writeError = '';
+
+                writeProc.stream((data) => {
+                    writeError += data;
+                });
+
                 writeProc.input(newContent);
-                writeProc.done(code => code === 0 ? resolve() : reject(new Error(`Failed to write crontab (code ${code})`)));
+                writeProc.done(code => {
+                    if (code === 0 || code == null || code === '') resolve();
+                    else reject(new Error(`Failed to write crontab (code ${code}): ${writeError}`));
+                });
                 writeProc.fail(err => reject(err));
             });
         });
