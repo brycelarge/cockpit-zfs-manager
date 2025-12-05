@@ -139,16 +139,18 @@ async function getPoolIoStats() {
             if (exitCode === 0) {
                 const lines = output.trim().split('\n').filter(l => l.trim().length > 0);
 
-                // We expect sets of lines. With -p -H 1 2:
-                // Set 1: Avg since boot (one line per pool)
-                // Set 2: Avg for last 1 second (one line per pool)
-                // We want the second set.
+                // We requested 2 iterations. We expect P lines for the first iteration (avg)
+                // and P lines for the second iteration (current).
+                // Total lines should be 2 * P.
+                // We want to sum stats from the second iteration (the last P lines).
 
-                if (lines.length < 2) {
+                if (lines.length === 0) {
                     resolve({ read: 0, write: 0 });
                     return;
                 }
 
+                // Assuming even number of lines since we asked for 2 intervals
+                // If odd (unexpected), floor ensures we might miss one but safer than taking from first set
                 const half = Math.floor(lines.length / 2);
                 const currentLines = lines.slice(half);
 
