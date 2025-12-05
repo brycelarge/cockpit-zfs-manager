@@ -11,6 +11,7 @@ import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
 import { Alert } from "@patternfly/react-core/dist/esm/components/Alert";
 import { Tooltip } from "@patternfly/react-core/dist/esm/components/Tooltip";
+import { Popover } from "@patternfly/react-core/dist/esm/components/Popover";
 import { HelpIcon } from '@patternfly/react-icons';
 
 import { FormHelper } from 'cockpit-components-form-helper.jsx';
@@ -27,6 +28,7 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
     const [showConfirm, setShowConfirm] = useState(false);
     const [confirmText, setConfirmText] = useState('');
     const [force, setForce] = useState(false);
+    const [ashift, setAshift] = useState('');
     const [validationFailed, setValidationFailed] = useState({});
     const [error, setError] = useState({});
 
@@ -42,9 +44,38 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
             setShowConfirm(false);
             setConfirmText('');
             setForce(false);
+            setAshift('');
             loadDisks();
         }
     }, [isOpen]);
+
+    // Auto-detect best ashift when devices change
+    React.useEffect(() => {
+        if (devices.length === 0) {
+            setAshift('');
+            return;
+        }
+
+        let maxPhySec = 512;
+        devices.forEach(path => {
+            const disk = availableDisks.find(d => d.path === path);
+            if (disk && disk.phySec) {
+                if (disk.phySec > maxPhySec) maxPhySec = disk.phySec;
+            }
+        });
+
+        // Calculate optimal ashift: log2(phySec)
+        // 512 -> 9, 4096 -> 12
+        const optimal = Math.floor(Math.log2(maxPhySec));
+        // Default to 12 if optimal is less than 12 (modern standard),
+        // or stick to detected if strictly following hardware?
+        // Request says "determine the best ashift".
+        // ZFS best practice is often 12 even for 512n drives to allow future replacement.
+        // But let's stick to the hardware detection for the "Auto" behavior logic,
+        // or maybe default to 12 if 9 is detected?
+        // Let's use the detected value.
+        setAshift(optimal.toString());
+    }, [devices, availableDisks]);
 
     const loadDisks = async () => {
         setLoadingDisks(true);
@@ -76,7 +107,7 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
     const handleCreate = () => {
         const validation = {};
         const trimmedName = poolName.trim();
-        
+
         if (!trimmedName) {
             validation.name = 'Pool name is required';
         } else {
@@ -89,12 +120,18 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
                 validation.name = 'Pool name must be 255 characters or less';
             }
         }
-        
+
         if (devices.length === 0) {
             validation.devices = 'Please select at least one device';
         }
         if (vdevType === 'mirror' && devices.length < 2) {
             validation.devices = 'Mirror requires at least 2 devices';
+        }
+        if (vdevType === 'raid10' && devices.length < 4) {
+            validation.devices = 'RAID 10 requires at least 4 devices';
+        }
+        if (vdevType === 'raid10' && devices.length % 2 !== 0) {
+            validation.devices = 'RAID 10 requires an even number of devices';
         }
         if (vdevType === 'raidz' && devices.length < 3) {
             validation.devices = 'RAID-Z requires at least 3 devices';
@@ -127,13 +164,14 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
 
         setCreating(true);
         setError({});
-        
+
         try {
             await onCreate({
                 name: poolName.trim(),
                 vdevType,
                 devices,
-                force
+                force,
+                ashift: ashift || null
             });
             onClose();
         } catch (exc) {
@@ -167,7 +205,7 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
                                 {...(error.dialogErrorDetail && { dialogErrorDetail: error.dialogErrorDetail })}
                             />
                         )}
-                        
+
                         <Alert variant="warning" title="Warning: Data Loss Risk" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
                             <p>
                                 <strong>Creating this pool will destroy all existing data on the selected devices:</strong>
@@ -265,9 +303,67 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
                             >
                                 <FormSelectOption value="stripe" label="Stripe (No redundancy)" />
                                 <FormSelectOption value="mirror" label="Mirror (requires 2+ devices)" />
+                                <FormSelectOption value="raid10" label="RAID 10 (Stripe of Mirrors, requires 4+ devices, even number)" />
                                 <FormSelectOption value="raidz" label="RAID-Z (single parity, requires 3+ devices)" />
                                 <FormSelectOption value="raidz2" label="RAID-Z2 (double parity, requires 4+ devices)" />
                                 <FormSelectOption value="raidz3" label="RAID-Z3 (triple parity, requires 5+ devices)" />
+                            </FormSelect>
+                        </FormGroup>
+
+                        <FormGroup
+                            label={
+                                <span>
+                                    Sector Size (ashift)
+                                    <Popover
+                                        headerContent="About Sector Size (ashift)"
+                                        bodyContent={
+                                            <div style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>
+                                                <p style={{ marginBottom: 'var(--pf-t--global--spacer--sm)' }}>
+                                                    The <strong>ashift</strong> property determines the physical block size of the pool. It is a power of 2.
+                                                </p>
+                                                <ul style={{ marginBottom: 'var(--pf-t--global--spacer--sm)', paddingLeft: 'var(--pf-t--global--spacer--md)' }}>
+                                                    <li><strong>ashift=9</strong>: 512 bytes (Legacy drives)</li>
+                                                    <li><strong>ashift=12</strong>: 4 KiB (Modern HDDs/SSDs)</li>
+                                                    <li><strong>ashift=13</strong>: 8 KiB (Some high-end SSDs)</li>
+                                                </ul>
+                                                <p>
+                                                    <strong>Why it matters:</strong> Using a value smaller than your drive's actual physical sector size will result in significantly reduced performance and increased wear.
+                                                </p>
+                                                <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)' }}>
+                                                    <strong>Recommendation:</strong> ashift=12 is the safest default for modern drives. This setting cannot be changed after pool creation.
+                                                </p>
+                                            </div>
+                                        }
+                                    >
+                                        <button
+                                            type="button"
+                                            aria-label="More info for ashift"
+                                            onClick={e => e.preventDefault()}
+                                            style={{
+                                                marginLeft: 'var(--pf-t--global--spacer--xs)',
+                                                border: 'none',
+                                                background: 'transparent',
+                                                padding: 0,
+                                                cursor: 'pointer',
+                                                color: 'var(--pf-t--global--icon--color--subtle)'
+                                            }}
+                                        >
+                                            <HelpIcon />
+                                        </button>
+                                    </Popover>
+                                </span>
+                            }
+                            fieldId="pool-ashift"
+                        >
+                            <FormSelect
+                                id="pool-ashift"
+                                value={ashift}
+                                onChange={(_, value) => setAshift(value)}
+                            >
+                                <FormSelectOption value="" label="Auto (System Default)" />
+                                <FormSelectOption value="9" label="512 bytes (ashift=9)" />
+                                <FormSelectOption value="12" label="4 KiB (ashift=12)" />
+                                <FormSelectOption value="13" label="8 KiB (ashift=13)" />
                             </FormSelect>
                         </FormGroup>
 
@@ -316,7 +412,9 @@ function CreatePoolDialog({ isOpen, onClose, onCreate }) {
                                 helperText={
                                     vdevType === 'mirror' && devices.length > 0 && devices.length < 2
                                         ? 'Mirror requires at least 2 devices'
-                                        : vdevType === 'raidz' && devices.length > 0 && devices.length < 3
+                                        : vdevType === 'raid10' && (devices.length < 4 || devices.length % 2 !== 0)
+                                            ? 'RAID 10 requires at least 4 devices and an even number'
+                                            : vdevType === 'raidz' && devices.length > 0 && devices.length < 3
                                             ? 'RAID-Z requires at least 3 devices'
                                             : vdevType === 'raidz2' && devices.length > 0 && devices.length < 4
                                                 ? 'RAID-Z2 requires at least 4 devices'

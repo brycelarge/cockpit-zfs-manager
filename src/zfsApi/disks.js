@@ -8,17 +8,17 @@ export class DisksApi {
             // Use a function to stop after first match
             const checkProc = cockpit.spawn(['sh', '-c', 'for path in /usr/sbin/smartctl /sbin/smartctl /usr/bin/smartctl; do if test -x "$path"; then echo "$path"; exit 0; fi; done; command -v smartctl 2>/dev/null || which smartctl 2>/dev/null || exit 1'], { err: 'message' });
             let checkOutput = '';
-            
+
             checkProc.stream((data) => {
                 checkOutput += data;
             });
-            
+
             checkProc.done((exitCode) => {
                 const path = checkOutput.trim().split('\n')[0]; // Take first line only
                 const found = path.length > 0 && path !== 'exit';
                 resolve(found ? path : null);
             });
-            
+
             checkProc.fail(() => {
                 resolve(null);
             });
@@ -30,11 +30,11 @@ export class DisksApi {
             try {
                 // Get devices used by the pool
                 const devices = await DisksApi.getPoolDevices(poolName);
-                
+
                 // Check if smartctl is available once and get its path
                 const smartctlPath = await DisksApi.getSmartctlPath();
                 const smartctlAvailable = smartctlPath !== null;
-                
+
                 // Get SMART info for each device sequentially to avoid overwhelming the system
                 const disksWithSmart = [];
                 for (const device of devices) {
@@ -53,7 +53,7 @@ export class DisksApi {
                         });
                     }
                 }
-                
+
                 resolve(disksWithSmart);
             } catch (exc) {
                 reject(exc);
@@ -76,73 +76,69 @@ export class DisksApi {
                             const lines = output.split('\n');
                     const deviceSet = new Set();
                     let inDeviceTable = false;
-                    
+
                     for (const line of lines) {
                         const trimmed = line.trim();
-                        
+
                                 // Device table starts with "NAME" header (can be indented)
                                 if (trimmed.startsWith('NAME') || trimmed.match(/^\s*NAME\s+STATE\s+READ\s+WRITE\s+CHECKSUM/)) {
                                     inDeviceTable = true;
                                     continue;
                                 }
-                                
+
                                 // Stop parsing if we hit a new section (pool:, state:, etc.)
                                 if (trimmed.startsWith('pool:') || trimmed.startsWith('state:') || trimmed.startsWith('status:') || trimmed.startsWith('action:') || trimmed.startsWith('scan:') || trimmed.startsWith('errors:')) {
                                     inDeviceTable = false;
                                     continue;
                                 }
-                                
-                                // Parse device rows (can be indented)
-                                if (inDeviceTable && trimmed) {
-                                    // Skip separator lines
-                                    if (trimmed.match(/^-+$/)) continue;
-                                    
-                                    // Skip empty lines
-                                    if (!trimmed) continue;
-                                    
-                                    // Skip the pool name row itself (exact match or starts with pool name)
-                                    if (trimmed === poolName || trimmed.startsWith(poolName + ' ') || trimmed.startsWith(poolName + '\t')) {
-                                        continue;
-                                    }
-                                    
-                                    // Split by whitespace (handles both spaces and tabs)
-                                    const parts = trimmed.split(/\s+/);
-                                    if (parts.length >= 1) {
-                                        const deviceName = parts[0];
-                                
-                                // Check if it's a physical device name (with or without /dev/ prefix)
-                                let devicePath = deviceName;
-                                let deviceShortName = deviceName;
-                                
-                                // If it doesn't start with /dev/, check if it looks like a device name
-                                if (!deviceName.startsWith('/dev/')) {
-                                    // Check if it matches common device name patterns
-                                    if (deviceName.match(/^(nvme\d+n\d+|sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+)/)) {
-                                        // It's a device name without /dev/ prefix, add it
-                                        devicePath = '/dev/' + deviceName;
-                                        deviceShortName = deviceName;
-                                    } else {
-                                        // Not a device name, skip it
-                                        continue;
-                                    }
-                                } else {
-                                    // Already has /dev/ prefix
-                                    deviceShortName = deviceName.replace('/dev/', '');
-                                }
-                                
-                                        // Only process if it looks like a physical device
-                                        if (devicePath.startsWith('/dev/') && !deviceSet.has(devicePath)) {
-                                            deviceSet.add(devicePath);
-                                            
-                                            devices.push({
-                                                path: devicePath,
-                                                name: deviceShortName,
-                                                type: DisksApi.getDeviceType(devicePath)
-                                            });
-                                        }
+
+                    // Parse device rows (can be indented)
+                    if (inDeviceTable && trimmed) {
+                        // Skip separator lines
+                        if (trimmed.match(/^-+$/)) continue;
+
+                        // Skip empty lines
+                        if (!trimmed) continue;
+
+                        // Skip VDEV container names (mirror, raidz, spare, replacing, etc.)
+                        // Also skip "logs", "cache", "special", "dedup" headers
+                        if (trimmed.match(/^(mirror|raidz|draid|spare|replacing|logs|cache|special|dedup)/)) continue;
+
+                        // Skip the pool name row itself (exact match or starts with pool name)
+                        if (trimmed === poolName || trimmed.startsWith(poolName + ' ') || trimmed.startsWith(poolName + '\t')) {
+                            continue;
+                        }
+
+                        // Split by whitespace (handles both spaces and tabs)
+                        const parts = trimmed.split(/\s+/);
+                        if (parts.length >= 1) {
+                            const deviceName = parts[0];
+
+                            // Check if it's a physical device name (with or without /dev/ prefix)
+                            let devicePath = deviceName;
+                            let deviceShortName = deviceName;
+
+                            // Normalize device path to include /dev/ if it's a simple name
+                            // and doesn't already have a path separator
+                            if (!deviceName.includes('/') && !deviceName.startsWith('/')) {
+                                devicePath = `/dev/${deviceName}`;
+                                deviceShortName = deviceName;
+                            } else if (deviceName.startsWith('/dev/')) {
+                                deviceShortName = deviceName.replace('/dev/', '');
+                            }
+
+                            if (!deviceSet.has(devicePath)) {
+                                deviceSet.add(devicePath);
+
+                                devices.push({
+                                    path: devicePath,
+                                    name: deviceShortName,
+                                    type: DisksApi.getDeviceType(devicePath)
+                                });
                             }
                         }
-                        
+                    }
+
                         // Also check for /dev/ paths anywhere in the output (fallback)
                         // This catches cases where devices might be listed differently
                         if (trimmed.includes('/dev/')) {
@@ -164,7 +160,7 @@ export class DisksApi {
                             }
                         }
                             }
-                            
+
                             resolve(devices);
                 } else {
                     reject(new Error(`Failed to get pool devices: exit code ${exitCode}`));
@@ -197,11 +193,11 @@ export class DisksApi {
                 // Fallback: try common locations (prioritize direct path checks)
                 const checkProc = cockpit.spawn(['sh', '-c', 'for path in /usr/sbin/smartctl /sbin/smartctl /usr/bin/smartctl; do if test -x "$path"; then echo "$path"; exit 0; fi; done; command -v smartctl 2>/dev/null || which smartctl 2>/dev/null || exit 1'], { err: 'message' });
                 let checkOutput = '';
-                
+
                 checkProc.stream((data) => {
                     checkOutput += data;
                 });
-                
+
                 checkProc.done((checkExitCode) => {
                     const path = checkOutput.trim().split('\n')[0]; // Take first line only
                     if (!path || path === 'exit') {
@@ -211,15 +207,15 @@ export class DisksApi {
                     smartctlPath = path;
                     proceedWithSmartInfo();
                 });
-                
+
                 checkProc.fail(() => {
                     resolve(null);
                 });
                 return;
             }
-            
+
             proceedWithSmartInfo();
-            
+
             function proceedWithSmartInfo() {
                 // Try to run smartctl directly - if it fails, we'll catch it
                 const isNVMe = devicePath.includes('nvme');
@@ -247,7 +243,7 @@ export class DisksApi {
                     hostWrites: null,
                     type: ''
                 };
-                
+
                 // For NVMe devices, use different approach
                 if (isNVMe) {
                     // Get NVMe SMART info directly - use full path if we found it, otherwise try smartctl
@@ -256,11 +252,11 @@ export class DisksApi {
                     // For NVMe, smartctl might output to stderr, so merge stderr into stdout
                     const nvmeProc = cockpit.spawn([smartctlCmd, '-a', devicePath], { err: 'out' });
                     let nvmeOutput = '';
-                    
+
                     nvmeProc.stream((data) => {
                         nvmeOutput += data;
                     });
-                    
+
                     nvmeProc.done((nvmeExitCode) => {
                         // For NVMe devices, smartctl may return non-zero exit codes but still produce useful output
                         // Exit code 4 is common for NVMe devices but output is still valid
@@ -272,13 +268,13 @@ export class DisksApi {
                         if (modelMatch) {
                             smartInfo.model = modelMatch[1].trim();
                         }
-                        
+
                         // Parse NVMe serial
                         const serialMatch = nvmeOutput.match(/Serial Number:\s*(.+)/i);
                         if (serialMatch) {
                             smartInfo.serial = serialMatch[1].trim();
                         }
-                        
+
                             // Parse NVMe capacity - try multiple patterns as NVMe output can vary
                             const capacityMatch = nvmeOutput.match(/Total NVM Capacity:\s*([\d,]+)\s*bytes/i) ||
                                                 nvmeOutput.match(/Namespace 1 Size\/Capacity:\s*([\d,]+)\s*\[/i) ||
@@ -289,7 +285,7 @@ export class DisksApi {
                                 const bytes = parseInt(capacityMatch[1].replace(/,/g, ''));
                                 smartInfo.capacity = DisksApi.formatBytes(bytes);
                             }
-                        
+
                         // Parse NVMe health status
                         if (nvmeOutput.match(/SMART overall-health self-assessment test result:\s*PASSED/i) ||
                             nvmeOutput.match(/Health Status:\s*OK/i)) {
@@ -298,7 +294,7 @@ export class DisksApi {
                                   nvmeOutput.match(/Health Status:\s*FAILED/i)) {
                             smartInfo.health = 'FAILED';
                         }
-                        
+
                         // Parse NVMe temperature (usually in Celsius)
                         const tempMatch = nvmeOutput.match(/Temperature:\s*(\d+)\s*Celsius/i) ||
                                         nvmeOutput.match(/Temperature Sensor \d+:\s*(\d+)\s*C/i) ||
@@ -306,47 +302,47 @@ export class DisksApi {
                         if (tempMatch) {
                             smartInfo.temperature = parseInt(tempMatch[1]);
                         }
-                        
+
                         // Parse Power On Hours for NVMe
                         const pohMatch = nvmeOutput.match(/Power On Hours:\s*(\d+)/i);
                         if (pohMatch) {
                             smartInfo.powerOnHours = parseInt(pohMatch[1]);
                         }
-                        
+
                         // Parse Power Cycles for NVMe
                         const pcMatch = nvmeOutput.match(/Power Cycles:\s*(\d+)/i);
                         if (pcMatch) {
                             smartInfo.powerCycleCount = parseInt(pcMatch[1]);
                         }
-                        
+
                         // Parse Media and Data Integrity Errors (NVMe equivalent of reallocated sectors)
                         const mediaErrorMatch = nvmeOutput.match(/Media and Data Integrity Errors:\s*(\d+)/i);
                         if (mediaErrorMatch) {
                             smartInfo.reallocatedSectors = parseInt(mediaErrorMatch[1]);
                         }
-                        
+
                         // Parse firmware version
                         const firmwareMatch = nvmeOutput.match(/Firmware Version:\s*(.+)/i);
                         if (firmwareMatch) {
                             smartInfo.firmware = firmwareMatch[1].trim();
                         }
-                        
+
                         // Set type for NVMe
                         smartInfo.type = 'NVMe';
-                        
+
                         // Parse NVMe SMART attributes/log pages from the entire output
                         // NVMe devices don't have traditional SMART attributes, but we can parse log pages
                         const logLines = nvmeOutput.split('\n');
                         let attrId = 200; // Start from 200 to avoid conflicts with standard SMART IDs
                         const seenAttributes = new Set(); // Track which attributes we've already added
-                        
+
                         for (const line of logLines) {
                             // Skip empty lines, headers, and separators
-                            if (!line.trim() || line.match(/^[=\-]+$/) || line.match(/^[A-Z\s]+$/) || 
+                            if (!line.trim() || line.match(/^[=\-]+$/) || line.match(/^[A-Z\s]+$/) ||
                                 line.match(/^===/) || line.match(/^---/) || line.match(/^SMART/)) {
                                 continue;
                             }
-                            
+
                             // Parse various NVMe log entries - try multiple patterns
                             const tempMatch = line.match(/Temperature[:\s]+(\d+)/i);
                             const warningMatch = line.match(/Critical Warning[:\s]+(0x[\da-fA-F]+|\d+)/i);
@@ -363,7 +359,7 @@ export class DisksApi {
                             const unsafeShutdownsMatch = line.match(/Unsafe Shutdowns[:\s]+([\d,]+)/i);
                             const mediaErrorsMatch = line.match(/Media and Data Integrity Errors[:\s]+([\d,]+)/i);
                             const errorInfoMatch = line.match(/Error Information Log Entries[:\s]+([\d,]+)/i);
-                            
+
                             if (tempMatch && !seenAttributes.has('Temperature')) {
                                 seenAttributes.add('Temperature');
                                 smartInfo.attributes.push({
@@ -375,7 +371,7 @@ export class DisksApi {
                                     rawValue: parseInt(tempMatch[1])
                                 });
                             }
-                            
+
                             if (warningMatch && !seenAttributes.has('Critical Warning')) {
                                 seenAttributes.add('Critical Warning');
                                 smartInfo.attributes.push({
@@ -387,7 +383,7 @@ export class DisksApi {
                                     rawValue: warningMatch[1]
                                 });
                             }
-                            
+
                             if (availableMatch && !seenAttributes.has('Available Spare')) {
                                 seenAttributes.add('Available Spare');
                                 smartInfo.attributes.push({
@@ -399,7 +395,7 @@ export class DisksApi {
                                     rawValue: parseInt(availableMatch[1])
                                 });
                             }
-                            
+
                             if (spareThresholdMatch && !seenAttributes.has('Available Spare Threshold')) {
                                 seenAttributes.add('Available Spare Threshold');
                                 smartInfo.attributes.push({
@@ -411,7 +407,7 @@ export class DisksApi {
                                     rawValue: parseInt(spareThresholdMatch[1])
                                 });
                             }
-                            
+
                             if (percentageMatch && !seenAttributes.has('Percentage Used')) {
                                 seenAttributes.add('Percentage Used');
                                 smartInfo.attributes.push({
@@ -423,7 +419,7 @@ export class DisksApi {
                                     rawValue: parseInt(percentageMatch[1])
                                 });
                             }
-                            
+
                             if (dataUnitsReadMatch && !seenAttributes.has('Data Units Read')) {
                                 seenAttributes.add('Data Units Read');
                                 smartInfo.attributes.push({
@@ -435,7 +431,7 @@ export class DisksApi {
                                     rawValue: parseInt(dataUnitsReadMatch[1].replace(/,/g, ''))
                                 });
                             }
-                            
+
                             if (dataUnitsWrittenMatch && !seenAttributes.has('Data Units Written')) {
                                 seenAttributes.add('Data Units Written');
                                 smartInfo.attributes.push({
@@ -447,7 +443,7 @@ export class DisksApi {
                                     rawValue: parseInt(dataUnitsWrittenMatch[1].replace(/,/g, ''))
                                 });
                             }
-                            
+
                             if (hostReadsMatch && !seenAttributes.has('Host Read Commands')) {
                                 seenAttributes.add('Host Read Commands');
                                 smartInfo.hostReads = parseInt(hostReadsMatch[1].replace(/,/g, ''));
@@ -460,7 +456,7 @@ export class DisksApi {
                                     rawValue: parseInt(hostReadsMatch[1].replace(/,/g, ''))
                                 });
                             }
-                            
+
                             if (hostWritesMatch && !seenAttributes.has('Host Write Commands')) {
                                 seenAttributes.add('Host Write Commands');
                                 smartInfo.hostWrites = parseInt(hostWritesMatch[1].replace(/,/g, ''));
@@ -473,7 +469,7 @@ export class DisksApi {
                                     rawValue: parseInt(hostWritesMatch[1].replace(/,/g, ''))
                                 });
                             }
-                            
+
                             if (controllerBusyMatch && !seenAttributes.has('Controller Busy Time')) {
                                 seenAttributes.add('Controller Busy Time');
                                 smartInfo.attributes.push({
@@ -485,7 +481,7 @@ export class DisksApi {
                                     rawValue: parseInt(controllerBusyMatch[1].replace(/,/g, ''))
                                 });
                             }
-                            
+
                             if (powerCyclesMatch && !seenAttributes.has('Power Cycles')) {
                                 seenAttributes.add('Power Cycles');
                                 if (!smartInfo.powerCycleCount) {
@@ -500,7 +496,7 @@ export class DisksApi {
                                     rawValue: parseInt(powerCyclesMatch[1].replace(/,/g, ''))
                                 });
                             }
-                            
+
                             if (powerOnHoursMatch && !seenAttributes.has('Power On Hours')) {
                                 seenAttributes.add('Power On Hours');
                                 if (!smartInfo.powerOnHours) {
@@ -515,7 +511,7 @@ export class DisksApi {
                                     rawValue: parseInt(powerOnHoursMatch[1].replace(/,/g, ''))
                                 });
                             }
-                            
+
                             if (unsafeShutdownsMatch && !seenAttributes.has('Unsafe Shutdowns')) {
                                 seenAttributes.add('Unsafe Shutdowns');
                                 smartInfo.attributes.push({
@@ -527,7 +523,7 @@ export class DisksApi {
                                     rawValue: parseInt(unsafeShutdownsMatch[1].replace(/,/g, ''))
                                 });
                             }
-                            
+
                             if (mediaErrorsMatch && !seenAttributes.has('Media and Data Integrity Errors')) {
                                 seenAttributes.add('Media and Data Integrity Errors');
                                 if (!smartInfo.reallocatedSectors) {
@@ -542,7 +538,7 @@ export class DisksApi {
                                     rawValue: parseInt(mediaErrorsMatch[1].replace(/,/g, ''))
                                 });
                             }
-                            
+
                             if (errorInfoMatch && !seenAttributes.has('Error Information Log Entries')) {
                                 seenAttributes.add('Error Information Log Entries');
                                 smartInfo.attributes.push({
@@ -555,13 +551,13 @@ export class DisksApi {
                                 });
                             }
                         }
-                        
+
                         resolve(smartInfo);
                         } else {
                             resolve(null);
                         }
                 });
-                
+
                 nvmeProc.fail((error) => {
                     // Even if smartctl returns a non-zero exit code, check if we got any output
                     // Exit code 4 is common for NVMe devices but output may still be valid
@@ -572,12 +568,12 @@ export class DisksApi {
                         if (modelMatch) {
                             smartInfo.model = modelMatch[1].trim();
                         }
-                        
+
                         const serialMatch = nvmeOutput.match(/Serial Number:\s*(.+)/i);
                         if (serialMatch) {
                             smartInfo.serial = serialMatch[1].trim();
                         }
-                        
+
                         // Parse NVMe capacity - try multiple patterns as NVMe output can vary
                         const capacityMatch = nvmeOutput.match(/Total NVM Capacity:\s*([\d,]+)\s*bytes/i) ||
                                             nvmeOutput.match(/Namespace 1 Size\/Capacity:\s*([\d,]+)\s*\[/i) ||
@@ -588,7 +584,7 @@ export class DisksApi {
                             const bytes = parseInt(capacityMatch[1].replace(/,/g, ''));
                             smartInfo.capacity = DisksApi.formatBytes(bytes);
                         }
-                        
+
                         if (nvmeOutput.match(/SMART overall-health self-assessment test result:\s*PASSED/i) ||
                             nvmeOutput.match(/Health Status:\s*OK/i)) {
                             smartInfo.health = 'PASSED';
@@ -596,49 +592,49 @@ export class DisksApi {
                                   nvmeOutput.match(/Health Status:\s*FAILED/i)) {
                             smartInfo.health = 'FAILED';
                         }
-                        
+
                         const tempMatch = nvmeOutput.match(/Temperature:\s*(\d+)\s*Celsius/i) ||
                                         nvmeOutput.match(/Temperature Sensor \d+:\s*(\d+)\s*C/i) ||
                                         nvmeOutput.match(/Temperature:\s*(\d+)\s*C/i);
                         if (tempMatch) {
                             smartInfo.temperature = parseInt(tempMatch[1]);
                         }
-                        
+
                         const pohMatch = nvmeOutput.match(/Power On Hours:\s*(\d+)/i);
                         if (pohMatch) {
                             smartInfo.powerOnHours = parseInt(pohMatch[1]);
                         }
-                        
+
                         const pcMatch = nvmeOutput.match(/Power Cycles:\s*(\d+)/i);
                         if (pcMatch) {
                             smartInfo.powerCycleCount = parseInt(pcMatch[1]);
                         }
-                        
+
                         const mediaErrorMatch = nvmeOutput.match(/Media and Data Integrity Errors:\s*(\d+)/i);
                         if (mediaErrorMatch) {
                             smartInfo.reallocatedSectors = parseInt(mediaErrorMatch[1]);
                         }
-                        
+
                         // Parse firmware version
                         const firmwareMatch = nvmeOutput.match(/Firmware Version:\s*(.+)/i);
                         if (firmwareMatch) {
                             smartInfo.firmware = firmwareMatch[1].trim();
                         }
-                        
+
                         // Set type for NVMe
                         smartInfo.type = 'NVMe';
-                        
+
                         // Parse NVMe SMART attributes/log pages from the entire output (same as in done callback)
                         const logLines = nvmeOutput.split('\n');
                         let attrId = 200;
                         const seenAttributes = new Set();
-                        
+
                         for (const line of logLines) {
-                            if (!line.trim() || line.match(/^[=\-]+$/) || line.match(/^[A-Z\s]+$/) || 
+                            if (!line.trim() || line.match(/^[=\-]+$/) || line.match(/^[A-Z\s]+$/) ||
                                 line.match(/^===/) || line.match(/^---/) || line.match(/^SMART/)) {
                                 continue;
                             }
-                            
+
                             const tempMatch = line.match(/Temperature[:\s]+(\d+)/i);
                             const warningMatch = line.match(/Critical Warning[:\s]+(0x[\da-fA-F]+|\d+)/i);
                             const availableMatch = line.match(/Available Spare[:\s]+(\d+)/i);
@@ -654,7 +650,7 @@ export class DisksApi {
                             const unsafeShutdownsMatch = line.match(/Unsafe Shutdowns[:\s]+([\d,]+)/i);
                             const mediaErrorsMatch = line.match(/Media and Data Integrity Errors[:\s]+([\d,]+)/i);
                             const errorInfoMatch = line.match(/Error Information Log Entries[:\s]+([\d,]+)/i);
-                            
+
                             if (tempMatch && !seenAttributes.has('Temperature')) {
                                 seenAttributes.add('Temperature');
                                 smartInfo.attributes.push({ id: attrId++, name: 'Temperature', value: parseInt(tempMatch[1]), worst: parseInt(tempMatch[1]), threshold: 0, rawValue: parseInt(tempMatch[1]) });
@@ -721,7 +717,7 @@ export class DisksApi {
                                 smartInfo.attributes.push({ id: attrId++, name: 'Error Information Log Entries', value: 0, worst: 0, threshold: 0, rawValue: parseInt(errorInfoMatch[1].replace(/,/g, '')) });
                             }
                         }
-                        
+
                         // If we parsed at least the model, consider it successful
                         if (smartInfo.model || smartInfo.serial || smartInfo.capacity) {
                             resolve(smartInfo);
@@ -737,11 +733,11 @@ export class DisksApi {
                 const smartctlCmd = (smartctlPath || 'smartctl').split('\n')[0].trim();
                 const healthProc = cockpit.spawn([smartctlCmd, '-H', devicePath], { err: 'message' });
                 let healthOutput = '';
-                
+
                 healthProc.stream((data) => {
                     healthOutput += data;
                 });
-                
+
                 healthProc.done(async (healthExitCode) => {
                     // Parse health status
                     if (healthOutput.includes('PASSED') || healthOutput.includes('OK')) {
@@ -749,40 +745,40 @@ export class DisksApi {
                     } else if (healthOutput.includes('FAILED')) {
                         smartInfo.health = 'FAILED';
                     }
-                    
+
                     // Get detailed SMART attributes
                     const attrsProc = cockpit.spawn([smartctlCmd, '-A', devicePath], { err: 'message' });
                     let attrsOutput = '';
-                    
+
                     attrsProc.stream((data) => {
                         attrsOutput += data;
                     });
-                    
+
                     attrsProc.done(async (attrsExitCode) => {
                         // Parse model and serial from info section
                         const infoProc = cockpit.spawn([smartctlCmd, '-i', devicePath], { err: 'message' });
                         let infoOutput = '';
-                        
+
                         infoProc.stream((data) => {
                             infoOutput += data;
                         });
-                        
+
                         infoProc.done((infoExitCode) => {
                             // Parse model
-                            const modelMatch = infoOutput.match(/Device Model:\s*(.+)/i) || 
+                            const modelMatch = infoOutput.match(/Device Model:\s*(.+)/i) ||
                                              infoOutput.match(/Model Number:\s*(.+)/i) ||
                                              infoOutput.match(/Model Family:\s*(.+)/i);
                             if (modelMatch) {
                                 smartInfo.model = modelMatch[1].trim();
                             }
-                            
+
                             // Parse serial
                             const serialMatch = infoOutput.match(/Serial Number:\s*(.+)/i) ||
                                               infoOutput.match(/Serial number:\s*(.+)/i);
                             if (serialMatch) {
                                 smartInfo.serial = serialMatch[1].trim();
                             }
-                            
+
                             // Parse capacity
                             const capacityMatch = infoOutput.match(/User Capacity:\s*\[?(\d+)\s*bytes\]?/i) ||
                                                 infoOutput.match(/Capacity:\s*(\d+)\s*bytes/i);
@@ -790,13 +786,13 @@ export class DisksApi {
                                 const bytes = parseInt(capacityMatch[1]);
                                 smartInfo.capacity = DisksApi.formatBytes(bytes);
                             }
-                            
+
                             // Parse firmware
                             const firmwareMatch = infoOutput.match(/Firmware Version:\s*(.+)/i);
                             if (firmwareMatch) {
                                 smartInfo.firmware = firmwareMatch[1].trim();
                             }
-                            
+
                             // Parse interface (SATA, SAS, etc.)
                             const interfaceMatch = infoOutput.match(/SATA Version is:\s*(.+)/i) ||
                                                   infoOutput.match(/Transport protocol:\s*(.+)/i);
@@ -807,14 +803,14 @@ export class DisksApi {
                             } else if (infoOutput.match(/SAS/i)) {
                                 smartInfo.interface = 'SAS';
                             }
-                            
+
                             // Parse transfer mode
                             const transferMatch = infoOutput.match(/SATA Version is:\s*.*?(\d+\.\d+\s*Gb\/s)/i) ||
                                                    infoOutput.match(/SATA Version is:\s*.*?(\d+\.\d+\s*Gbps)/i);
                             if (transferMatch) {
                                 smartInfo.transferMode = transferMatch[1].trim();
                             }
-                            
+
                             // Parse rotation rate
                             const rotationMatch = infoOutput.match(/Rotation Rate:\s*(\d+)\s*rpm/i) ||
                                                  infoOutput.match(/Rotation Rate:\s*Solid State Device/i);
@@ -826,26 +822,26 @@ export class DisksApi {
                                     smartInfo.type = 'SSD';
                                 }
                             }
-                            
+
                             // Parse physical block size
                             const blockSizeMatch = infoOutput.match(/Sector Sizes?:\s*(\d+)\s*bytes/i) ||
                                                   infoOutput.match(/Logical block size:\s*(\d+)\s*bytes/i);
                             if (blockSizeMatch) {
                                 smartInfo.physicalBlockSize = blockSizeMatch[1] + ' bytes';
                             }
-                            
+
                             // Parse WWN
                             const wwnMatch = infoOutput.match(/WWN:\s*(.+)/i) ||
                                            infoOutput.match(/World Wide Name:\s*(.+)/i);
                             if (wwnMatch) {
                                 smartInfo.wwn = wwnMatch[1].trim();
                             }
-                            
+
                             // Set type if not already set
                             if (!smartInfo.type) {
                                 smartInfo.type = smartInfo.rotationRate === 0 ? 'SSD' : 'HDD';
                             }
-                            
+
                             // Parse SMART attributes
                             const lines = attrsOutput.split('\n');
                             for (const line of lines) {
@@ -861,7 +857,7 @@ export class DisksApi {
                                     const value = parseInt(attrMatch[3]);
                                     const worst = parseInt(attrMatch[4]);
                                     const threshold = parseInt(attrMatch[5]);
-                                    
+
                                     // Extract RAW_VALUE (last numeric field, can be very large)
                                     // Try to match the last number in the line, handling large numbers
                                     const rawMatch = line.match(/\s+(\d+)\s*$/);
@@ -873,7 +869,7 @@ export class DisksApi {
                                     } else if (rawMatchAlt) {
                                         rawValue = parseInt(rawMatchAlt[1]);
                                     }
-                                    
+
                                     // If still no match, try to extract from the last field after splitting
                                     if (rawValue === null) {
                                         const parts = line.trim().split(/\s+/);
@@ -885,7 +881,7 @@ export class DisksApi {
                                             }
                                         }
                                     }
-                                    
+
                                     smartInfo.attributes.push({
                                         id,
                                         name,
@@ -894,7 +890,7 @@ export class DisksApi {
                                         threshold,
                                         rawValue
                                     });
-                                    
+
                                     // Extract specific important attributes
                                     if (name.includes('Temperature') || name.includes('Temp')) {
                                         smartInfo.temperature = rawValue || value;
@@ -916,20 +912,20 @@ export class DisksApi {
                                     }
                                 }
                             }
-                            
+
                             resolve(smartInfo);
                         });
-                        
+
                         infoProc.fail(() => {
                             resolve(smartInfo); // Return what we have
                         });
                     });
-                    
+
                     attrsProc.fail(() => {
                         resolve(smartInfo); // Return what we have
                     });
                 });
-                
+
                 healthProc.fail(() => {
                     resolve(null); // SMART not available for this device
                 });

@@ -47,12 +47,21 @@ export class ZfsApi {
                 // If we have pool data, always resolve successfully regardless of exit code
                 if (pools.length > 0 || exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     // Get vdev type for each pool
+                    let ashiftMap = {};
+                    try {
+                        ashiftMap = await this.getAllPoolsAshift();
+                    } catch (e) {
+                        console.warn("Failed to fetch ashift map", e);
+                    }
+
                     for (const pool of pools) {
                         try {
                             pool.vdevType = await this.getPoolVdevType(pool.name);
                         } catch {
                             pool.vdevType = 'stripe'; // Default to stripe if detection fails
                         }
+
+                        pool.ashift = ashiftMap[pool.name] || '-';
                     }
                     resolve(pools);
                 } else {
@@ -68,16 +77,46 @@ export class ZfsApi {
         });
     }
 
+    static async getAllPoolsAshift() {
+        return new Promise((resolve, reject) => {
+            const ashiftMap = {};
+            const proc = cockpit.spawn(['zpool', 'get', '-Hp', '-o', 'name,value', 'ashift'], {
+                err: 'message'
+            });
+
+            proc.stream((data) => {
+                const lines = data.trim().split('\n');
+                lines.forEach(line => {
+                    if (line.trim()) {
+                        const parts = line.split('\t');
+                        if (parts.length >= 2) {
+                            const name = parts[0];
+                            const value = parts[1];
+                            ashiftMap[name] = value;
+                        }
+                    }
+                });
+            });
+
+            proc.done((exitCode) => {
+                 resolve(ashiftMap);
+            });
+
+            proc.fail(() => resolve({})); // resolve empty on fail
+        });
+    }
+
     static async listAvailableDisks() {
         return new Promise((resolve, reject) => {
             const disks = [];
-            
+
             // Use the same approach that worked in the old code
             // Use lsblk with awk to parse and format output properly
-            const proc = cockpit.spawn(['sh', '-c', 'lsblk -nd -o NAME,TYPE,SIZE,MODEL -e 7,11 2>/dev/null | awk \'$2=="disk" && $1!~/^loop/ && $1!~/^ram/ {path="/dev/"$1; size=$3; model=""; for(i=4;i<=NF;i++) model=model" "$i; gsub(/^ /,"",model); if(model=="") model=$1; print path"|"model"|"size}\''], {
+            // Added PHY-SEC to get physical sector size for ashift calculation
+            const proc = cockpit.spawn(['sh', '-c', 'lsblk -nd -o NAME,TYPE,SIZE,PHY-SEC,MODEL -e 7,11 2>/dev/null | awk \'$2=="disk" && $1!~/^loop/ && $1!~/^ram/ {path="/dev/"$1; size=$3; phy_sec=$4; model=""; for(i=5;i<=NF;i++) model=model" "$i; gsub(/^ /,"",model); if(model=="") model=$1; print path"|"model"|"size"|"phy_sec}\''], {
                 err: 'message'
             });
-            
+
             proc.stream((data) => {
                 const lines = data.split('\n');
                 lines.forEach(line => {
@@ -88,12 +127,13 @@ export class ZfsApi {
                             path: parts[0],
                             type: 'disk',
                             size: parts[2] || 'Unknown',
+                            phySec: parseInt(parts[3], 10) || 512,
                             model: parts[1] || parts[0].replace('/dev/', '')
                         });
                     }
                 });
             });
-            
+
             proc.done((exitCode) => {
                 disks.sort((a, b) => a.path.localeCompare(b.path));
                 if (exitCode === 0) {
@@ -103,7 +143,7 @@ export class ZfsApi {
                     resolve(disks);
                 }
             });
-            
+
             proc.fail((error) => {
                 // If lsblk fails completely, return empty array instead of rejecting
                 console.warn('lsblk failed:', error);
@@ -212,13 +252,13 @@ export class ZfsApi {
                     // Parse output to extract version numbers and descriptions
                     const lines = output.trim().split('\n');
                     let currentVersion = null;
-                    
+
                     lines.forEach(line => {
                         const trimmed = line.trim();
                         if (!trimmed || trimmed.startsWith('This system')) {
                             return;
                         }
-                        
+
                         // Match version lines like "28	zpool version 28"
                         const versionMatch = trimmed.match(/^(\d+)\s+(.+)$/);
                         if (versionMatch) {
@@ -228,7 +268,7 @@ export class ZfsApi {
                             });
                         }
                     });
-                    
+
                     resolve(versions);
                 } else {
                     const errorMsg = output.trim() || data || `zpool upgrade -v exited with code ${exitCode}`;
@@ -377,29 +417,45 @@ export class ZfsApi {
         });
     }
 
-    static async createPool(name, devices, vdevType, force = false) {
+    static async createPool(name, devices, vdevType, force = false, ashift = null) {
         return new Promise((resolve, reject) => {
             const args = ['zpool', 'create'];
-            
+
             // Add force flag if requested
             if (force) {
                 args.push('-f');
             }
-            
-            args.push(name);
-            
-            // Add vdev type if not stripe
-            if (vdevType !== 'stripe') {
-                args.push(vdevType);
+
+            // Add ashift if provided
+            if (ashift) {
+                args.push('-o', `ashift=${ashift}`);
             }
-            
-            // Add devices
-            args.push(...devices);
+
+            args.push(name);
+
+            // Handle RAID 10 (Stripe of Mirrors)
+            if (vdevType === 'raid10') {
+                // Create mirror pairs
+                for (let i = 0; i < devices.length; i += 2) {
+                    if (i + 1 < devices.length) {
+                        args.push('mirror', devices[i], devices[i+1]);
+                    }
+                }
+            }
+            // Handle standard types (mirror, raidz, etc.)
+            else if (vdevType !== 'stripe') {
+                args.push(vdevType);
+                args.push(...devices);
+            }
+            // Handle stripe
+            else {
+                args.push(...devices);
+            }
 
             const proc = cockpit.spawn(args, {
                 err: 'message'
             });
-            
+
             let errorOutput = '';
             proc.stream((data) => {
                 errorOutput += data;
@@ -506,7 +562,7 @@ export class ZfsApi {
             if (encrypted) {
                 args.push('-o', 'encryption=aes-256-gcm', '-o', 'keyformat=passphrase', '-o', 'keylocation=prompt');
             }
-            
+
             // Add properties
             if (properties.compression) {
                 args.push('-o', `compression=${properties.compression}`);
@@ -520,11 +576,11 @@ export class ZfsApi {
             if (properties.reservation) {
                 args.push('-o', `reservation=${properties.reservation}`);
             }
-            
+
             args.push(name);
 
             const proc = cockpit.spawn(args, { err: 'message' });
-            
+
             // If encrypted, send passphrase via stdin
             if (encrypted && passphrase) {
                 proc.input(passphrase + '\n');
@@ -993,19 +1049,19 @@ export class ZfsApi {
     static async addVdevToPool(poolName, vdevType, devices, force = false) {
         return new Promise((resolve, reject) => {
             const args = ['zpool', 'add'];
-            
+
             // Add force flag if requested
             if (force) {
                 args.push('-f');
             }
-            
+
             args.push(poolName);
-            
+
             // Add vdev type if not stripe
             if (vdevType !== 'stripe') {
                 args.push(vdevType);
             }
-            
+
             // Add devices
             args.push(...devices);
 
@@ -1048,18 +1104,18 @@ export class ZfsApi {
                 if (output.trim().length > 0 || exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                     const lines = output.split('\n');
                     let vdevType = 'stripe'; // Default to stripe
-                    
+
                     // Look for vdev type in the status output
                     // Format: "pool: poolname" followed by vdev configuration
                     for (let i = 0; i < lines.length; i++) {
                         const line = lines[i].trim();
-                        
+
                         // Look for the pool name line, then check the next lines for vdev info
                         if (line.startsWith('pool:') || line.startsWith('NAME')) {
                             // Check subsequent lines for vdev type indicators
                             for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
                                 const nextLine = lines[j].trim();
-                                
+
                                 // Check for mirror
                                 if (nextLine.includes('mirror') || nextLine.match(/^\s+mirror-/)) {
                                     vdevType = 'mirror';
@@ -1094,7 +1150,7 @@ export class ZfsApi {
                             break;
                         }
                     }
-                    
+
                     resolve(vdevType);
                 } else {
                     reject(new Error(`zpool status exited with code ${exitCode}`));
@@ -1130,35 +1186,56 @@ export class ZfsApi {
 
                     for (const line of lines) {
                         const trimmed = line.trim();
-                        
+
                         // Device table starts with "NAME" header
                         if (trimmed.startsWith('NAME') || trimmed.match(/^\s+NAME\s+STATE\s+READ\s+WRITE\s+CHECKSUM/)) {
                             inDeviceTable = true;
                             continue;
                         }
-                        
+
                         // Parse device rows
                         if (inDeviceTable && trimmed && !trimmed.startsWith('pool:') && !trimmed.startsWith('state:')) {
-                            // Skip separator lines
-                            if (trimmed.match(/^-+$/)) continue;
-                            
+                            // Stop parsing if we hit errors or other sections
+                            if (trimmed.startsWith('errors:')) {
+                                inDeviceTable = false;
+                                continue;
+                            }
+
+                            // Skip separator lines and empty lines
+                            if (trimmed.match(/^-+$/) || !trimmed) continue;
+
+                            // Skip VDEV container names (mirror, raidz, spare, replacing, etc.)
+                            // Also skip "logs", "cache", "special", "dedup" headers
+                            if (trimmed.match(/^(mirror|raidz|draid|spare|replacing|logs|cache|special|dedup)/)) continue;
+
                             const parts = trimmed.split(/\s+/);
                             if (parts.length >= 2) {
-                                const deviceName = parts[0];
+                                let deviceName = parts[0];
                                 const state = parts[1];
-                                
-                                // Skip the pool name itself (first row)
-                                if (deviceName !== poolName && deviceName.startsWith('/dev/')) {
-                                    devices.push({
-                                        name: deviceName,
-                                        state: state,
-                                        read: parts[2] || '0',
-                                        write: parts[3] || '0',
-                                        checksum: parts[4] || '0',
-                                        message: parts.slice(5, -1).join(' ') || '',
-                                        product: parts[parts.length - 1] || ''
-                                    });
+
+                                // Skip the pool name itself (first row usually matches poolName)
+                                if (deviceName === poolName) continue;
+
+                                // If we are here, it should be a disk or partition
+                                // Some systems list full paths /dev/sda, others just sda, others wwn-...
+                                // We assume if it's not a VDEV type, it's a device.
+
+                                // Normalize device path to include /dev/ if it's a simple name
+                                // and doesn't already have a path separator
+                                if (!deviceName.includes('/') && !deviceName.startsWith('/')) {
+                                    deviceName = `/dev/${deviceName}`;
                                 }
+
+                                devices.push({
+                                    name: parts[0], // Display name (as shown in zpool status)
+                                    path: deviceName, // Full path for operations
+                                    state: state,
+                                    read: parts[2] || '0',
+                                    write: parts[3] || '0',
+                                    checksum: parts[4] || '0',
+                                    message: parts.slice(5, -1).join(' ') || '',
+                                    product: parts[parts.length - 1] || ''
+                                });
                             }
                         }
                     }
@@ -1207,7 +1284,7 @@ export class ZfsApi {
     static async sendSnapshot(snapshotName, destination, options = {}) {
         return new Promise((resolve, reject) => {
             const args = ['zfs', 'send'];
-            
+
             if (options.recursive) {
                 args.push('-R');
             }
@@ -1220,9 +1297,9 @@ export class ZfsApi {
             if (options.replication) {
                 args.push('-R');
             }
-            
+
             args.push(snapshotName);
-            
+
             // If destination is a file path, redirect output
             // If it's a remote system, use ssh
             let proc;
@@ -1261,7 +1338,7 @@ export class ZfsApi {
     static async sendSnapshotWithProgress(snapshotName, destination, options = {}, progressCallback) {
         return new Promise((resolve, reject) => {
             const args = ['zfs', 'send'];
-            
+
             if (options.recursive) {
                 args.push('-R');
             }
@@ -1274,17 +1351,17 @@ export class ZfsApi {
             if (options.replication) {
                 args.push('-R');
             }
-            
+
             args.push(snapshotName);
-            
+
             // Check if pv (pipe viewer) is available for progress
             const checkPv = cockpit.spawn(['which', 'pv'], { err: 'message' });
             let pvAvailable = false;
             let pvPath = 'pv';
-            
+
             checkPv.done((exitCode) => {
                 pvAvailable = (exitCode === 0);
-                
+
                 // Build command with or without pv
                 let cmd;
                 if (options.toPool) {
@@ -1315,14 +1392,14 @@ export class ZfsApi {
                         cmd = `${args.join(' ')} > ${destination}`;
                     }
                 }
-                
+
                 const proc = cockpit.spawn(['sh', '-c', cmd], {
                     err: 'message'
                 });
-                
+
                 let lastProgress = { bytes: 0, speed: 0, time: 0 };
                 const startTime = Date.now();
-                
+
                 if (pvAvailable && progressCallback) {
                     // Parse pv output for progress
                     proc.stream((data) => {
@@ -1335,7 +1412,7 @@ export class ZfsApi {
                                 const elapsed = (Date.now() - startTime) / 1000; // seconds
                                 const speed = elapsed > 0 ? bytes / elapsed : 0;
                                 const remaining = speed > 0 ? (options.estimatedSize ? (options.estimatedSize - bytes) / speed : null) : null;
-                                
+
                                 lastProgress = {
                                     bytes,
                                     speed,
@@ -1343,7 +1420,7 @@ export class ZfsApi {
                                     remaining,
                                     percent: options.estimatedSize ? (bytes / options.estimatedSize * 100) : null
                                 };
-                                
+
                                 if (progressCallback) {
                                     progressCallback(lastProgress);
                                 }
@@ -1351,7 +1428,7 @@ export class ZfsApi {
                         });
                     });
                 }
-                
+
                 proc.done((exitCode, data) => {
                     if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                         if (progressCallback) {
@@ -1363,12 +1440,12 @@ export class ZfsApi {
                         reject(new Error(errorMsg));
                     }
                 });
-                
+
                 proc.fail((error) => {
                     reject(error);
                 });
             });
-            
+
             checkPv.fail(() => {
                 // pv not available, proceed without progress
                 pvAvailable = false;
@@ -1379,7 +1456,7 @@ export class ZfsApi {
     static async receiveSnapshot(poolName, source, options = {}) {
         return new Promise((resolve, reject) => {
             const args = ['zfs', 'receive'];
-            
+
             if (options.force) {
                 args.push('-F');
             }
@@ -1389,9 +1466,9 @@ export class ZfsApi {
             if (options.verbose) {
                 args.push('-v');
             }
-            
+
             args.push(poolName);
-            
+
             let proc;
             if (source.startsWith('ssh://') || source.includes('@')) {
                 // Remote source via SSH
@@ -1428,7 +1505,7 @@ export class ZfsApi {
     static async receiveSnapshotWithProgress(poolName, source, options = {}, progressCallback) {
         return new Promise((resolve, reject) => {
             const args = ['zfs', 'receive'];
-            
+
             if (options.force) {
                 args.push('-F');
             }
@@ -1438,17 +1515,17 @@ export class ZfsApi {
             if (options.verbose) {
                 args.push('-v');
             }
-            
+
             args.push(poolName);
-            
+
             // Check if pv (pipe viewer) is available for progress
             const checkPv = cockpit.spawn(['which', 'pv'], { err: 'message' });
             let pvAvailable = false;
             let pvPath = 'pv';
-            
+
             checkPv.done((exitCode) => {
                 pvAvailable = (exitCode === 0);
-                
+
                 // Build command with or without pv
                 let cmd;
                 if (options.fromPool) {
@@ -1480,14 +1557,14 @@ export class ZfsApi {
                         cmd = `cat ${source} | ${args.join(' ')}`;
                     }
                 }
-                
+
                 const proc = cockpit.spawn(['sh', '-c', cmd], {
                     err: 'message'
                 });
-                
+
                 let lastProgress = { bytes: 0, speed: 0, time: 0 };
                 const startTime = Date.now();
-                
+
                 if (pvAvailable && progressCallback) {
                     // Parse pv output for progress
                     proc.stream((data) => {
@@ -1500,7 +1577,7 @@ export class ZfsApi {
                                 const elapsed = (Date.now() - startTime) / 1000; // seconds
                                 const speed = elapsed > 0 ? bytes / elapsed : 0;
                                 const remaining = speed > 0 ? (options.estimatedSize ? (options.estimatedSize - bytes) / speed : null) : null;
-                                
+
                                 lastProgress = {
                                     bytes,
                                     speed,
@@ -1508,7 +1585,7 @@ export class ZfsApi {
                                     remaining,
                                     percent: options.estimatedSize ? (bytes / options.estimatedSize * 100) : null
                                 };
-                                
+
                                 if (progressCallback) {
                                     progressCallback(lastProgress);
                                 }
@@ -1516,7 +1593,7 @@ export class ZfsApi {
                         });
                     });
                 }
-                
+
                 proc.done((exitCode, data) => {
                     if (exitCode === 0 || exitCode == null || exitCode === '' || exitCode === undefined) {
                         if (progressCallback) {
@@ -1528,12 +1605,12 @@ export class ZfsApi {
                         reject(new Error(errorMsg));
                     }
                 });
-                
+
                 proc.fail((error) => {
                     reject(error);
                 });
             });
-            
+
             checkPv.fail(() => {
                 // pv not available, proceed without progress
                 pvAvailable = false;
@@ -1545,14 +1622,14 @@ export class ZfsApi {
     static async mountDataset(datasetName, options = {}) {
         return new Promise((resolve, reject) => {
             const args = ['zfs', 'mount'];
-            
+
             if (options.overlay) {
                 args.push('-O');
             }
             if (options.options) {
                 args.push('-o', options.options);
             }
-            
+
             args.push(datasetName);
 
             const proc = cockpit.spawn(args, {
@@ -1579,11 +1656,11 @@ export class ZfsApi {
     static async unmountDataset(datasetName, options = {}) {
         return new Promise((resolve, reject) => {
             const args = ['zfs', 'unmount'];
-            
+
             if (options.force) {
                 args.push('-f');
             }
-            
+
             args.push(datasetName);
 
             const proc = cockpit.spawn(args, {
@@ -1668,7 +1745,7 @@ export class ZfsApi {
                         if (parts.length >= 3) {
                             const name = parts[0];
                             const value = parseInt(parts[2], 10);
-                            
+
                             switch (name) {
                                 case 'size':
                                     stats.size = value;
@@ -1849,7 +1926,7 @@ export class ZfsApi {
                 write: { ops: 0, bytes: 0 },
                 total: { ops: 0, bytes: 0 }
             };
-            
+
             const proc = cockpit.spawn(['zpool', 'iostat', '-v', poolName, '1', '2'], {
                 err: 'message'
             });

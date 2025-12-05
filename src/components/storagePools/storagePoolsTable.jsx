@@ -28,7 +28,7 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
     const handleCreatePool = async (poolData) => {
-        await ZfsApi.createPool(poolData.name, poolData.devices, poolData.vdevType, poolData.force || false);
+        await ZfsApi.createPool(poolData.name, poolData.devices, poolData.vdevType, poolData.force || false, poolData.ashift);
         setCreateDialogOpen(false);
         onRefresh();
     };
@@ -86,15 +86,16 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                     aria-label="Storage pools"
                     variant="compact"
                     columns={[
-                        { title: "Name", header: true, props: { width: 12 } },
-                        { title: "RAID Type", props: { width: 12 } },
-                        { title: "Health", props: { width: 12 } },
-                        { title: "Size", props: { width: 12 } },
-                        { title: "Allocated", props: { width: 12 } },
-                        { title: "Free", props: { width: 12 } },
-                        { title: "Fragmentation", props: { width: 12 } },
-                        { title: "Usage", props: { width: 16 } },
-                        { title: "", props: { width: 12, "aria-label": "Actions" } },
+                        { title: "Name", header: true, props: { width: 10 } },
+                        { title: "RAID Type", props: { width: 10 } },
+                        { title: "ashift", props: { width: 8 } },
+                        { title: "Health", props: { width: 10 } },
+                        { title: "Size", props: { width: 10 } },
+                        { title: "Allocated", props: { width: 10 } },
+                        { title: "Free", props: { width: 10 } },
+                        { title: "Fragmentation", props: { width: 10 } },
+                        { title: "Usage", props: { width: 12 } },
+                        { title: "", props: { width: 10, "aria-label": "Actions" } },
                     ]}
                     emptyCaption="No storage pool is defined on this host"
                     rows={pools.map(pool => {
@@ -176,10 +177,10 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                         // Format health with color
                         const formatHealth = (health) => {
                             if (!health) return health;
-                            
+
                             const healthUpper = health.toUpperCase();
                             let color = undefined; // Default - use theme color
-                            
+
                             if (healthUpper === 'ONLINE') {
                                 color = '#3e8635'; // PatternFly success green
                             } else if (healthUpper === 'DEGRADED' || healthUpper === 'FAULTED') {
@@ -187,8 +188,8 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                             } else if (healthUpper === 'OFFLINE' || healthUpper === 'UNAVAIL') {
                                 color = '#f0ab00'; // PatternFly warning orange
                             }
-                            
-                            const style = color ? { 
+
+                            const style = color ? {
                                 color: color,
                                 fontWeight: 'bold',
                                 fontSize: 'var(--pf-t--global--font--size--md)'
@@ -196,7 +197,7 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                                 fontWeight: 'bold',
                                 fontSize: 'var(--pf-t--global--font--size--md)'
                             };
-                            
+
                             return (
                                 <span style={style}>
                                     {health}
@@ -208,6 +209,7 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                             columns: [
                                 { title: pool.name, header: true },
                                 { title: formatVdevType(pool.vdevType) },
+                                { title: pool.ashift || '-' },
                                 { title: formatHealth(pool.health) },
                                 { title: pool.size },
                                 { title: pool.allocated },
