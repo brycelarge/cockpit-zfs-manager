@@ -138,7 +138,7 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
                             {
                                 name: "Sanoid",
                                 renderer: SanoidTab,
-                                data: { pool },
+                                data: { pool, onConfigureSanoid: () => setSanoidDialogOpen(true) },
                                 id: `${pool.name}-sanoid`
                             },
                             {

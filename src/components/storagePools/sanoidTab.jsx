@@ -9,13 +9,14 @@ import { Form, FormGroup } from "@patternfly/react-core/dist/esm/components/Form
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { SanoidApi } from '../../zfsApi/sanoid.js';
 
-function SanoidTab({ pool }) {
+function SanoidTab({ pool, onConfigureSanoid }) {
     const [installed, setInstalled] = useState(null);
     const [configPath, setConfigPath] = useState(null);
     const [configContent, setConfigContent] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState({});
     const [isConfigured, setIsConfigured] = useState(false);
+    const [enabling, setEnabling] = useState(false);
 
     useEffect(() => {
         checkSanoid();
@@ -68,6 +69,34 @@ function SanoidTab({ pool }) {
         setError({});
     };
 
+    const handleEnablePool = async () => {
+        setEnabling(true);
+        setError({});
+        try {
+            const content = await SanoidApi.readConfig(configPath);
+
+            const poolConfig = `
+# Automatically enabled for pool ${pool.name}
+[${pool.name}]
+use_template = production
+recursive = yes
+`;
+            const newContent = content + poolConfig;
+
+            await SanoidApi.writeConfig(configPath, newContent);
+
+            // Re-check
+            await checkSanoid();
+        } catch (exc) {
+            setError({
+                dialogError: 'Failed to enable pool',
+                dialogErrorDetail: exc.message || String(exc)
+            });
+        } finally {
+            setEnabling(false);
+        }
+    };
+
     if (loading) {
         return <Spinner size="lg" aria-label="Loading sanoid status" />;
     }
@@ -118,9 +147,16 @@ function SanoidTab({ pool }) {
                 <Alert variant="warning" title={`Pool "${pool.name}" is not configured in Sanoid`} style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
                     <p>This pool does not appear to have a configuration section in <code>{configPath}</code>.</p>
                     <p>Automatic snapshots will not be created until you add a section for this pool.</p>
-                    <p style={{ marginTop: 'var(--pf-t--global--spacer--sm)' }}>
-                        Use the <strong>Configure Sanoid</strong> button on the main Storage Pools page to edit the configuration.
-                    </p>
+                    <div style={{ marginTop: 'var(--pf-t--global--spacer--md)', display: 'flex', gap: '1rem' }}>
+                        <Button variant="primary" onClick={handleEnablePool} isLoading={enabling} isDisabled={enabling || loading}>
+                            Enable Automation
+                        </Button>
+                        {onConfigureSanoid && (
+                            <Button variant="secondary" onClick={onConfigureSanoid} isDisabled={enabling || loading}>
+                                Edit Configuration Manually
+                            </Button>
+                        )}
+                    </div>
                 </Alert>
             )}
 
