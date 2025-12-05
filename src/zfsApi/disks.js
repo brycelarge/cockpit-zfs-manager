@@ -188,37 +188,60 @@ export class DisksApi {
 
     static async getSmartInfo(devicePath, smartctlPath = null) {
         return new Promise((resolve, reject) => {
-            // If no path provided, try to find it
-            if (!smartctlPath) {
-                // Fallback: try common locations (prioritize direct path checks)
-                const checkProc = cockpit.spawn(['sh', '-c', 'for path in /usr/sbin/smartctl /sbin/smartctl /usr/bin/smartctl; do if test -x "$path"; then echo "$path"; exit 0; fi; done; command -v smartctl 2>/dev/null || which smartctl 2>/dev/null || exit 1'], { err: 'message' });
-                let checkOutput = '';
+            // Resolve symlinks first (e.g. /dev/disk/by-id/... -> /dev/nvme0n1)
+            const resolveProc = cockpit.spawn(['readlink', '-f', devicePath], { err: 'message' });
+            let resolvedPath = devicePath;
 
-                checkProc.stream((data) => {
-                    checkOutput += data;
-                });
+            resolveProc.stream((data) => {
+                const trimmed = data.trim();
+                if (trimmed && trimmed.startsWith('/')) {
+                    resolvedPath = trimmed;
+                }
+            });
 
-                checkProc.done((checkExitCode) => {
-                    const path = checkOutput.trim().split('\n')[0]; // Take first line only
-                    if (!path || path === 'exit') {
+            resolveProc.done(() => {
+                runSmartctl();
+            });
+
+            resolveProc.fail(() => {
+                runSmartctl();
+            });
+
+            function runSmartctl() {
+                // If no path provided, try to find it
+                if (!smartctlPath) {
+                    // Fallback: try common locations (prioritize direct path checks)
+                    const checkProc = cockpit.spawn(['sh', '-c', 'for path in /usr/sbin/smartctl /sbin/smartctl /usr/bin/smartctl; do if test -x "$path"; then echo "$path"; exit 0; fi; done; command -v smartctl 2>/dev/null || which smartctl 2>/dev/null || exit 1'], { err: 'message' });
+                    let checkOutput = '';
+
+                    checkProc.stream((data) => {
+                        checkOutput += data;
+                    });
+
+                    checkProc.done((checkExitCode) => {
+                        const path = checkOutput.trim().split('\n')[0]; // Take first line only
+                        if (!path || path === 'exit') {
+                            resolve(null);
+                            return;
+                        }
+                        smartctlPath = path;
+                        proceedWithSmartInfo();
+                    });
+
+                    checkProc.fail(() => {
                         resolve(null);
-                        return;
-                    }
-                    smartctlPath = path;
-                    proceedWithSmartInfo();
-                });
+                    });
+                    return;
+                }
 
-                checkProc.fail(() => {
-                    resolve(null);
-                });
-                return;
+                proceedWithSmartInfo();
             }
-
-            proceedWithSmartInfo();
 
             function proceedWithSmartInfo() {
                 // Try to run smartctl directly - if it fails, we'll catch it
-                const isNVMe = devicePath.includes('nvme');
+                // Check both original and resolved path for 'nvme' to be safe
+                const isNVMe = devicePath.includes('nvme') || resolvedPath.includes('nvme');
+
                 const smartInfo = {
                     available: true,
                     health: 'UNKNOWN',
@@ -250,7 +273,11 @@ export class DisksApi {
                     // Ensure we only use the first path if multiple were returned
                     const smartctlCmd = (smartctlPath || 'smartctl').split('\n')[0].trim();
                     // For NVMe, smartctl might output to stderr, so merge stderr into stdout
-                    const nvmeProc = cockpit.spawn([smartctlCmd, '-a', devicePath], { err: 'out' });
+                    // Use superuser: 'try' to gain necessary permissions
+                    const nvmeProc = cockpit.spawn([smartctlCmd, '-a', resolvedPath], {
+                        err: 'out',
+                        superuser: 'try'
+                    });
                     let nvmeOutput = '';
 
                     nvmeProc.stream((data) => {
@@ -262,18 +289,18 @@ export class DisksApi {
                         // Exit code 4 is common for NVMe devices but output is still valid
                         // Check if we have output first, regardless of exit code
                         if (nvmeOutput && nvmeOutput.trim().length > 0) {
-                        // Parse NVMe model
-                        const modelMatch = nvmeOutput.match(/Model Number:\s*(.+)/i) ||
-                                         nvmeOutput.match(/Device Model:\s*(.+)/i);
-                        if (modelMatch) {
-                            smartInfo.model = modelMatch[1].trim();
-                        }
+                            // Parse NVMe model
+                            const modelMatch = nvmeOutput.match(/Model Number:\s*(.+)/i) ||
+                                             nvmeOutput.match(/Device Model:\s*(.+)/i);
+                            if (modelMatch) {
+                                smartInfo.model = modelMatch[1].trim();
+                            }
 
-                        // Parse NVMe serial
-                        const serialMatch = nvmeOutput.match(/Serial Number:\s*(.+)/i);
-                        if (serialMatch) {
-                            smartInfo.serial = serialMatch[1].trim();
-                        }
+                            // Parse NVMe serial
+                            const serialMatch = nvmeOutput.match(/Serial Number:\s*(.+)/i);
+                            if (serialMatch) {
+                                smartInfo.serial = serialMatch[1].trim();
+                            }
 
                             // Parse NVMe capacity - try multiple patterns as NVMe output can vary
                             const capacityMatch = nvmeOutput.match(/Total NVM Capacity:\s*([\d,]+)\s*bytes/i) ||
