@@ -272,9 +272,7 @@ function StoragePoolsTableContent({ pools, loading, onRefresh }) {
 
 function StoragePoolsTable({ pools, loading, onRefresh }) {
     return (
-        <WithDialogs>
-            <StoragePoolsTableContent pools={pools} loading={loading} onRefresh={onRefresh} />
-        </WithDialogs>
+        <StoragePoolsTableContent pools={pools} loading={loading} onRefresh={onRefresh} />
     );
 }
 
