@@ -257,6 +257,47 @@ function Dashboard({ pools, loading }) {
                             </DescriptionListDescription>
                         </DescriptionListGroup>
                     </DescriptionList>
+
+                    {pools.length > 0 && (
+                        <>
+                            <div style={{
+                                marginTop: 'var(--pf-t--global--spacer--md)',
+                                marginBottom: 'var(--pf-t--global--spacer--md)',
+                                borderTop: '1px solid var(--pf-t--global--border--color--default)',
+                                paddingTop: 'var(--pf-t--global--spacer--md)'
+                            }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: 'var(--pf-t--global--spacer--sm)', fontSize: 'var(--pf-t--global--font--size--sm)' }}>Per Pool Usage</div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--pf-t--global--spacer--md)' }}>
+                                {pools.map(pool => {
+                                    const sizeBytes = pool.sizeBytes !== undefined ? pool.sizeBytes : parseSizeToBytes(pool.size);
+                                    const usedBytes = pool.allocatedBytes !== undefined ? pool.allocatedBytes : parseSizeToBytes(pool.allocated);
+                                    const percent = sizeBytes > 0 ? ((usedBytes / sizeBytes) * 100).toFixed(1) : '0.0';
+
+                                    return (
+                                        <div key={pool.name}>
+                                            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{pool.name}</div>
+                                            <div style={{ fontSize: 'var(--pf-t--global--font--size--sm)', color: 'var(--pf-t--global--text--color--subtle)', marginBottom: '4px' }}>
+                                                {formatBytes(usedBytes)} / {formatBytes(sizeBytes)}
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--pf-t--global--palette--black-200)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                    <div
+                                                        style={{
+                                                            height: '100%',
+                                                            width: `${Math.min(Math.max(parseFloat(percent) || 0, 0), 100)}%`,
+                                                            backgroundColor: parseFloat(percent) > 90 ? '#c9190b' : parseFloat(percent) > 75 ? '#f0ab00' : '#3e8635'
+                                                        }}
+                                                    />
+                                                </div>
+                                                <span style={{ fontSize: 'var(--pf-t--global--font--size--sm)' }}>{percent}%</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
                 </CardBody>
             </Card>
 
