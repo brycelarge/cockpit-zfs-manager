@@ -17,10 +17,15 @@ function Dashboard({ pools, loading }) {
     const [arcHistory, setArcHistory] = useState(Array(60).fill(0));
 
     useEffect(() => {
-        // Poll system stats every 2 seconds
+        let mounted = true;
+        let timeoutId = null;
+
+        // Poll system stats
         const fetchSystemStats = async () => {
             try {
                 const zfsStats = await SystemApi.getZfsStats();
+
+                if (!mounted) return;
 
                 // Update ARC History
                 setArcHistory(prev => {
@@ -29,7 +34,6 @@ function Dashboard({ pools, loading }) {
                 });
 
                 // Update IO History (Total throughput in MB/s)
-                // We get raw bytes from getZfsStats which is current bandwidth
                 const totalMb = zfsStats.io.total / (1024 * 1024);
 
                 setIoHistory(prev => {
@@ -38,13 +42,20 @@ function Dashboard({ pools, loading }) {
                 });
             } catch (error) {
                 console.error('Failed to fetch ZFS stats:', error);
+            } finally {
+                // Schedule next fetch only after this one completes
+                if (mounted) {
+                    timeoutId = setTimeout(fetchSystemStats, 2000);
+                }
             }
         };
 
-        const interval = setInterval(fetchSystemStats, 2000);
         fetchSystemStats(); // Initial fetch
 
-        return () => clearInterval(interval);
+        return () => {
+            mounted = false;
+            if (timeoutId) clearTimeout(timeoutId);
+        };
     }, []);
 
     useEffect(() => {
