@@ -2,6 +2,11 @@
 
 ## High Priority Features
 
+### Replicate Filesystem
+- [ ] Add "Replicate" option to filesystem actions
+- [ ] Workflow to create fresh snapshot + replicate
+- [ ] Simplify backup of entire datasets
+- [ ] Reuse existing replication dialog
 
 ## Medium Priority Features
 
@@ -23,12 +28,6 @@
 
 
 ## Low Priority Features
-
-### Pool Split
-- [ ] Split mirrored pool (`zpool split`)
-- [ ] Create new pool from split
-- [ ] Handle split conflicts
-- [ ] Use cases: Migration, backup
 
 ### Pool Attach
 - [ ] Attach device to mirror (`zpool attach`)
