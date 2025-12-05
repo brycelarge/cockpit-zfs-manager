@@ -2,32 +2,56 @@ const cockpit = window.cockpit;
 
 export class SystemApi {
     static async getStats() {
-        return new Promise((resolve, reject) => {
-            // Read both files in one go to minimize spawn overhead
-            const proc = cockpit.spawn(['sh', '-c', 'cat /proc/stat; echo "---SPLIT---"; cat /proc/meminfo']);
-            let output = '';
+        try {
+            // Use cockpit.file to read files directly (more robust than spawn sh)
+            const [statData, memData] = await Promise.all([
+                cockpit.file('/proc/stat').read(),
+                cockpit.file('/proc/meminfo').read()
+            ]);
 
-            proc.stream((data) => {
-                output += data;
-            });
+            return {
+                cpu: parseCpuStat(statData),
+                memory: parseMemInfo(memData)
+            };
+        } catch (error) {
+            console.error('SystemApi.getStats failed:', error);
+            throw error;
+        }
+    }
 
-            proc.done((exitCode) => {
-                if (exitCode === 0) {
-                    const [statRaw, memRaw] = output.split('---SPLIT---');
-                    const stats = {
-                        cpu: parseCpuStat(statRaw),
-                        memory: parseMemInfo(memRaw)
-                    };
-                    resolve(stats);
-                } else {
-                    reject(new Error('Failed to read system stats'));
+    static async getZfsStats() {
+        try {
+            const [memInfo, arcStats, ioStats] = await Promise.all([
+                cockpit.file('/proc/meminfo').read(),
+                cockpit.file('/proc/spl/kstat/zfs/arcstats').read(),
+                getPoolIoStats()
+            ]);
+
+            // Parse Memory (ARC)
+            const memTotal = parseMemTotal(memInfo);
+            const arcSize = parseArcSize(arcStats);
+            const arcPercent = (memTotal > 0) ? (arcSize / memTotal) * 100 : 0;
+
+            // Parse I/O (Total Bandwidth)
+            // ioStats returns { read: bytes, write: bytes }
+            const totalIo = ioStats.read + ioStats.write;
+
+            return {
+                memory: {
+                    usedBytes: arcSize,
+                    totalBytes: memTotal,
+                    percent: arcPercent
+                },
+                io: {
+                    read: ioStats.read,
+                    write: ioStats.write,
+                    total: totalIo
                 }
-            });
-
-            proc.fail((error) => {
-                reject(error);
-            });
-        });
+            };
+        } catch (error) {
+            console.error('SystemApi.getZfsStats failed:', error);
+            throw error;
+        }
     }
 }
 
@@ -40,14 +64,14 @@ function parseCpuStat(data) {
     const parts = cpuLine.split(/\s+/);
     // cpu  user nice system idle iowait irq softirq steal guest guest_nice
     // parts[0] is "cpu"
-    const user = parseInt(parts[1]);
-    const nice = parseInt(parts[2]);
-    const system = parseInt(parts[3]);
-    const idle = parseInt(parts[4]);
-    const iowait = parseInt(parts[5]);
-    const irq = parseInt(parts[6]);
-    const softirq = parseInt(parts[7]);
-    const steal = parseInt(parts[8]);
+    const user = parseInt(parts[1], 10) || 0;
+    const nice = parseInt(parts[2], 10) || 0;
+    const system = parseInt(parts[3], 10) || 0;
+    const idle = parseInt(parts[4], 10) || 0;
+    const iowait = parseInt(parts[5], 10) || 0;
+    const irq = parseInt(parts[6], 10) || 0;
+    const softirq = parseInt(parts[7], 10) || 0;
+    const steal = parseInt(parts[8], 10) || 0;
 
     const total = user + nice + system + idle + iowait + irq + softirq + steal;
     const active = total - idle - iowait;
@@ -64,13 +88,16 @@ function parseMemInfo(data) {
         const parts = line.split(':');
         if (parts.length === 2) {
             const key = parts[0].trim();
-            const value = parseInt(parts[1].trim().split(' ')[0]); // KB
-            mem[key] = value * 1024; // Bytes
+            // Parse value, ignoring unit (usually kB)
+            const valueStr = parts[1].trim().split(/\s+/)[0];
+            const value = parseInt(valueStr, 10);
+            if (!isNaN(value)) {
+                mem[key] = value * 1024; // Convert kB to Bytes
+            }
         }
     });
 
     // Calculate used/available
-    // MemAvailable is present in newer kernels (standard now)
     const total = mem.MemTotal || 0;
     const available = mem.MemAvailable || (mem.MemFree + mem.Buffers + mem.Cached) || 0;
     const used = total - available;
@@ -81,4 +108,89 @@ function parseMemInfo(data) {
         available,
         percent: total > 0 ? (used / total) * 100 : 0
     };
+}
+
+function parseMemTotal(data) {
+    if (!data) return 0;
+    const match = data.match(/MemTotal:\s+(\d+)\s+kB/);
+    return match ? parseInt(match[1], 10) * 1024 : 0;
+}
+
+function parseArcSize(data) {
+    if (!data) return 0;
+    // size 4 123456
+    const match = data.match(/^size\s+\d+\s+(\d+)/m);
+    return match ? parseInt(match[1], 10) : 0;
+}
+
+async function getPoolIoStats() {
+    return new Promise((resolve) => {
+        // Run iostat twice to get current usage (first output is avg since boot)
+        const proc = cockpit.spawn(['zpool', 'iostat', '-H', '1', '2'], { err: 'message' });
+        let output = '';
+
+        proc.stream((data) => {
+            output += data;
+        });
+
+        proc.done((exitCode) => {
+            if (exitCode === 0) {
+                const lines = output.trim().split('\n');
+                // We expect lines for each pool, repeated twice.
+                // Example with 1 pool: 2 lines.
+                // Example with 2 pools: 4 lines.
+                // We want the last N lines where N is number of pools.
+                // Actually, we just want to sum the last block.
+
+                // Identify the break between first and second report?
+                // zpool iostat -H just outputs lines.
+                // If we have P pools, we get 2*P lines.
+                // We want the last P lines.
+                // But we don't know P easily here without listing.
+                // However, we can just sum the LAST half of lines.
+
+                const allLines = lines.filter(l => l.trim().length > 0);
+                const half = Math.floor(allLines.length / 2);
+                const currentLines = allLines.slice(half); // Take the second set
+
+                let readBytes = 0;
+                let writeBytes = 0;
+
+                currentLines.forEach(line => {
+                    const parts = line.trim().split(/\s+/);
+                    // zpool iostat -H output:
+                    // pool_name  alloc  free  read_ops  write_ops  read_bw  write_bw
+                    // parts indices: 0, 1, 2, 3, 4, 5, 6
+                    if (parts.length >= 7) {
+                        readBytes += parseBandwidth(parts[5]);
+                        writeBytes += parseBandwidth(parts[6]);
+                    }
+                });
+
+                resolve({ read: readBytes, write: writeBytes });
+            } else {
+                resolve({ read: 0, write: 0 });
+            }
+        });
+
+        proc.fail(() => {
+            resolve({ read: 0, write: 0 });
+        });
+    });
+}
+
+function parseBandwidth(str) {
+    if (!str) return 0;
+    const units = {
+        'K': 1024, 'M': 1024**2, 'G': 1024**3, 'T': 1024**4,
+        'k': 1024, 'm': 1024**2, 'g': 1024**3, 't': 1024**4
+    };
+    const lastChar = str.slice(-1);
+    const multiplier = units[lastChar];
+
+    if (multiplier) {
+        return parseFloat(str.slice(0, -1)) * multiplier;
+    } else {
+        return parseFloat(str);
+    }
 }

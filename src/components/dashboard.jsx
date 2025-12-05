@@ -13,36 +13,31 @@ import { parseSizeToBytes, formatBytes } from '../utils/size.js';
 function Dashboard({ pools, loading }) {
     const [stats, setStats] = useState(null);
     const [loadingStats, setLoadingStats] = useState(true);
-    const [cpuHistory, setCpuHistory] = useState(Array(60).fill(0));
-    const [memHistory, setMemHistory] = useState(Array(60).fill(0));
-    const lastCpuRef = React.useRef(null);
+    const [ioHistory, setIoHistory] = useState(Array(60).fill(0));
+    const [arcHistory, setArcHistory] = useState(Array(60).fill(0));
 
     useEffect(() => {
         // Poll system stats every 2 seconds
         const fetchSystemStats = async () => {
             try {
-                const sysStats = await SystemApi.getStats();
+                const zfsStats = await SystemApi.getZfsStats();
 
-                // Update Memory History
-                setMemHistory(prev => {
-                    const newHistory = [...prev.slice(1), sysStats.memory.percent];
+                // Update ARC History
+                setArcHistory(prev => {
+                    const newHistory = [...prev.slice(1), zfsStats.memory.percent];
                     return newHistory;
                 });
 
-                // Update CPU History
-                if (lastCpuRef.current && sysStats.cpu) {
-                    const totalDiff = sysStats.cpu.total - lastCpuRef.current.total;
-                    const activeDiff = sysStats.cpu.active - lastCpuRef.current.active;
-                    const cpuPercent = totalDiff > 0 ? (activeDiff / totalDiff) * 100 : 0;
+                // Update IO History (Total throughput in MB/s)
+                // We get raw bytes from getZfsStats which is current bandwidth
+                const totalMb = zfsStats.io.total / (1024 * 1024);
 
-                    setCpuHistory(prev => {
-                        const newHistory = [...prev.slice(1), cpuPercent];
-                        return newHistory;
-                    });
-                }
-                lastCpuRef.current = sysStats.cpu;
+                setIoHistory(prev => {
+                    const newHistory = [...prev.slice(1), totalMb];
+                    return newHistory;
+                });
             } catch (error) {
-                console.error('Failed to fetch system stats:', error);
+                console.error('Failed to fetch ZFS stats:', error);
             }
         };
 
@@ -146,62 +141,67 @@ function Dashboard({ pools, loading }) {
     }
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--pf-t--global--spacer--md)' }}>
-            <Card>
-                <CardTitle>System Resources</CardTitle>
-                <CardBody>
+        <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--pf-t--global--spacer--md)', marginBottom: 'var(--pf-t--global--spacer--md)' }}>
+                <div>
                     <SimpleLineChart
-                        data={cpuHistory}
-                        title="CPU Usage"
+                        data={ioHistory}
+                        title="Total Throughput"
+                        subTitle="Read + Write"
                         color="#0066cc"
-                        height={100}
+                        height={150}
+                        yLabel=" MB/s"
                     />
+                </div>
+                <div>
                     <SimpleLineChart
-                        data={memHistory}
-                        title="Memory Usage"
+                        data={arcHistory}
+                        title="ARC Memory"
+                        subTitle="% of Total RAM"
                         color="#3e8635"
-                        height={100}
+                        height={150}
                     />
-                </CardBody>
-            </Card>
+                </div>
+            </div>
 
-            <Card>
-                <CardTitle>Storage Pools</CardTitle>
-                <CardBody>
-                    <DescriptionList isHorizontal>
-                        <DescriptionListGroup>
-                            <DescriptionListTerm>Total Pools</DescriptionListTerm>
-                            <DescriptionListDescription>{stats.totalPools}</DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                            <DescriptionListTerm>Healthy</DescriptionListTerm>
-                            <DescriptionListDescription>
-                                <span style={{ color: '#3e8635', fontWeight: 'bold' }}>{stats.healthyPools}</span>
-                            </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        {stats.degradedPools > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--pf-t--global--spacer--md)' }}>
+                <Card>
+                    <CardTitle>Storage Pools</CardTitle>
+                    <CardBody>
+                        <DescriptionList isHorizontal>
                             <DescriptionListGroup>
-                                <DescriptionListTerm>Degraded</DescriptionListTerm>
+                                <DescriptionListTerm>Total Pools</DescriptionListTerm>
+                                <DescriptionListDescription>{stats.totalPools}</DescriptionListDescription>
+                            </DescriptionListGroup>
+                            <DescriptionListGroup>
+                                <DescriptionListTerm>Healthy</DescriptionListTerm>
                                 <DescriptionListDescription>
-                                    <span style={{ color: '#f0ab00', fontWeight: 'bold' }}>{stats.degradedPools}</span>
+                                    <span style={{ color: '#3e8635', fontWeight: 'bold' }}>{stats.healthyPools}</span>
                                 </DescriptionListDescription>
                             </DescriptionListGroup>
-                        )}
-                        {stats.faultedPools > 0 && (
-                            <DescriptionListGroup>
-                                <DescriptionListTerm>Faulted</DescriptionListTerm>
-                                <DescriptionListDescription>
-                                    <span style={{ color: '#c9190b', fontWeight: 'bold' }}>{stats.faultedPools}</span>
-                                </DescriptionListDescription>
-                            </DescriptionListGroup>
-                        )}
-                    </DescriptionList>
-                </CardBody>
-            </Card>
+                            {stats.degradedPools > 0 && (
+                                <DescriptionListGroup>
+                                    <DescriptionListTerm>Degraded</DescriptionListTerm>
+                                    <DescriptionListDescription>
+                                        <span style={{ color: '#f0ab00', fontWeight: 'bold' }}>{stats.degradedPools}</span>
+                                    </DescriptionListDescription>
+                                </DescriptionListGroup>
+                            )}
+                            {stats.faultedPools > 0 && (
+                                <DescriptionListGroup>
+                                    <DescriptionListTerm>Faulted</DescriptionListTerm>
+                                    <DescriptionListDescription>
+                                        <span style={{ color: '#c9190b', fontWeight: 'bold' }}>{stats.faultedPools}</span>
+                                    </DescriptionListDescription>
+                                </DescriptionListGroup>
+                            )}
+                        </DescriptionList>
+                    </CardBody>
+                </Card>
 
-            <Card>
-                <CardTitle>Storage Capacity</CardTitle>
-                <CardBody>
+                <Card>
+                    <CardTitle>Storage Capacity</CardTitle>
+                    <CardBody>
                     <DescriptionList isHorizontal>
                         <DescriptionListGroup>
                             <DescriptionListTerm>Total Capacity</DescriptionListTerm>
@@ -361,8 +361,8 @@ function Dashboard({ pools, loading }) {
                 </Card>
             )}
         </div>
+        </>
     );
 }
 
 export default Dashboard;
-
