@@ -15,21 +15,12 @@ import { ZfsApi } from '../../zfsApi/index.js';
 
 function DeletePoolDialog({ pool, onRefresh }) {
     const Dialogs = useDialogs();
-    const [confirmName, setConfirmName] = useState('');
     const [confirmYes, setConfirmYes] = useState('');
     const [force, setForce] = useState(false);
     const [error, setError] = useState({});
     const [deleting, setDeleting] = useState(false);
 
     const handleDelete = async () => {
-        if (confirmName !== pool.name) {
-            setError({
-                dialogError: 'Pool name does not match',
-                dialogErrorDetail: 'Please type the pool name exactly to confirm deletion'
-            });
-            return;
-        }
-
         if (confirmYes.toLowerCase() !== 'yes') {
             setError({
                 dialogError: 'Confirmation required',
@@ -62,30 +53,13 @@ function DeletePoolDialog({ pool, onRefresh }) {
                         {...(error.dialogErrorDetail && { dialogErrorDetail: error.dialogErrorDetail })}
                     />
                 )}
-                
+
                 <Alert variant="warning" title="Warning: Data Loss Risk" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
                     <p>
                         This will permanently delete the pool <strong>{pool.name}</strong> and all its data.
                         This action cannot be undone.
                     </p>
                 </Alert>
-
-                <p>
-                    Type <strong>{pool.name}</strong> to confirm:
-                </p>
-                <TextInput
-                    id="confirm-pool-name"
-                    value={confirmName}
-                    onChange={(_, value) => {
-                        setConfirmName(value);
-                        if (error.dialogError) {
-                            setError({});
-                        }
-                    }}
-                    placeholder={pool.name}
-                    validated={confirmName && confirmName !== pool.name ? 'error' : 'default'}
-                    style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}
-                />
 
                 <p>
                     Type <strong>"yes"</strong> to confirm deletion:
@@ -117,7 +91,7 @@ function DeletePoolDialog({ pool, onRefresh }) {
                     isDanger
                     id="delete-pool-dialog-confirm"
                     onClick={handleDelete}
-                    isDisabled={confirmName !== pool.name || confirmYes.toLowerCase() !== 'yes' || deleting}
+                    isDisabled={confirmYes.toLowerCase() !== 'yes' || deleting}
                     isLoading={deleting}
                 >
                     Delete Pool
