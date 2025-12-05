@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
-import { EmptyState, EmptyStateIcon, EmptyStateBody, EmptyStateHeader, EmptyStateFooter } from '@patternfly/react-core';
+import { EmptyState, EmptyStateBody, EmptyStateFooter, Title } from '@patternfly/react-core';
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
 import { ReplicatorIcon } from '@patternfly/react-icons';
 
@@ -58,7 +58,10 @@ function ReplicationTasksTable({ pools }) {
     if (tasks.length === 0) {
         return (
             <EmptyState>
-                <EmptyStateHeader titleText="No Scheduled Replication Tasks" icon={<EmptyStateIcon icon={ReplicatorIcon} />} headingLevel="h4" />
+                <div style={{ marginBottom: 'var(--pf-t--global--spacer--md)', fontSize: '3rem', color: 'var(--pf-t--global--icon--color--subtle)' }}>
+                    <ReplicatorIcon />
+                </div>
+                <Title headingLevel="h4" size="lg">No Scheduled Replication Tasks</Title>
                 <EmptyStateBody>
                     Automate your backups by scheduling regular replication tasks using Syncoid.
                 </EmptyStateBody>
