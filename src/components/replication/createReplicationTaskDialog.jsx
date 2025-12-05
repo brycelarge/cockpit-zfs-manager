@@ -9,12 +9,14 @@ import { FormSelect, FormSelectOption } from "@patternfly/react-core/dist/esm/co
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { useDialogs } from 'dialogs.jsx';
 import { SchedulerApi } from '../../zfsApi/scheduler.js';
+import { ZfsApi } from '../../zfsApi/index.js';
 
 function CreateReplicationTaskDialog({ pools, onRefresh }) {
     const Dialogs = useDialogs();
 
     const [sourcePool, setSourcePool] = useState('');
-    const [sourceDataset, setSourceDataset] = useState('');
+    const [sourceDatasets, setSourceDatasets] = useState([]);
+    const [sourceDataset, setSourceDataset] = useState(''); // Full path e.g. "pool/data"
     const [destinationType, setDestinationType] = useState('local');
     const [destinationPool, setDestinationPool] = useState('');
     const [destinationPath, setDestinationPath] = useState('');
@@ -24,7 +26,37 @@ function CreateReplicationTaskDialog({ pools, onRefresh }) {
     const [customSchedule, setCustomSchedule] = useState('0 0 * * *');
 
     const [loading, setLoading] = useState(false);
+    const [loadingDatasets, setLoadingDatasets] = useState(false);
     const [error, setError] = useState({});
+
+    // Fetch datasets when pool changes
+    useEffect(() => {
+        if (sourcePool) {
+            fetchDatasets(sourcePool);
+        } else {
+            setSourceDatasets([]);
+            setSourceDataset('');
+        }
+    }, [sourcePool]);
+
+    const fetchDatasets = async (poolName) => {
+        setLoadingDatasets(true);
+        try {
+            const fsList = await ZfsApi.listFileSystems(poolName);
+            // Filter out snapshots if listFileSystems returns them, though normally it just returns filesystems
+            // Also, usually we might want to replicate the root pool dataset too.
+            // ZfsApi.listFileSystems returns objects with 'name'.
+            setSourceDatasets(fsList);
+            setSourceDataset(poolName); // Default to the root pool dataset
+        } catch (err) {
+            console.error("Failed to list filesystems", err);
+            // Fallback to just the pool
+            setSourceDatasets([{ name: poolName }]);
+            setSourceDataset(poolName);
+        } finally {
+            setLoadingDatasets(false);
+        }
+    };
 
     const scheduleOptions = [
         { value: 'hourly', label: 'Hourly (@hourly)', cron: '0 * * * *' },
@@ -39,7 +71,7 @@ function CreateReplicationTaskDialog({ pools, onRefresh }) {
         setError({});
 
         try {
-            let source = sourceDataset ? `${sourcePool}/${sourceDataset}` : sourcePool;
+            const source = sourceDataset || sourcePool;
             if (!source) throw new Error("Source is required");
 
             let destination = '';
@@ -54,13 +86,7 @@ function CreateReplicationTaskDialog({ pools, onRefresh }) {
             let schedule = scheduleType === 'custom' ? customSchedule : scheduleOptions.find(o => o.value === scheduleType)?.cron;
             if (!schedule) throw new Error("Invalid schedule");
 
-            // Build syncoid command
-            // syncoid --no-privilege-elevation if running as non-root? usually running as root here.
-            // -r for recursive is default in syncoid usually but let's be explicit if flag exists, actually syncoid is recursive by default for datasets
-            // usually command is: syncoid source target
-
             let cmd = `syncoid ${recursive ? '--recursive' : ''} ${source} ${destination}`;
-            // Basic syncoid command construction
 
             await SchedulerApi.addTask(schedule, cmd);
             onRefresh();
@@ -91,8 +117,16 @@ function CreateReplicationTaskDialog({ pools, onRefresh }) {
                         </FormSelect>
                     </FormGroup>
 
-                    <FormGroup label="Source Dataset (Optional)" fieldId="source-dataset">
-                        <TextInput value={sourceDataset} onChange={(_, val) => setSourceDataset(val)} id="source-dataset" placeholder="dataset/child" />
+                    <FormGroup label="Source Dataset" fieldId="source-dataset">
+                        <FormSelect
+                            value={sourceDataset}
+                            onChange={(_, val) => setSourceDataset(val)}
+                            id="source-dataset"
+                            isDisabled={!sourcePool || loadingDatasets}
+                        >
+                            {sourceDatasets.length === 0 && <FormSelectOption value="" label={loadingDatasets ? "Loading..." : "Select Pool First"} isDisabled />}
+                            {sourceDatasets.map(fs => <FormSelectOption key={fs.name} value={fs.name} label={fs.name} />)}
+                        </FormSelect>
                     </FormGroup>
 
                     <FormGroup label="Recursive" fieldId="recursive">
