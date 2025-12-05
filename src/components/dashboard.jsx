@@ -6,11 +6,51 @@ import { Alert } from "@patternfly/react-core/dist/esm/components/Alert";
 import { DescriptionList, DescriptionListGroup, DescriptionListTerm, DescriptionListDescription } from "@patternfly/react-core/dist/esm/components/DescriptionList";
 
 import { ZfsApi } from '../zfsApi/index.js';
+import { SystemApi } from '../zfsApi/system.js';
+import SimpleLineChart from './simpleLineChart.jsx';
 import { parseSizeToBytes, formatBytes } from '../utils/size.js';
 
 function Dashboard({ pools, loading }) {
     const [stats, setStats] = useState(null);
     const [loadingStats, setLoadingStats] = useState(true);
+    const [cpuHistory, setCpuHistory] = useState(Array(60).fill(0));
+    const [memHistory, setMemHistory] = useState(Array(60).fill(0));
+    const lastCpuRef = React.useRef(null);
+
+    useEffect(() => {
+        // Poll system stats every 2 seconds
+        const fetchSystemStats = async () => {
+            try {
+                const sysStats = await SystemApi.getStats();
+
+                // Update Memory History
+                setMemHistory(prev => {
+                    const newHistory = [...prev.slice(1), sysStats.memory.percent];
+                    return newHistory;
+                });
+
+                // Update CPU History
+                if (lastCpuRef.current && sysStats.cpu) {
+                    const totalDiff = sysStats.cpu.total - lastCpuRef.current.total;
+                    const activeDiff = sysStats.cpu.active - lastCpuRef.current.active;
+                    const cpuPercent = totalDiff > 0 ? (activeDiff / totalDiff) * 100 : 0;
+
+                    setCpuHistory(prev => {
+                        const newHistory = [...prev.slice(1), cpuPercent];
+                        return newHistory;
+                    });
+                }
+                lastCpuRef.current = sysStats.cpu;
+            } catch (error) {
+                console.error('Failed to fetch system stats:', error);
+            }
+        };
+
+        const interval = setInterval(fetchSystemStats, 2000);
+        fetchSystemStats(); // Initial fetch
+
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         if (!loading && pools.length > 0) {
@@ -107,6 +147,24 @@ function Dashboard({ pools, loading }) {
 
     return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--pf-t--global--spacer--md)' }}>
+            <Card>
+                <CardTitle>System Resources</CardTitle>
+                <CardBody>
+                    <SimpleLineChart
+                        data={cpuHistory}
+                        title="CPU Usage"
+                        color="#0066cc"
+                        height={100}
+                    />
+                    <SimpleLineChart
+                        data={memHistory}
+                        title="Memory Usage"
+                        color="#3e8635"
+                        height={100}
+                    />
+                </CardBody>
+            </Card>
+
             <Card>
                 <CardTitle>Storage Pools</CardTitle>
                 <CardBody>
