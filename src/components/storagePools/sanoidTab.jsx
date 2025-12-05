@@ -3,8 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
 import { Alert } from "@patternfly/react-core/dist/esm/components/Alert";
-import { TextArea } from "@patternfly/react-core/dist/esm/components/TextArea";
-import { Form, FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 
 import { ModalError } from 'cockpit-components-inline-notification.jsx';
 import { SanoidApi } from '../../zfsApi/sanoid.js';
