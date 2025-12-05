@@ -78,10 +78,10 @@ function Dashboard({ pools, loading }) {
             let totalSnapshots = 0;
 
             for (const pool of pools) {
-                // Parse size (e.g., "7.27T" -> bytes)
-                const sizeBytes = parseSizeToBytes(pool.size);
-                const usedBytes = parseSizeToBytes(pool.allocated);
-                const freeBytes = parseSizeToBytes(pool.free);
+                // Use raw bytes if available (more accurate), otherwise parse
+                const sizeBytes = pool.sizeBytes !== undefined ? pool.sizeBytes : parseSizeToBytes(pool.size);
+                const usedBytes = pool.allocatedBytes !== undefined ? pool.allocatedBytes : parseSizeToBytes(pool.allocated);
+                const freeBytes = pool.freeBytes !== undefined ? pool.freeBytes : parseSizeToBytes(pool.free);
 
                 totalSize += sizeBytes;
                 totalUsed += usedBytes;
