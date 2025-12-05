@@ -162,8 +162,8 @@ async function getPoolIoStats() {
                     // With -p: pool_name alloc free read_ops write_ops read_bytes write_bytes
                     // indices: 0         1     2    3         4         5          6
                     if (parts.length >= 7) {
-                        const rb = parseInt(parts[5], 10);
-                        const wb = parseInt(parts[6], 10);
+                        const rb = parseBandwidth(parts[5]);
+                        const wb = parseBandwidth(parts[6]);
                         if (!isNaN(rb)) readBytes += rb;
                         if (!isNaN(wb)) writeBytes += wb;
                     }
