@@ -15,13 +15,15 @@ export class SchedulerApi {
                 if (exitCode === 0 || exitCode === 1) {
                     const tasks = [];
                     const lines = output.trim().split('\n');
-                    console.log('[ZFS] Crontab raw:', output);
+                    console.warn('[ZFS-DEBUG] Raw crontab output:', JSON.stringify(output));
 
                     for (let i = 0; i < lines.length; i++) {
                         const line = lines[i].trim();
+                        console.warn(`[ZFS-DEBUG] Processing line ${i}: "${line}"`);
 
                         // NEW FORMAT: Marker line followed by task line
                         if (line.startsWith(SchedulerApi.MARKER_PREFIX)) {
+                            console.warn('[ZFS-DEBUG] Found NEW marker');
                             const idMatch = line.match(/id=([a-zA-Z0-9-]+)/);
                             const id = idMatch ? idMatch[1] : `legacy-${i}`;
 
@@ -42,28 +44,32 @@ export class SchedulerApi {
                                 }
                             }
                         }
-                        // OLD FORMAT: Inline comment using Regex for robustness
-                        // Matches: "0 0 * * * cmd # COCKPIT-ZFS-MANAGER-REPLICATION id=123"
-                        const legacyRegex = /(.*)# COCKPIT-ZFS-MANAGER-REPLICATION\s+id=([a-zA-Z0-9-]+)/;
-                        const legacyMatch = line.match(legacyRegex);
+                        // OLD FORMAT regex check
+                        else {
+                            const legacyRegex = /(.*)# COCKPIT-ZFS-MANAGER-REPLICATION\s+id=([a-zA-Z0-9-]+)/;
+                            const legacyMatch = line.match(legacyRegex);
+                            if (legacyMatch) {
+                                console.warn('[ZFS-DEBUG] Found LEGACY match:', legacyMatch);
+                                const jobPart = legacyMatch[1].trim();
+                                const id = legacyMatch[2];
 
-                        if (legacyMatch) {
-                            console.log('[ZFS] Found legacy match:', legacyMatch[0]);
-                            const jobPart = legacyMatch[1].trim();
-                            const id = legacyMatch[2];
-
-                            const parts = jobPart.split(/\s+/);
-                            if (parts.length >= 6) {
-                                const schedule = parts.slice(0, 5).join(' ');
-                                const command = parts.slice(5).join(' ');
-                                tasks.push({
-                                    id, schedule, command,
-                                    raw: line
-                                });
+                                const parts = jobPart.split(/\s+/);
+                                if (parts.length >= 6) {
+                                    const schedule = parts.slice(0, 5).join(' ');
+                                    const command = parts.slice(5).join(' ');
+                                    tasks.push({
+                                        id, schedule, command,
+                                        raw: line
+                                    });
+                                } else {
+                                    console.warn('[ZFS-DEBUG] Legacy match failed field check:', parts.length);
+                                }
+                            } else {
+                                console.warn('[ZFS-DEBUG] No match for line');
                             }
                         }
                     }
-                    console.log('[ZFS] Parsed tasks:', tasks);
+                    console.warn('[ZFS-DEBUG] Final tasks list:', tasks);
                     resolve(tasks);
                 } else {
                     resolve([]);
