@@ -51,6 +51,8 @@ function ReplicationTasksTable({ pools }) {
         return { source: '?', target: '?' };
     };
 
+    console.log('ReplicationTasksTable render. Tasks:', tasks.length);
+
     if (loading) {
         return <Spinner size="lg" />;
     }
@@ -100,7 +102,7 @@ function ReplicationTasksTable({ pools }) {
                             { title: <code style={{ fontSize: 'small' }}>{task.command}</code> },
                             {
                                 title: (
-                                    <Button variant="danger" variantType="secondary" isSmall onClick={() => handleDelete(task.id)}>
+                                    <Button variant="danger" size="sm" onClick={() => handleDelete(task.id)}>
                                         Delete
                                     </Button>
                                 )
