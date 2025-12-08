@@ -1,38 +1,28 @@
 const cockpit = window.cockpit;
 
-console.error("ZFS MANAGER SCHEDULER LOADED - DEBUG MODE ACTIVE - V3");
-
 export class SchedulerApi {
     static MARKER_PREFIX = '# COCKPIT-ZFS-MANAGER-TASK';
-    static LEGACY_MARKER = '# COCKPIT-ZFS-MANAGER-REPLICATION';
 
     static async listTasks() {
-        console.warn("[ZFS-DEBUG] SchedulerApi.listTasks called");
         return new Promise((resolve, reject) => {
-            console.warn("[ZFS-DEBUG] Spawning crontab -l");
             const proc = cockpit.spawn(['crontab', '-l'], { err: 'message' });
             let output = '';
 
             proc.stream((data) => {
-                console.warn("[ZFS-DEBUG] Received stream data length:", data.length);
                 output += data;
             });
 
             proc.done((exitCode) => {
-                console.warn("[ZFS-DEBUG] Process done. Exit code:", exitCode);
                 // Accept 0, 1, null, or empty string as valid completion if we got this far
                 if (exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '') {
                     const tasks = [];
                     const lines = output.trim().split('\n');
-                    console.warn('[ZFS-DEBUG] Raw crontab output:', JSON.stringify(output));
 
                     for (let i = 0; i < lines.length; i++) {
                         const line = lines[i].trim();
-                        console.warn(`[ZFS-DEBUG] Processing line ${i}: "${line}"`);
 
                         // NEW FORMAT: Marker line followed by task line
                         if (line.startsWith(SchedulerApi.MARKER_PREFIX)) {
-                            console.warn('[ZFS-DEBUG] Found NEW marker');
                             const idMatch = line.match(/id=([a-zA-Z0-9-]+)/);
                             const id = idMatch ? idMatch[1] : `legacy-${i}`;
 
@@ -53,32 +43,7 @@ export class SchedulerApi {
                                 }
                             }
                         }
-                        // OLD FORMAT regex check
-                        else {
-                            const legacyRegex = /(.*)# COCKPIT-ZFS-MANAGER-REPLICATION\s+id=([a-zA-Z0-9-]+)/;
-                            const legacyMatch = line.match(legacyRegex);
-                            if (legacyMatch) {
-                                console.warn('[ZFS-DEBUG] Found LEGACY match:', legacyMatch);
-                                const jobPart = legacyMatch[1].trim();
-                                const id = legacyMatch[2];
-
-                                const parts = jobPart.split(/\s+/);
-                                if (parts.length >= 6) {
-                                    const schedule = parts.slice(0, 5).join(' ');
-                                    const command = parts.slice(5).join(' ');
-                                    tasks.push({
-                                        id, schedule, command,
-                                        raw: line
-                                    });
-                                } else {
-                                    console.warn('[ZFS-DEBUG] Legacy match failed field check:', parts.length);
-                                }
-                            } else {
-                                console.warn('[ZFS-DEBUG] No match for line');
-                            }
-                        }
                     }
-                    console.warn('[ZFS-DEBUG] Final tasks list:', tasks);
                     resolve(tasks);
                 } else {
                     resolve([]);
@@ -86,7 +51,7 @@ export class SchedulerApi {
             });
 
             proc.fail((err) => {
-                console.error("[ZFS-DEBUG] Spawn FAILED:", err);
+                console.error("Failed to list cron tasks:", err);
                 resolve([]);
             });
         });
@@ -109,20 +74,11 @@ export class SchedulerApi {
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
 
-                // Check New Format
                 if (line.startsWith(SchedulerApi.MARKER_PREFIX)) {
                     const idMatch = line.match(/id=([a-zA-Z0-9-]+)/);
                     if (idMatch && idMatch[1] === id) {
                         // Found the task to delete. Skip this line AND the next one (the command)
                         i++;
-                        continue;
-                    }
-                }
-                // Check Legacy Format
-                else if (line.includes(SchedulerApi.LEGACY_MARKER)) {
-                    const match = line.match(/id=([a-zA-Z0-9-]+)/);
-                    if (match && match[1] === id) {
-                        // Found legacy task. Skip just this line.
                         continue;
                     }
                 }

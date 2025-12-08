@@ -51,8 +51,6 @@ function ReplicationTasksTable({ pools }) {
         return { source: '?', target: '?' };
     };
 
-    console.log('ReplicationTasksTable render. Tasks:', tasks.length);
-
     if (loading) {
         return <Spinner size="lg" />;
     }
