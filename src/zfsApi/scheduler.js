@@ -1,93 +1,88 @@
 const cockpit = window.cockpit;
 
 export class SchedulerApi {
-    static MARKER = '# COCKPIT-ZFS-MANAGER-REPLICATION';
+    static MARKER_PREFIX = '# COCKPIT-ZFS-MANAGER-TASK';
 
     static async listTasks() {
         return new Promise((resolve, reject) => {
-            // Read root crontab
             const proc = cockpit.spawn(['crontab', '-l'], { err: 'message' });
             let output = '';
 
-            proc.stream((data) => {
-                output += data;
-            });
+            proc.stream((data) => { output += data; });
 
             proc.done((exitCode) => {
-                // Crontab -l returns exit code 1 if no crontab exists for user, which is fine (empty)
                 if (exitCode === 0 || exitCode === 1) {
                     const tasks = [];
                     const lines = output.trim().split('\n');
-                    console.log('SchedulerApi: Raw crontab output:', output);
 
-                    lines.forEach((line, index) => {
-                        console.log('SchedulerApi: Processing line:', line, 'matches marker:', line.includes(SchedulerApi.MARKER));
-                        if (line.includes(SchedulerApi.MARKER)) {
-                            console.log('SchedulerApi: Found managed line:', line);
-                            // Format: schedule command # MARKER id=...
-                            // Example: 0 * * * * syncoid rpool/data user@host:pool/backup # COCKPIT-ZFS-MANAGER-REPLICATION id=12345
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (line.startsWith(SchedulerApi.MARKER_PREFIX)) {
+                            // Found a marker line: # COCKPIT-ZFS-MANAGER-TASK id=...
+                            const idMatch = line.match(/id=([a-zA-Z0-9-]+)/);
+                            const id = idMatch ? idMatch[1] : `legacy-${i}`;
 
-                            // Simple parse: split by marker
-                            const [jobPart, commentPart] = line.split(SchedulerApi.MARKER);
-                            if (!jobPart || !commentPart) return;
+                            // The actual task should be the NEXT line
+                            if (i + 1 < lines.length) {
+                                const taskLine = lines[i+1].trim();
+                                // Validate it's not another marker or empty
+                                if (taskLine && !taskLine.startsWith('#')) {
+                                    const parts = taskLine.split(/\s+/);
+                                    if (parts.length >= 6) {
+                                        const schedule = parts.slice(0, 5).join(' ');
+                                        const command = parts.slice(5).join(' ');
 
-                            const idMatch = commentPart.match(/id=([a-zA-Z0-9-]+)/);
-                            const id = idMatch ? idMatch[1] : `legacy-${index}`;
-
-                            // Parse schedule and command
-                            // Cron has 5 time fields
-                            const parts = jobPart.trim().split(/\s+/);
-                            if (parts.length >= 6) {
-                                const schedule = parts.slice(0, 5).join(' ');
-                                const command = parts.slice(5).join(' ');
-
-                                tasks.push({
-                                    id,
-                                    schedule,
-                                    command,
-                                    raw: line
-                                });
+                                        tasks.push({
+                                            id,
+                                            schedule,
+                                            command,
+                                            // Store both lines as "raw" for deletion
+                                            rawMarker: line,
+                                            rawTask: lines[i+1]
+                                        });
+                                        i++; // Skip the task line in the loop
+                                    }
+                                }
                             }
                         }
-                    });
+                    }
                     resolve(tasks);
                 } else {
-                    // If unknown error
                     resolve([]);
                 }
             });
 
-            proc.fail(() => {
-                // If crontab command fails entirely
-                resolve([]);
-            });
+            proc.fail(() => resolve([]));
         });
     }
 
     static async addTask(schedule, command) {
-        const tasks = await this.listTasks();
         const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        const markerLine = `${SchedulerApi.MARKER_PREFIX} id=${id}`;
+        const taskLine = `${schedule} ${command}`;
 
-        const newTaskLine = `${schedule} ${command} ${SchedulerApi.MARKER} id=${id}`;
-
-        return this.writeCrontab([...tasks.map(t => t.raw), newTaskLine]);
+        // We append to the existing file
+        return this.updateCrontab(lines => {
+            return [...lines, markerLine, taskLine];
+        });
     }
 
     static async deleteTask(id) {
-        const tasks = await this.listTasks();
-        const filteredRaw = tasks.filter(t => t.id !== id).map(t => t.raw);
-
-        // We also need to preserve non-managed lines
-        // This requires reading the full crontab again properly to keep other lines
-        return this.updateCrontab((lines) => {
-            return lines.filter(line => {
-                if (line.includes(SchedulerApi.MARKER)) {
-                    const match = line.match(/id=([a-zA-Z0-9-]+)/);
-                    const lineId = match ? match[1] : null;
-                    return lineId !== id;
+        return this.updateCrontab(lines => {
+            const newLines = [];
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line.startsWith(SchedulerApi.MARKER_PREFIX)) {
+                    const idMatch = line.match(/id=([a-zA-Z0-9-]+)/);
+                    if (idMatch && idMatch[1] === id) {
+                        // Found the task to delete. Skip this line AND the next one (the command)
+                        i++;
+                        continue;
+                    }
                 }
-                return true; // Keep other lines
-            });
+                newLines.push(lines[i]);
+            }
+            return newLines;
         });
     }
 
