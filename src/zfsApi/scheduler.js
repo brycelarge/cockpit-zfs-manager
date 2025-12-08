@@ -1,5 +1,7 @@
 const cockpit = window.cockpit;
 
+console.error("ZFS MANAGER SCHEDULER LOADED - DEBUG MODE ACTIVE - V3");
+
 export class SchedulerApi {
     static MARKER_PREFIX = '# COCKPIT-ZFS-MANAGER-TASK';
     static LEGACY_MARKER = '# COCKPIT-ZFS-MANAGER-REPLICATION';
