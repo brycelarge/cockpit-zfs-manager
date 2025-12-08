@@ -144,6 +144,7 @@ export class SchedulerApi {
                 });
 
                 writeProc.input(newContent);
+                writeProc.close();
                 writeProc.done(code => {
                     if (code === 0 || code == null || code === '') resolve();
                     else reject(new Error(`Failed to write crontab (code ${code}): ${writeError}`));
