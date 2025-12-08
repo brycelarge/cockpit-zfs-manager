@@ -66,7 +66,8 @@ function CreateReplicationTaskDialog({ pools, onRefresh }) {
         { value: 'custom', label: 'Custom Cron Expression', cron: '' }
     ];
 
-    const handleCreate = async () => {
+    const handleCreate = async (event) => {
+        if (event) event.preventDefault();
         setLoading(true);
         setError({});
 
@@ -172,7 +173,7 @@ function CreateReplicationTaskDialog({ pools, onRefresh }) {
                 </Form>
             </ModalBody>
             <ModalFooter>
-                <Button variant="primary" onClick={handleCreate} isLoading={loading} isDisabled={loading}>Create Task</Button>
+                <Button variant="primary" type="button" onClick={handleCreate} isLoading={loading} isDisabled={loading}>Create Task</Button>
                 <Button variant="link" onClick={Dialogs.close}>Cancel</Button>
             </ModalFooter>
         </Modal>
