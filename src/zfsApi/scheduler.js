@@ -90,7 +90,6 @@ export class SchedulerApi {
     }
 
     static async updateCrontab(filterFn) {
-        console.error("[ZFS-DEBUG] updateCrontab called");
         return new Promise((resolve, reject) => {
             // Read existing
             const readProc = cockpit.spawn(['crontab', '-l'], { err: 'out' });
@@ -99,7 +98,6 @@ export class SchedulerApi {
             readProc.stream(data => output += data);
 
             readProc.done((exitCode) => {
-                console.error("[ZFS-DEBUG] Read done. Code:", exitCode, "Output length:", output.length);
                 let lines = [];
                 // Accept 0, 1, null, or empty string as valid completion
                 if ((exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '') && output) {
@@ -108,56 +106,66 @@ export class SchedulerApi {
 
                 const newLines = filterFn(lines);
                 const newContent = newLines.join('\n') + '\n';
-                console.error("[ZFS-DEBUG] Writing new content:\n", newContent);
 
-                // Write back
-                const writeProc = cockpit.spawn(['crontab', '-'], { err: 'out' });
-                let writeError = '';
+                // Use a temp file approach which is more robust than stdin pipe
+                const tempFile = "/tmp/cockpit-zfs-manager-cron.tmp";
 
-                writeProc.stream((data) => {
-                    writeError += data;
-                });
+                cockpit.file(tempFile).replace(newContent)
+                    .then(() => {
+                        // File written, now load it
+                        const loadProc = cockpit.spawn(['crontab', tempFile], { err: 'message' });
+                        let loadError = '';
 
-                writeProc.input(newContent);
-                writeProc.close();
+                        loadProc.stream(data => loadError += data);
 
-                writeProc.done((writeExitCode) => {
-                    console.error("[ZFS-DEBUG] Write done. Code:", writeExitCode, "Output:", writeError);
-                    if (writeExitCode === 0 || writeExitCode == null || writeExitCode === '') {
-                        resolve();
-                    } else {
-                        reject(new Error(`Failed to write crontab (code ${writeExitCode}): ${writeError}`));
-                    }
-                });
+                        loadProc.done((loadCode) => {
+                            // Cleanup temp file (fire and forget)
+                            cockpit.file(tempFile).replace(null).catch(() => {});
 
-                writeProc.fail(err => {
-                    console.error("[ZFS-DEBUG] Write process failed:", err);
-                    reject(err);
-                });
+                            if (loadCode === 0 || loadCode == null || loadCode === '') {
+                                resolve();
+                            } else {
+                                reject(new Error(`Failed to load crontab file (code ${loadCode}): ${loadError}`));
+                            }
+                        });
+
+                        loadProc.fail(err => {
+                            cockpit.file(tempFile).replace(null).catch(() => {});
+                            reject(err);
+                        });
+                    })
+                    .catch(err => {
+                        reject(new Error(`Failed to write temp cron file: ${err}`));
+                    });
             });
 
             readProc.fail((err) => {
-                console.error("[ZFS-DEBUG] Read process failed:", err);
-                // Assume empty if read fails (e.g. no crontab)
+                // If read fails (e.g. no crontab), proceed with empty list
                 const newLines = filterFn([]);
                 const newContent = newLines.join('\n') + '\n';
-                console.error("[ZFS-DEBUG] Writing fresh content (fallback):\n", newContent);
 
-                const writeProc = cockpit.spawn(['crontab', '-'], { err: 'out' });
-                let writeError = '';
+                const tempFile = "/tmp/cockpit-zfs-manager-cron.tmp";
 
-                writeProc.stream((data) => {
-                    writeError += data;
-                });
+                cockpit.file(tempFile).replace(newContent)
+                    .then(() => {
+                        const loadProc = cockpit.spawn(['crontab', tempFile], { err: 'message' });
+                        let loadError = '';
+                        loadProc.stream(data => loadError += data);
 
-                writeProc.input(newContent);
-                writeProc.close();
-                writeProc.done(code => {
-                    console.error("[ZFS-DEBUG] Fallback write done. Code:", code);
-                    if (code === 0 || code == null || code === '') resolve();
-                    else reject(new Error(`Failed to write crontab (code ${code}): ${writeError}`));
-                });
-                writeProc.fail(err => reject(err));
+                        loadProc.done((loadCode) => {
+                            cockpit.file(tempFile).replace(null).catch(() => {});
+                            if (loadCode === 0 || loadCode == null || loadCode === '') resolve();
+                            else reject(new Error(`Failed to load crontab file (code ${loadCode}): ${loadError}`));
+                        });
+
+                        loadProc.fail(err => {
+                            cockpit.file(tempFile).replace(null).catch(() => {});
+                            reject(err);
+                        });
+                    })
+                    .catch(writeErr => {
+                        reject(new Error(`Failed to write temp cron file: ${writeErr}`));
+                    });
             });
         });
     }
