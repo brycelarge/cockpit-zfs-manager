@@ -7,13 +7,19 @@ export class SchedulerApi {
     static LEGACY_MARKER = '# COCKPIT-ZFS-MANAGER-REPLICATION';
 
     static async listTasks() {
+        console.warn("[ZFS-DEBUG] SchedulerApi.listTasks called");
         return new Promise((resolve, reject) => {
+            console.warn("[ZFS-DEBUG] Spawning crontab -l");
             const proc = cockpit.spawn(['crontab', '-l'], { err: 'message' });
             let output = '';
 
-            proc.stream((data) => { output += data; });
+            proc.stream((data) => {
+                console.warn("[ZFS-DEBUG] Received stream data length:", data.length);
+                output += data;
+            });
 
             proc.done((exitCode) => {
+                console.warn("[ZFS-DEBUG] Process done. Exit code:", exitCode);
                 if (exitCode === 0 || exitCode === 1) {
                     const tasks = [];
                     const lines = output.trim().split('\n');
@@ -78,7 +84,10 @@ export class SchedulerApi {
                 }
             });
 
-            proc.fail(() => resolve([]));
+            proc.fail((err) => {
+                console.error("[ZFS-DEBUG] Spawn FAILED:", err);
+                resolve([]);
+            });
         });
     }
 
