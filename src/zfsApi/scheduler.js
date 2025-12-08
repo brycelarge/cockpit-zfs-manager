@@ -90,14 +90,16 @@ export class SchedulerApi {
     }
 
     static async updateCrontab(filterFn) {
+        console.error("[ZFS-DEBUG] updateCrontab called");
         return new Promise((resolve, reject) => {
             // Read existing
-            const readProc = cockpit.spawn(['crontab', '-l'], { err: 'message' });
+            const readProc = cockpit.spawn(['crontab', '-l'], { err: 'out' });
             let output = '';
 
             readProc.stream(data => output += data);
 
             readProc.done((exitCode) => {
+                console.error("[ZFS-DEBUG] Read done. Code:", exitCode, "Output length:", output.length);
                 let lines = [];
                 // Accept 0, 1, null, or empty string as valid completion
                 if ((exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '') && output) {
@@ -106,13 +108,13 @@ export class SchedulerApi {
 
                 const newLines = filterFn(lines);
                 const newContent = newLines.join('\n') + '\n';
+                console.error("[ZFS-DEBUG] Writing new content:\n", newContent);
 
                 // Write back
-                const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
+                const writeProc = cockpit.spawn(['crontab', '-'], { err: 'out' });
                 let writeError = '';
 
                 writeProc.stream((data) => {
-                    // crontab might output warnings to stdout/stderr
                     writeError += data;
                 });
 
@@ -120,6 +122,7 @@ export class SchedulerApi {
                 writeProc.close();
 
                 writeProc.done((writeExitCode) => {
+                    console.error("[ZFS-DEBUG] Write done. Code:", writeExitCode, "Output:", writeError);
                     if (writeExitCode === 0 || writeExitCode == null || writeExitCode === '') {
                         resolve();
                     } else {
@@ -127,15 +130,20 @@ export class SchedulerApi {
                     }
                 });
 
-                writeProc.fail(err => reject(err));
+                writeProc.fail(err => {
+                    console.error("[ZFS-DEBUG] Write process failed:", err);
+                    reject(err);
+                });
             });
 
-            readProc.fail(() => {
+            readProc.fail((err) => {
+                console.error("[ZFS-DEBUG] Read process failed:", err);
                 // Assume empty if read fails (e.g. no crontab)
                 const newLines = filterFn([]);
                 const newContent = newLines.join('\n') + '\n';
+                console.error("[ZFS-DEBUG] Writing fresh content (fallback):\n", newContent);
 
-                const writeProc = cockpit.spawn(['crontab', '-'], { err: 'message' });
+                const writeProc = cockpit.spawn(['crontab', '-'], { err: 'out' });
                 let writeError = '';
 
                 writeProc.stream((data) => {
@@ -145,6 +153,7 @@ export class SchedulerApi {
                 writeProc.input(newContent);
                 writeProc.close();
                 writeProc.done(code => {
+                    console.error("[ZFS-DEBUG] Fallback write done. Code:", code);
                     if (code === 0 || code == null || code === '') resolve();
                     else reject(new Error(`Failed to write crontab (code ${code}): ${writeError}`));
                 });
