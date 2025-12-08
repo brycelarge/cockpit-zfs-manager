@@ -108,6 +108,8 @@ export class SchedulerApi {
             const newLines = [];
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
+
+                // Check New Format
                 if (line.startsWith(SchedulerApi.MARKER_PREFIX)) {
                     const idMatch = line.match(/id=([a-zA-Z0-9-]+)/);
                     if (idMatch && idMatch[1] === id) {
@@ -116,6 +118,15 @@ export class SchedulerApi {
                         continue;
                     }
                 }
+                // Check Legacy Format
+                else if (line.includes(SchedulerApi.LEGACY_MARKER)) {
+                    const match = line.match(/id=([a-zA-Z0-9-]+)/);
+                    if (match && match[1] === id) {
+                        // Found legacy task. Skip just this line.
+                        continue;
+                    }
+                }
+
                 newLines.push(lines[i]);
             }
             return newLines;
