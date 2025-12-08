@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@patternfly/react-core/dist/esm/components/Modal';
-import { Form, FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
+import { Form, FormGroup, FormHelperText, HelperText, HelperTextItem } from "@patternfly/react-core/dist/esm/components/Form";
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
@@ -146,16 +146,25 @@ function CreateReplicationTaskDialog({ pools, onRefresh }) {
                             label="Destination Pool"
                             fieldId="dest-pool"
                             isRequired
-                            helperText={sourceDataset ? `Will create ${destinationPool}/${sourceDataset.split('/').pop()}` : "Select a pool to replicate to"}
                         >
                             <FormSelect value={destinationPool} onChange={(_, val) => setDestinationPool(val)} id="dest-pool">
                                 <FormSelectOption value="" label="Select Pool" isDisabled />
                                 {pools.filter(p => p.name !== sourcePool).map(p => <FormSelectOption key={p.name} value={p.name} label={p.name} />)}
                             </FormSelect>
+                            <FormHelperText>
+                                <HelperText>
+                                    <HelperTextItem>{sourceDataset ? `Will create ${destinationPool}/${sourceDataset.split('/').pop()}` : "Select a pool to replicate to"}</HelperTextItem>
+                                </HelperText>
+                            </FormHelperText>
                         </FormGroup>
                     ) : (
-                        <FormGroup label="SSH Destination" fieldId="dest-path" isRequired helperText="user@host:pool/dataset">
+                        <FormGroup label="SSH Destination" fieldId="dest-path" isRequired>
                             <TextInput value={destinationPath} onChange={(_, val) => setDestinationPath(val)} id="dest-path" placeholder="root@192.168.1.50:backup/pool" />
+                            <FormHelperText>
+                                <HelperText>
+                                    <HelperTextItem>user@host:pool/dataset</HelperTextItem>
+                                </HelperText>
+                            </FormHelperText>
                         </FormGroup>
                     )}
 
