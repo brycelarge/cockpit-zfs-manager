@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@patternfly/react-core/dist/esm/components/Modal';
-import { Form, FormGroup, FormHelperText, HelperText, HelperTextItem } from "@patternfly/react-core/dist/esm/components/Form";
+import { Form, FormGroup, FormHelperText, HelperText, HelperTextItem } from "@patternfly/react-core";
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
