@@ -118,6 +118,7 @@ export class SchedulerApi {
                 });
 
                 writeProc.input(newContent);
+                writeProc.close();
 
                 writeProc.done((writeExitCode) => {
                     if (writeExitCode === 0 || writeExitCode == null || writeExitCode === '') {
