@@ -42,24 +42,28 @@ export class SchedulerApi {
                                 }
                             }
                         }
-                        // OLD FORMAT: Inline comment
-                        else if (line.includes(SchedulerApi.LEGACY_MARKER)) {
-                            const [jobPart, commentPart] = line.split(SchedulerApi.LEGACY_MARKER);
-                            if (jobPart && commentPart) {
-                                const idMatch = commentPart.match(/id=([a-zA-Z0-9-]+)/);
-                                const id = idMatch ? idMatch[1] : `legacy-${i}`;
-                                const parts = jobPart.trim().split(/\s+/);
-                                if (parts.length >= 6) {
-                                    const schedule = parts.slice(0, 5).join(' ');
-                                    const command = parts.slice(5).join(' ');
-                                    tasks.push({
-                                        id, schedule, command,
-                                        raw: line
-                                    });
-                                }
+                        // OLD FORMAT: Inline comment using Regex for robustness
+                        // Matches: "0 0 * * * cmd # COCKPIT-ZFS-MANAGER-REPLICATION id=123"
+                        const legacyRegex = /(.*)# COCKPIT-ZFS-MANAGER-REPLICATION\s+id=([a-zA-Z0-9-]+)/;
+                        const legacyMatch = line.match(legacyRegex);
+
+                        if (legacyMatch) {
+                            console.log('[ZFS] Found legacy match:', legacyMatch[0]);
+                            const jobPart = legacyMatch[1].trim();
+                            const id = legacyMatch[2];
+
+                            const parts = jobPart.split(/\s+/);
+                            if (parts.length >= 6) {
+                                const schedule = parts.slice(0, 5).join(' ');
+                                const command = parts.slice(5).join(' ');
+                                tasks.push({
+                                    id, schedule, command,
+                                    raw: line
+                                });
                             }
                         }
                     }
+                    console.log('[ZFS] Parsed tasks:', tasks);
                     resolve(tasks);
                 } else {
                     resolve([]);
