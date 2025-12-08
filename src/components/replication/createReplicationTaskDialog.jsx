@@ -33,11 +33,19 @@ function CreateReplicationTaskDialog({ pools, onRefresh }) {
     useEffect(() => {
         if (sourcePool) {
             fetchDatasets(sourcePool);
+
+            // Auto-select destination if only one option remains
+            const availableDestinations = pools.filter(p => p.name !== sourcePool);
+            if (availableDestinations.length === 1) {
+                setDestinationPool(availableDestinations[0].name);
+            } else if (destinationPool === sourcePool) {
+                setDestinationPool('');
+            }
         } else {
             setSourceDatasets([]);
             setSourceDataset('');
         }
-    }, [sourcePool]);
+    }, [sourcePool, pools]);
 
     const fetchDatasets = async (poolName) => {
         setLoadingDatasets(true);
