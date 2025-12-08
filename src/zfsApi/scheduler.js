@@ -99,7 +99,8 @@ export class SchedulerApi {
 
             readProc.done((exitCode) => {
                 let lines = [];
-                if (exitCode === 0 && output) {
+                // Accept 0, 1, null, or empty string as valid completion
+                if ((exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '') && output) {
                     lines = output.trim().split('\n');
                 }
 
