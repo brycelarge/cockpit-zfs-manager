@@ -2,6 +2,7 @@ const cockpit = window.cockpit;
 
 export class SchedulerApi {
     static MARKER_PREFIX = '# COCKPIT-ZFS-MANAGER-TASK';
+    static LEGACY_MARKER = '# COCKPIT-ZFS-MANAGER-REPLICATION';
 
     static async listTasks() {
         return new Promise((resolve, reject) => {
@@ -14,34 +15,47 @@ export class SchedulerApi {
                 if (exitCode === 0 || exitCode === 1) {
                     const tasks = [];
                     const lines = output.trim().split('\n');
+                    console.log('[ZFS] Crontab raw:', output);
 
                     for (let i = 0; i < lines.length; i++) {
                         const line = lines[i].trim();
+
+                        // NEW FORMAT: Marker line followed by task line
                         if (line.startsWith(SchedulerApi.MARKER_PREFIX)) {
-                            // Found a marker line: # COCKPIT-ZFS-MANAGER-TASK id=...
                             const idMatch = line.match(/id=([a-zA-Z0-9-]+)/);
                             const id = idMatch ? idMatch[1] : `legacy-${i}`;
 
-                            // The actual task should be the NEXT line
                             if (i + 1 < lines.length) {
                                 const taskLine = lines[i+1].trim();
-                                // Validate it's not another marker or empty
                                 if (taskLine && !taskLine.startsWith('#')) {
                                     const parts = taskLine.split(/\s+/);
                                     if (parts.length >= 6) {
                                         const schedule = parts.slice(0, 5).join(' ');
                                         const command = parts.slice(5).join(' ');
-
                                         tasks.push({
-                                            id,
-                                            schedule,
-                                            command,
-                                            // Store both lines as "raw" for deletion
+                                            id, schedule, command,
                                             rawMarker: line,
                                             rawTask: lines[i+1]
                                         });
                                         i++; // Skip the task line in the loop
                                     }
+                                }
+                            }
+                        }
+                        // OLD FORMAT: Inline comment
+                        else if (line.includes(SchedulerApi.LEGACY_MARKER)) {
+                            const [jobPart, commentPart] = line.split(SchedulerApi.LEGACY_MARKER);
+                            if (jobPart && commentPart) {
+                                const idMatch = commentPart.match(/id=([a-zA-Z0-9-]+)/);
+                                const id = idMatch ? idMatch[1] : `legacy-${i}`;
+                                const parts = jobPart.trim().split(/\s+/);
+                                if (parts.length >= 6) {
+                                    const schedule = parts.slice(0, 5).join(' ');
+                                    const command = parts.slice(5).join(' ');
+                                    tasks.push({
+                                        id, schedule, command,
+                                        raw: line
+                                    });
                                 }
                             }
                         }
