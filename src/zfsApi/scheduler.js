@@ -20,7 +20,8 @@ export class SchedulerApi {
 
             proc.done((exitCode) => {
                 console.warn("[ZFS-DEBUG] Process done. Exit code:", exitCode);
-                if (exitCode === 0 || exitCode === 1) {
+                // Accept 0, 1, null, or empty string as valid completion if we got this far
+                if (exitCode === 0 || exitCode === 1 || exitCode == null || exitCode === '') {
                     const tasks = [];
                     const lines = output.trim().split('\n');
                     console.warn('[ZFS-DEBUG] Raw crontab output:', JSON.stringify(output));
